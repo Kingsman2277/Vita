@@ -19,6 +19,7 @@ export default function Budget() {
   const [savingsForm, setSavingsForm] = useState('')
   const [recForm, setRecForm] = useState({ name: '', amount: '', day_of_month: '1', category: '' })
   const [expandedCats, setExpandedCats] = useState({})
+  const [cashFlowOpen, setCashFlowOpen] = useState(false)
 
   const spentSoFar = monthlyTotal
   const canSpend = discretionary - spentSoFar
@@ -98,21 +99,45 @@ export default function Budget() {
         <button onClick={openEditBudget} className="btn-secondary" style={{ padding: '8px 18px', minWidth: 'auto' }}>Edit</button>
       </div>
 
-      {/* Cash Flow — hero card */}
-      <div className="hero-card" style={{ padding: 24 }}>
-        <p className="label text-[11px] font-semibold uppercase tracking-[0.1em] mb-4">Cash Flow Summary</p>
-        <div className="flex flex-col" style={{ gap: 10 }}>
-          <FlowRow label="Monthly Income" value={formatCurrency(monthlyIncome)} color="text-emerald-400" />
-          <FlowRow label="Recurring Expenses" value={`-${formatCurrency(totalRecurring)}`} color="text-red-400" />
-          <FlowRow label="Savings Target" value={`-${formatCurrency(savingsTarget)}`} color="text-blue-400" />
-          <div className="border-t border-white/10 pt-2.5">
-            <FlowRow label="Discretionary Budget" value={formatCurrency(discretionary)} bold />
+      {/* Cash Flow — compact with expandable detail */}
+      <div className="hero-card" style={{ padding: '16px 20px' }}>
+        <button
+          onClick={() => setCashFlowOpen(o => !o)}
+          style={{ width: '100%', background: 'none', border: 'none', fontFamily: 'inherit', cursor: 'pointer', padding: 0 }}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center" style={{ gap: 10 }}>
+              <svg
+                width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"
+                style={{ transition: 'transform 0.2s ease', transform: cashFlowOpen ? 'rotate(90deg)' : 'rotate(0deg)', opacity: 0.5 }}
+              >
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+              <span className="label text-[11px] font-semibold uppercase tracking-[0.1em]" style={{ margin: 0 }}>You Can Spend</span>
+            </div>
+            <span className={`text-[22px] font-bold ${canSpend >= 0 ? 'text-emerald-400' : 'text-red-400'}`} style={{ letterSpacing: '-0.02em' }}>
+              {formatCurrency(canSpend)}
+            </span>
           </div>
-          <FlowRow label="Spent So Far" value={`-${formatCurrency(spentSoFar)}`} color="text-orange-400" />
-          <div className="border-t border-white/10 pt-2.5">
-            <FlowRow label="You Can Spend" value={formatCurrency(canSpend)} color={canSpend >= 0 ? 'text-emerald-400' : 'text-red-400'} bold large />
+          {!cashFlowOpen && (
+            <div className="flex justify-between" style={{ marginTop: 4 }}>
+              <span className="text-[11px] opacity-50">of {formatCurrency(discretionary)} discretionary</span>
+              <span className="text-[11px] opacity-50">{formatCurrency(spentSoFar)} spent</span>
+            </div>
+          )}
+        </button>
+
+        {cashFlowOpen && (
+          <div className="flex flex-col" style={{ gap: 8, marginTop: 14, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+            <FlowRow label="Monthly Income" value={formatCurrency(monthlyIncome)} color="text-emerald-400" />
+            <FlowRow label="Recurring Expenses" value={`-${formatCurrency(totalRecurring)}`} color="text-red-400" />
+            <FlowRow label="Savings Target" value={`-${formatCurrency(savingsTarget)}`} color="text-blue-400" />
+            <div className="border-t border-white/10 pt-2">
+              <FlowRow label="Discretionary Budget" value={formatCurrency(discretionary)} bold />
+            </div>
+            <FlowRow label="Spent So Far" value={`-${formatCurrency(spentSoFar)}`} color="text-orange-400" />
           </div>
-        </div>
+        )}
       </div>
 
       {/* Budget Allocation by Category */}
