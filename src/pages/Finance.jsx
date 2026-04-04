@@ -348,36 +348,38 @@ function SummaryView({ monthExpenses, monthTotal, onCategoryClick }) {
       </div>
 
       {/* Category bars */}
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col" style={{ gap: 12 }}>
         {sorted.map(([cat, data]) => {
           const pct = monthTotal > 0 ? (data.total / monthTotal) * 100 : 0
           return (
             <button
               key={cat}
               onClick={() => onCategoryClick(cat)}
-              className="w-full text-left p-4 rounded-lg border border-border hover:border-primary/30 transition-all bg-card"
-              style={{ cursor: 'pointer' }}
+              className="w-full text-left rounded-[12px] border border-border hover:border-primary/30 transition-all bg-card"
+              style={{ padding: '16px 20px', cursor: 'pointer' }}
             >
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">{getCategoryEmoji(cat)}</span>
-                  <span className="text-sm font-medium text-foreground capitalize">{cat}</span>
-                  <span className="text-[11px] text-muted-foreground">({data.count})</span>
+              <div className="flex items-center justify-between" style={{ marginBottom: 10 }}>
+                <div className="flex items-center" style={{ gap: 10 }}>
+                  <span style={{ fontSize: 22 }}>{getCategoryEmoji(cat)}</span>
+                  <div>
+                    <span className="text-[14px] font-semibold text-foreground capitalize">{cat}</span>
+                    <span className="text-[12px] text-muted-foreground ml-2">({data.count})</span>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <span className="text-sm font-semibold text-foreground">{formatCurrency(data.total)}</span>
-                  <span className="text-[11px] text-muted-foreground ml-1.5">{pct.toFixed(0)}%</span>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-[16px] font-bold text-foreground">{formatCurrency(data.total)}</span>
+                  <span className="text-[12px] text-muted-foreground">{pct.toFixed(0)}%</span>
                 </div>
               </div>
               {/* Progress bar */}
-              <div className="h-[6px] bg-muted rounded-full overflow-hidden">
+              <div className="bg-muted rounded-full overflow-hidden" style={{ height: 8, borderRadius: 4, marginBottom: data.recurring > 0 ? 10 : 0 }}>
                 <div
                   className="h-full rounded-full transition-all duration-500"
-                  style={{ width: `${pct}%`, background: 'var(--primary)' }}
+                  style={{ width: `${pct}%`, background: 'var(--primary)', borderRadius: 4 }}
                 />
               </div>
               {data.recurring > 0 && (
-                <p className="text-[10px] text-muted-foreground mt-1.5">
+                <p className="text-[11px] text-muted-foreground">
                   {formatCurrency(data.recurring)} recurring · {formatCurrency(data.total - data.recurring)} discretionary
                 </p>
               )}
