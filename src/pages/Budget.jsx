@@ -5,11 +5,12 @@ import Modal from '../components/Modal'
 import SkeletonLoader from '../components/SkeletonLoader'
 import { useBudget } from '../hooks/useBudget'
 import { useExpenses } from '../hooks/useExpenses'
-import { formatCurrency } from '../lib/helpers'
+import { formatCurrency, BUDGET_ALLOCATIONS, getCategoryEmoji } from '../lib/helpers'
+import { filterByMonth } from '../lib/dateFilters'
 
 export default function Budget() {
   const { budget, recurring, loading, saveBudget, addRecurring, updateRecurring, deleteRecurring, totalRecurring, monthlyIncome, savingsTarget, discretionary } = useBudget()
-  const { monthlyTotal } = useExpenses()
+  const { expenses, monthlyTotal } = useExpenses()
   const [editBudget, setEditBudget] = useState(false)
   const [addRecModal, setAddRecModal] = useState(false)
   const [editRecModal, setEditRecModal] = useState(false)
@@ -112,6 +113,9 @@ export default function Budget() {
           </div>
         </div>
       </div>
+
+      {/* Budget Allocation by Category */}
+      <BudgetCategories discretionary={discretionary} expenses={expenses} />
 
       {/* Recurring */}
       <div className="flex items-center justify-between">
@@ -253,6 +257,77 @@ function FlowRow({ label, value, color, bold, large }) {
     <div className="flex justify-between items-center" style={{ height: 40, fontSize: 14 }}>
       <span className={bold ? 'font-bold' : 'opacity-70'} style={{ fontSize: bold ? 16 : 14 }}>{label}</span>
       <span className={`font-medium ${bold ? 'font-bold' : ''} ${color || ''}`} style={{ fontSize: large ? 20 : bold ? 16 : 14 }}>{value}</span>
+    </div>
+  )
+}
+
+/* ─── Budget Categories Allocation ─── */
+function BudgetCategories({ discretionary, expenses }) {
+  // Get current month expenses (non-reimbursable only)
+  const now = new Date()
+  const monthExpenses = filterByMonth(expenses, now.getFullYear(), now.getMonth(), 'date')
+    .filter(e => !e.is_recurring)
+
+  // Calculate spent per category
+  const spentByCategory = {}
+  for (const e of monthExpenses) {
+    const cat = e.category || 'other'
+    spentByCategory[cat] = (spentByCategory[cat] || 0) + Number(e.amount)
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between" style={{ marginBottom: 16 }}>
+        <h2 className="section-title">Budget Allocation</h2>
+        <span className="text-sm text-muted-foreground">of {formatCurrency(discretionary)}</span>
+      </div>
+
+      <div className="flex flex-col" style={{ gap: 10 }}>
+        {BUDGET_ALLOCATIONS.map(({ category, label, emoji, percent }) => {
+          const allocated = discretionary * (percent / 100)
+          const spent = spentByCategory[category] || 0
+          const remaining = allocated - spent
+          const spentPct = allocated > 0 ? Math.min(100, (spent / allocated) * 100) : 0
+          const isOver = remaining < 0
+
+          return (
+            <div
+              key={category}
+              style={{ padding: '14px 18px', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--card)' }}
+            >
+              {/* Header row */}
+              <div className="flex items-center justify-between" style={{ marginBottom: 8 }}>
+                <div className="flex items-center" style={{ gap: 8 }}>
+                  <span style={{ fontSize: 18 }}>{emoji}</span>
+                  <span className="text-[13px] font-semibold text-foreground">{label}</span>
+                  <span className="text-[11px] text-muted-foreground">{percent}%</span>
+                </div>
+                <span className={`text-[13px] font-bold ${isOver ? 'text-destructive' : 'text-foreground'}`}>
+                  {formatCurrency(remaining)} left
+                </span>
+              </div>
+
+              {/* Progress bar */}
+              <div className="bg-muted rounded-full overflow-hidden" style={{ height: 6, borderRadius: 3 }}>
+                <div
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{
+                    width: `${spentPct}%`,
+                    background: isOver ? 'var(--destructive)' : spentPct > 80 ? '#e8a83e' : 'var(--primary)',
+                    borderRadius: 3,
+                  }}
+                />
+              </div>
+
+              {/* Footer stats */}
+              <div className="flex justify-between" style={{ marginTop: 6 }}>
+                <span className="text-[11px] text-muted-foreground">{formatCurrency(spent)} spent</span>
+                <span className="text-[11px] text-muted-foreground">{formatCurrency(allocated)} budget</span>
+              </div>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
