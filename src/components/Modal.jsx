@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { createPortal } from 'react-dom'
 
 export default function Modal({ open, onClose, title, children }) {
   useEffect(() => {
@@ -12,28 +13,9 @@ export default function Modal({ open, onClose, title, children }) {
 
   if (!open) return null
 
-  return (
-    <>
-      {/* Backdrop — fixed, covers everything */}
-      <div
-        className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
-      />
-
-      {/* Modal panel — fixed, centered, scrollable */}
-      <div
-        className="fixed z-50 bg-card border border-border sm:rounded-[16px] rounded-t-[16px] animate-slide-up"
-        style={{
-          left: '50%',
-          bottom: 0,
-          transform: 'translateX(-50%)',
-          width: '100%',
-          maxWidth: 448,
-          maxHeight: '85vh',
-          overflowY: 'auto',
-          padding: '28px 32px 32px',
-        }}
-      >
+  return createPortal(
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-panel" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-6">
           <h2 className="section-title">{title}</h2>
           <button
@@ -47,6 +29,7 @@ export default function Modal({ open, onClose, title, children }) {
         </div>
         {children}
       </div>
-    </>
+    </div>,
+    document.body
   )
 }
