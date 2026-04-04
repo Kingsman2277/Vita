@@ -16,7 +16,7 @@ export default function Finance() {
   const [modalOpen, setModalOpen] = useState(false)
   const [filter, setFilter] = useState('all')
   const [selectedDay, setSelectedDay] = useState(null)
-  const [form, setForm] = useState({ amount: '', category: 'food', note: '', date: getToday() })
+  const [form, setForm] = useState({ amount: '', category: 'food', note: '', date: getToday(), is_recurring: false })
 
   // Three-step filter: month → day → category
   const monthExpenses = filterByMonth(expenses, selectedMonth.year, selectedMonth.month, 'date')
@@ -35,10 +35,10 @@ export default function Finance() {
     e.preventDefault()
     if (!form.amount) return
     try {
-      await addExpense({ amount: Number(form.amount), category: form.category, note: form.note || null, date: form.date })
+      await addExpense({ amount: Number(form.amount), category: form.category, note: form.note || null, date: form.date, is_recurring: form.is_recurring })
       toast.success('Expense added!')
       setModalOpen(false)
-      setForm({ amount: '', category: 'food', note: '', date: getToday() })
+      setForm({ amount: '', category: 'food', note: '', date: getToday(), is_recurring: false })
     } catch { toast.error('Failed to save') }
   }
 
@@ -90,7 +90,10 @@ export default function Finance() {
               <div className="flex items-center gap-3 min-w-0 flex-1">
                 <span className="text-xl flex items-center justify-center rounded-lg bg-muted flex-shrink-0" style={{ width: 36, height: 36 }}>{getCategoryEmoji(exp.category)}</span>
                 <div className="min-w-0">
-                  <p className="font-medium text-sm truncate text-foreground">{exp.note || exp.category}</p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="font-medium text-sm truncate text-foreground">{exp.note || exp.category}</p>
+                    {exp.is_recurring && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-secondary text-secondary-foreground font-semibold uppercase tracking-wider flex-shrink-0">Recurring</span>}
+                  </div>
                   <p className="text-xs text-muted-foreground mt-0.5">{formatDate(exp.date)}</p>
                 </div>
               </div>
@@ -130,6 +133,56 @@ export default function Finance() {
           <div className="form-group">
             <label className="form-label">Date</label>
             <input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} className="form-input" />
+          </div>
+          {/* Recurring toggle */}
+          <div className="form-group">
+            <label
+              className="flex items-center gap-3 cursor-pointer p-3 rounded-lg border transition-all"
+              style={{
+                borderColor: form.is_recurring ? 'var(--primary)' : 'var(--border)',
+                background: form.is_recurring ? 'var(--secondary)' : 'transparent',
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={form.is_recurring}
+                onChange={e => setForm(f => ({ ...f, is_recurring: e.target.checked }))}
+                className="sr-only"
+              />
+              <div
+                style={{
+                  width: 40,
+                  height: 22,
+                  borderRadius: 11,
+                  background: form.is_recurring ? 'var(--primary)' : 'var(--muted)',
+                  position: 'relative',
+                  transition: 'background 0.2s ease',
+                  flexShrink: 0,
+                }}
+              >
+                <div
+                  style={{
+                    width: 18,
+                    height: 18,
+                    borderRadius: '50%',
+                    background: '#fff',
+                    position: 'absolute',
+                    top: 2,
+                    left: form.is_recurring ? 20 : 2,
+                    transition: 'left 0.2s ease',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                  }}
+                />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: form.is_recurring ? 'var(--secondary-foreground)' : 'var(--foreground)' }}>
+                  Part of monthly recurring
+                </p>
+                <p className="text-[11px]" style={{ color: form.is_recurring ? 'var(--secondary-foreground)' : 'var(--muted-foreground)', opacity: 0.7 }}>
+                  Won't count against your discretionary budget
+                </p>
+              </div>
+            </label>
           </div>
           <button type="submit" className="btn-primary w-full" style={{ padding: '12px 24px' }}>Save Expense</button>
         </form>

@@ -31,17 +31,27 @@ export function useExpenses() {
     await fetchExpenses()
   }
 
+  // Today totals (discretionary only — exclude recurring)
   const todayTotal = expenses
-    .filter(e => e.date === getToday())
+    .filter(e => e.date === getToday() && !e.is_recurring)
     .reduce((sum, e) => sum + Number(e.amount), 0)
 
-  const monthlyTotal = expenses
-    .filter(e => {
-      const d = new Date(e.date + 'T00:00:00')
-      const now = new Date()
-      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
-    })
+  // Monthly totals
+  const thisMonthExpenses = expenses.filter(e => {
+    const d = new Date(e.date + 'T00:00:00')
+    const now = new Date()
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+  })
+
+  // Discretionary spending only (not recurring)
+  const monthlyTotal = thisMonthExpenses
+    .filter(e => !e.is_recurring)
     .reduce((sum, e) => sum + Number(e.amount), 0)
 
-  return { expenses, loading, addExpense, deleteExpense, todayTotal, monthlyTotal, refetch: fetchExpenses }
+  // Recurring spending (actuals logged this month)
+  const monthlyRecurringActual = thisMonthExpenses
+    .filter(e => e.is_recurring)
+    .reduce((sum, e) => sum + Number(e.amount), 0)
+
+  return { expenses, loading, addExpense, deleteExpense, todayTotal, monthlyTotal, monthlyRecurringActual, refetch: fetchExpenses }
 }
