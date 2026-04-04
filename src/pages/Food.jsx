@@ -9,7 +9,7 @@ import SkeletonLoader from '../components/SkeletonLoader'
 import { useFoodLogs } from '../hooks/useFoodLogs'
 import { useMonthNavigation } from '../hooks/useMonthNavigation'
 import { filterByMonth } from '../lib/dateFilters'
-import { analyzeFood } from '../lib/gemini'
+import { analyzeFood, analyzeFoodText } from '../lib/gemini'
 import { getMealType } from '../lib/helpers'
 
 export default function Food() {
@@ -19,8 +19,29 @@ export default function Food() {
   const [cameraOpen, setCameraOpen] = useState(false)
   const [photoMenuOpen, setPhotoMenuOpen] = useState(false)
   const [analyzing, setAnalyzing] = useState(false)
+  const [smartText, setSmartText] = useState('')
   const [form, setForm] = useState({ food_name: '', calories: '', protein: '', carbs: '', fat: '', meal_type: getMealType() })
   const galleryRef = useRef()
+
+  const handleSmartAnalyze = async () => {
+    if (!smartText.trim()) return
+    setAnalyzing(true)
+    try {
+      const result = await analyzeFoodText(smartText.trim())
+      setForm({
+        food_name: result.food_name || smartText.trim(),
+        calories: String(result.calories || ''),
+        protein: String(result.protein_g || ''),
+        carbs: String(result.carbs_g || ''),
+        fat: String(result.fat_g || ''),
+        meal_type: result.meal_type_guess || getMealType(),
+      })
+      setSmartText('')
+    } catch {
+      toast.error('Could not analyze. Fill in manually below.')
+    }
+    setAnalyzing(false)
+  }
 
   // Filter logs to selected month
   const monthLogs = filterByMonth(logs, selectedMonth.year, selectedMonth.month, 'logged_at')
@@ -189,35 +210,71 @@ export default function Food() {
         {analyzing ? (
           <div className="flex flex-col items-center py-10 gap-3">
             <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-            <p className="text-sm text-muted-foreground">Analyzing photo...</p>
+            <p className="text-sm text-muted-foreground">Analyzing your meal...</p>
           </div>
         ) : (
-          <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label className="form-label">Meal Type</label>
-              <select value={form.meal_type} onChange={e => setForm(f => ({ ...f, meal_type: e.target.value }))} className="form-input">
-                <option value="breakfast">🌅 Breakfast</option><option value="lunch">☀️ Lunch</option><option value="dinner">🌙 Dinner</option><option value="snack">🍿 Snack</option>
-              </select>
-            </div>
-            <div className="form-group">
-              <label className="form-label">Food Name</label>
-              <input placeholder="Food name" value={form.food_name} onChange={e => setForm(f => ({ ...f, food_name: e.target.value }))} className="form-input" required />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Nutrition</label>
-              <div className="form-row grid-cols-2">
-                <input placeholder="Calories" type="number" value={form.calories} onChange={e => setForm(f => ({ ...f, calories: e.target.value }))} className="form-input" required />
-                <input placeholder="Protein (g)" type="number" value={form.protein} onChange={e => setForm(f => ({ ...f, protein: e.target.value }))} className="form-input" />
+          <>
+            {/* Smart AI input */}
+            <div style={{ marginBottom: 24 }}>
+              <label className="form-label">Describe what you ate</label>
+              <div className="flex gap-2">
+                <textarea
+                  value={smartText}
+                  onChange={e => setSmartText(e.target.value)}
+                  placeholder="e.g. two eggs, two parathas, an apple, orange juice and a coffee"
+                  className="form-input flex-1"
+                  rows={2}
+                  style={{ resize: 'none' }}
+                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSmartAnalyze() } }}
+                />
+                <button
+                  type="button"
+                  onClick={handleSmartAnalyze}
+                  disabled={!smartText.trim()}
+                  className="btn-primary self-end"
+                  style={{ padding: '10px 16px', minWidth: 'auto', opacity: smartText.trim() ? 1 : 0.4 }}
+                >
+                  ✨ Analyze
+                </button>
               </div>
+              <p className="text-hint">AI will calculate calories & macros for you. Press Enter or click Analyze.</p>
             </div>
-            <div className="form-group">
-              <div className="form-row grid-cols-2">
-                <input placeholder="Carbs (g)" type="number" value={form.carbs} onChange={e => setForm(f => ({ ...f, carbs: e.target.value }))} className="form-input" />
-                <input placeholder="Fat (g)" type="number" value={form.fat} onChange={e => setForm(f => ({ ...f, fat: e.target.value }))} className="form-input" />
+
+            {/* Divider */}
+            <div className="flex items-center gap-3" style={{ marginBottom: 20 }}>
+              <div className="flex-1 border-t border-border" />
+              <span className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">or enter manually</span>
+              <div className="flex-1 border-t border-border" />
+            </div>
+
+            {/* Manual form */}
+            <form onSubmit={handleSubmit}>
+              <div className="form-group">
+                <label className="form-label">Meal Type</label>
+                <select value={form.meal_type} onChange={e => setForm(f => ({ ...f, meal_type: e.target.value }))} className="form-input">
+                  <option value="breakfast">🌅 Breakfast</option><option value="lunch">☀️ Lunch</option><option value="dinner">🌙 Dinner</option><option value="snack">🍿 Snack</option>
+                </select>
               </div>
-            </div>
-            <button type="submit" className="btn-primary w-full" style={{ padding: '12px 24px' }}>Save</button>
-          </form>
+              <div className="form-group">
+                <label className="form-label">Food Name</label>
+                <input placeholder="Food name" value={form.food_name} onChange={e => setForm(f => ({ ...f, food_name: e.target.value }))} className="form-input" required />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Nutrition</label>
+                <div className="form-row grid-cols-2">
+                  <input placeholder="Calories" type="number" value={form.calories} onChange={e => setForm(f => ({ ...f, calories: e.target.value }))} className="form-input" required />
+                  <input placeholder="Protein (g)" type="number" value={form.protein} onChange={e => setForm(f => ({ ...f, protein: e.target.value }))} className="form-input" />
+                </div>
+              </div>
+              <div className="form-group">
+                <div className="form-row grid-cols-2">
+                  <input placeholder="Carbs (g)" type="number" value={form.carbs} onChange={e => setForm(f => ({ ...f, carbs: e.target.value }))} className="form-input" />
+                  <input placeholder="Fat (g)" type="number" value={form.fat} onChange={e => setForm(f => ({ ...f, fat: e.target.value }))} className="form-input" />
+                </div>
+              </div>
+              <button type="submit" className="btn-primary w-full" style={{ padding: '12px 24px' }}>Save</button>
+            </form>
+          </>
         )}
       </Modal>
 
