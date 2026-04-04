@@ -9,7 +9,13 @@
       "Bash(npx vite:*)",
       "Bash(npm ls:*)",
       "Bash(ls \"/Users/matteo/Documents/Health & Wealth 2026/Finance Tracker/RoadToSuccess/.claude/launch.json\")",
-      "mcp__Claude_Preview__preview_start"
+      "mcp__Claude_Preview__preview_start",
+      "Bash(curl -s -X POST \"https://api.github.com/user/repos\" -H \"Accept: application/vnd.github+json\" -d '{\"\"\"\"name\"\"\"\":\"\"\"\"vita\"\"\"\",\"\"\"\"description\"\"\"\":\"\"\"\"Vita — Personal Life OS PWA\"\"\"\",\"\"\"\"private\"\"\"\":false}' --key ~/.ssh/id_ed25519)",
+      "Bash(brew install:*)",
+      "Bash(npm list:*)",
+      "Bash(vercel whoami:*)",
+      "Bash(vercel --yes --prod -e VITE_SUPABASE_URL=https://cqouqsxjmbwujgdfkbol.supabase.co -e VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNxb3Vxc3hqbWJ3dWpnZGZrYm9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyNzMwNTcsImV4cCI6MjA5MDg0OTA1N30.5_Nei0BBWaOe0YpdTyp74bjZcNYqmIPeVsoU0uIE06w -e VITE_GEMINI_API_KEY=your_gemini_key_here)",
+      "Bash(vercel --yes --prod --name vita-life-os -e VITE_SUPABASE_URL=https://cqouqsxjmbwujgdfkbol.supabase.co -e VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNxb3Vxc3hqbWJ3dWpnZGZrYm9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyNzMwNTcsImV4cCI6MjA5MDg0OTA1N30.5_Nei0BBWaOe0YpdTyp74bjZcNYqmIPeVsoU0uIE06w -e VITE_GEMINI_API_KEY=your_gemini_key_here)"
     ]
   }
 }
