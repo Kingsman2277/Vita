@@ -12,7 +12,7 @@ export default function Modal({ open, onClose, title, children }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-card border border-border rounded-t-[16px] sm:rounded-[16px] w-full sm:max-w-md max-h-[85vh] overflow-y-auto p-7 animate-slide-up">
+      <div className="relative bg-card border border-border rounded-t-[16px] sm:rounded-[16px] w-full sm:max-w-md max-h-[85vh] overflow-y-auto animate-slide-up" style={{ padding: '28px 32px 32px' }}>
         <div className="flex items-center justify-between mb-6">
           <h2 className="section-title">{title}</h2>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors p-1.5 rounded-lg hover:bg-muted">

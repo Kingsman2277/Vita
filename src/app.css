@@ -329,7 +329,7 @@ input::placeholder, textarea::placeholder {
   background: var(--muted);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 10px 14px;
+  padding: 12px 16px;
   font-size: 14px;
 }
 .form-group { margin-bottom: 20px; }

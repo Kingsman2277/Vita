@@ -215,33 +215,31 @@ export default function Food() {
         ) : (
           <>
             {/* Smart AI input */}
-            <div style={{ marginBottom: 24 }}>
+            <div style={{ marginBottom: 28 }}>
               <label className="form-label">Describe what you ate</label>
-              <div className="flex gap-2">
-                <textarea
-                  value={smartText}
-                  onChange={e => setSmartText(e.target.value)}
-                  placeholder="e.g. two eggs, two parathas, an apple, orange juice and a coffee"
-                  className="form-input flex-1"
-                  rows={2}
-                  style={{ resize: 'none' }}
-                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSmartAnalyze() } }}
-                />
-                <button
-                  type="button"
-                  onClick={handleSmartAnalyze}
-                  disabled={!smartText.trim()}
-                  className="btn-primary self-end"
-                  style={{ padding: '10px 16px', minWidth: 'auto', opacity: smartText.trim() ? 1 : 0.4 }}
-                >
-                  ✨ Analyze
-                </button>
-              </div>
-              <p className="text-hint">AI will calculate calories & macros for you. Press Enter or click Analyze.</p>
+              <textarea
+                value={smartText}
+                onChange={e => setSmartText(e.target.value)}
+                placeholder="e.g. two eggs, two parathas, an apple, orange juice and a coffee"
+                className="form-input"
+                rows={3}
+                style={{ resize: 'none', marginBottom: 12 }}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSmartAnalyze() } }}
+              />
+              <button
+                type="button"
+                onClick={handleSmartAnalyze}
+                disabled={!smartText.trim()}
+                className="btn-primary w-full"
+                style={{ padding: '12px 24px', opacity: smartText.trim() ? 1 : 0.4 }}
+              >
+                ✨ Analyze with AI
+              </button>
+              <p className="text-hint">AI calculates calories & macros for you. Press Enter or click Analyze.</p>
             </div>
 
             {/* Divider */}
-            <div className="flex items-center gap-3" style={{ marginBottom: 20 }}>
+            <div className="flex items-center gap-4" style={{ marginBottom: 24 }}>
               <div className="flex-1 border-t border-border" />
               <span className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">or enter manually</span>
               <div className="flex-1 border-t border-border" />
