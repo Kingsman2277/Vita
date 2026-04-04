@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la \"/Users/matteo/Documents/Health & Wealth 2026/Finance Tracker/RoadToSuccess\")",
+      "Bash(npm create:*)",
+      "Bash(export PATH=\"/usr/local/bin:/opt/homebrew/bin:$HOME/.nvm/current/bin:$PATH\")",
+      "Bash(export PATH=\"/usr/local/bin:/opt/homebrew/bin:$PATH\")",
+      "Bash(npm install:*)",
+      "Bash(npx vite:*)",
+      "Bash(npm ls:*)",
+      "Bash(ls \"/Users/matteo/Documents/Health & Wealth 2026/Finance Tracker/RoadToSuccess/.claude/launch.json\")",
+      "mcp__Claude_Preview__preview_start"
+    ]
+  }
+}
