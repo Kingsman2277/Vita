@@ -8,7 +8,8 @@ import MacroRing from '../components/MacroRing'
 import SkeletonLoader from '../components/SkeletonLoader'
 import { useFoodLogs } from '../hooks/useFoodLogs'
 import { useMonthNavigation } from '../hooks/useMonthNavigation'
-import { filterByMonth } from '../lib/dateFilters'
+import DayPicker from '../components/DayPicker'
+import { filterByMonth, filterByDay, getDaysWithData } from '../lib/dateFilters'
 import { analyzeFood, analyzeFoodText } from '../lib/gemini'
 import { getMealType } from '../lib/helpers'
 
@@ -21,6 +22,7 @@ export default function Food() {
   const [analyzing, setAnalyzing] = useState(false)
   const [smartText, setSmartText] = useState('')
   const [form, setForm] = useState({ food_name: '', calories: '', protein: '', carbs: '', fat: '', meal_type: getMealType() })
+  const [selectedDay, setSelectedDay] = useState(null) // null = all days
   const galleryRef = useRef()
 
   const handleSmartAnalyze = async () => {
@@ -43,16 +45,24 @@ export default function Food() {
     setAnalyzing(false)
   }
 
-  // Filter logs to selected month
+  // Filter logs: month → day
   const monthLogs = filterByMonth(logs, selectedMonth.year, selectedMonth.month, 'logged_at')
+  const dayLogs = filterByDay(monthLogs, selectedDay, 'logged_at')
+  const foodDaysWithData = getDaysWithData(monthLogs, 'logged_at')
 
-  // Month aggregate stats (for past month hero)
-  const monthCalories = monthLogs.reduce((s, l) => s + Number(l.calories || 0), 0)
-  const monthProtein = monthLogs.reduce((s, l) => s + Number(l.protein || 0), 0)
-  const monthCarbs = monthLogs.reduce((s, l) => s + Number(l.carbs || 0), 0)
-  const monthFat = monthLogs.reduce((s, l) => s + Number(l.fat || 0), 0)
+  // Reset day selection when month changes
+  const monthKey = `${selectedMonth.year}-${selectedMonth.month}`
+  const [prevMonthKey, setPrevMonthKey] = useState(monthKey)
+  if (monthKey !== prevMonthKey) { setPrevMonthKey(monthKey); setSelectedDay(null) }
+
+  // Stats for the hero card (scoped to day if selected, else month)
+  const statsLogs = selectedDay !== null ? dayLogs : monthLogs
+  const statCalories = statsLogs.reduce((s, l) => s + Number(l.calories || 0), 0)
+  const statProtein = statsLogs.reduce((s, l) => s + Number(l.protein || 0), 0)
+  const statCarbs = statsLogs.reduce((s, l) => s + Number(l.carbs || 0), 0)
+  const statFat = statsLogs.reduce((s, l) => s + Number(l.fat || 0), 0)
   const daysWithLogs = new Set(monthLogs.map(l => new Date(l.logged_at).toDateString())).size
-  const avgDailyCalories = daysWithLogs > 0 ? Math.round(monthCalories / daysWithLogs) : 0
+  const avgDailyCalories = daysWithLogs > 0 ? Math.round(statCalories / daysWithLogs) : 0
 
   const handleCameraCapture = async (base64) => {
     setCameraOpen(false)
@@ -92,7 +102,7 @@ export default function Food() {
   const resetForm = () => setForm({ food_name: '', calories: '', protein: '', carbs: '', fat: '', meal_type: getMealType() })
 
   // Group month-filtered logs by date
-  const groupedByDate = monthLogs.reduce((acc, log) => {
+  const groupedByDate = dayLogs.reduce((acc, log) => {
     const date = new Date(log.logged_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
     if (!acc[date]) acc[date] = []
     acc[date].push(log)
@@ -130,41 +140,36 @@ export default function Food() {
         <input ref={galleryRef} type="file" accept="image/*" className="hidden" onChange={handleGalleryUpload} />
       </div>
 
-      <MonthPicker label={label} onPrev={goToPrev} onNext={goToNext} onToday={goToCurrentMonth} isCurrentMonth={isCurrentMonth} />
+      <MonthPicker label={label} onPrev={() => { goToPrev(); setSelectedDay(null) }} onNext={() => { goToNext(); setSelectedDay(null) }} onToday={() => { goToCurrentMonth(); setSelectedDay(null) }} isCurrentMonth={isCurrentMonth} />
 
-      {/* Hero card — conditional: today vs month aggregate */}
-      {isCurrentMonth ? (
-        <div className="hero-card" style={{ padding: 24 }}>
-          <p className="label text-[11px] font-semibold uppercase tracking-[0.1em] mb-3">Today</p>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-bold tracking-tight leading-none" style={{ fontSize: 42 }}>{todayCalories}</p>
-              <p className="label text-xs mt-1.5">calories</p>
-            </div>
-            <div className="flex" style={{ gap: 20 }}>
-              <MacroRing label="Protein" value={todayProtein} max={150} color="protein" />
-              <MacroRing label="Carbs" value={todayCarbs} max={250} color="carbs" />
-              <MacroRing label="Fat" value={todayFat} max={65} color="fat" />
-            </div>
+      <DayPicker year={selectedMonth.year} month={selectedMonth.month} selectedDay={selectedDay} onSelectDay={setSelectedDay} daysWithData={foodDaysWithData} />
+
+      {/* Hero card — shows stats for selected scope */}
+      <div className="hero-card" style={{ padding: 24 }}>
+        <p className="label text-[11px] font-semibold uppercase tracking-[0.1em] mb-3">
+          {selectedDay !== null
+            ? new Date(selectedMonth.year, selectedMonth.month, selectedDay).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
+            : isCurrentMonth ? 'Today' : label}
+        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="font-bold tracking-tight leading-none" style={{ fontSize: 42 }}>
+              {selectedDay !== null || !isCurrentMonth ? statCalories.toLocaleString() : todayCalories}
+            </p>
+            <p className="label text-xs mt-1.5">
+              {selectedDay !== null ? 'calories' : isCurrentMonth ? 'calories' : `total calories · ~${avgDailyCalories}/day avg`}
+            </p>
+          </div>
+          <div className="flex" style={{ gap: 20 }}>
+            <MacroRing label="Protein" value={selectedDay !== null || !isCurrentMonth ? statProtein : todayProtein} max={150} color="protein" />
+            <MacroRing label="Carbs" value={selectedDay !== null || !isCurrentMonth ? statCarbs : todayCarbs} max={250} color="carbs" />
+            <MacroRing label="Fat" value={selectedDay !== null || !isCurrentMonth ? statFat : todayFat} max={65} color="fat" />
           </div>
         </div>
-      ) : (
-        <div className="hero-card" style={{ padding: 24 }}>
-          <p className="label text-[11px] font-semibold uppercase tracking-[0.1em] mb-3">{label}</p>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-bold tracking-tight leading-none" style={{ fontSize: 42 }}>{monthCalories.toLocaleString()}</p>
-              <p className="label text-xs mt-1.5">total calories &middot; ~{avgDailyCalories}/day avg</p>
-            </div>
-            <div className="flex" style={{ gap: 20 }}>
-              <MacroRing label="Protein" value={monthProtein} max={150 * daysWithLogs || 150} color="protein" />
-              <MacroRing label="Carbs" value={monthCarbs} max={250 * daysWithLogs || 250} color="carbs" />
-              <MacroRing label="Fat" value={monthFat} max={65 * daysWithLogs || 65} color="fat" />
-            </div>
-          </div>
-          <p className="label text-[11px] mt-3">{daysWithLogs} day{daysWithLogs !== 1 ? 's' : ''} logged &middot; {monthLogs.length} entries</p>
-        </div>
-      )}
+        {selectedDay === null && !isCurrentMonth && (
+          <p className="label text-[11px] mt-3">{daysWithLogs} day{daysWithLogs !== 1 ? 's' : ''} logged · {monthLogs.length} entries</p>
+        )}
+      </div>
 
       {loading ? (
         <SkeletonLoader count={4} />

@@ -3,10 +3,11 @@ import toast from 'react-hot-toast'
 import Card from '../components/Card'
 import Modal from '../components/Modal'
 import MonthPicker from '../components/MonthPicker'
+import DayPicker from '../components/DayPicker'
 import SkeletonLoader from '../components/SkeletonLoader'
 import { useExpenses } from '../hooks/useExpenses'
 import { useMonthNavigation } from '../hooks/useMonthNavigation'
-import { filterByMonth } from '../lib/dateFilters'
+import { filterByMonth, filterByDay, getDaysWithData } from '../lib/dateFilters'
 import { formatCurrency, formatDate, getToday, EXPENSE_CATEGORIES, getCategoryEmoji } from '../lib/helpers'
 
 export default function Finance() {
@@ -14,12 +15,21 @@ export default function Finance() {
   const { selectedMonth, goToPrev, goToNext, goToCurrentMonth, isCurrentMonth, label } = useMonthNavigation()
   const [modalOpen, setModalOpen] = useState(false)
   const [filter, setFilter] = useState('all')
+  const [selectedDay, setSelectedDay] = useState(null)
   const [form, setForm] = useState({ amount: '', category: 'food', note: '', date: getToday() })
 
-  // Two-step filter: month first, then category
+  // Three-step filter: month → day → category
   const monthExpenses = filterByMonth(expenses, selectedMonth.year, selectedMonth.month, 'date')
-  const filtered = filter === 'all' ? monthExpenses : monthExpenses.filter(e => e.category === filter)
+  const dayExpenses = filterByDay(monthExpenses, selectedDay, 'date')
+  const filtered = filter === 'all' ? dayExpenses : dayExpenses.filter(e => e.category === filter)
   const monthTotal = monthExpenses.reduce((sum, e) => sum + Number(e.amount), 0)
+  const dayTotal = dayExpenses.reduce((sum, e) => sum + Number(e.amount), 0)
+  const expDaysWithData = getDaysWithData(monthExpenses, 'date')
+
+  // Reset day when month changes
+  const monthKey = `${selectedMonth.year}-${selectedMonth.month}`
+  const [prevMonthKey, setPrevMonthKey] = useState(monthKey)
+  if (monthKey !== prevMonthKey) { setPrevMonthKey(monthKey); setSelectedDay(null) }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -37,12 +47,19 @@ export default function Finance() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="page-title">Finance</h1>
-          <p className="text-muted-foreground text-sm mt-1">{label}: <span className="text-foreground font-semibold">{formatCurrency(monthTotal)}</span></p>
+          <p className="text-muted-foreground text-sm mt-1">
+            {selectedDay !== null
+              ? <>{label}, Day {selectedDay}: <span className="text-foreground font-semibold">{formatCurrency(dayTotal)}</span></>
+              : <>{label}: <span className="text-foreground font-semibold">{formatCurrency(monthTotal)}</span></>
+            }
+          </p>
         </div>
         <button onClick={() => setModalOpen(true)} className="btn-primary" style={{ padding: '10px 20px', borderRadius: 20, minWidth: 'auto' }}>+ Expense</button>
       </div>
 
-      <MonthPicker label={label} onPrev={goToPrev} onNext={goToNext} onToday={goToCurrentMonth} isCurrentMonth={isCurrentMonth} />
+      <MonthPicker label={label} onPrev={() => { goToPrev(); setSelectedDay(null) }} onNext={() => { goToNext(); setSelectedDay(null) }} onToday={() => { goToCurrentMonth(); setSelectedDay(null) }} isCurrentMonth={isCurrentMonth} />
+
+      <DayPicker year={selectedMonth.year} month={selectedMonth.month} selectedDay={selectedDay} onSelectDay={setSelectedDay} daysWithData={expDaysWithData} />
 
       <div className="flex overflow-x-auto pb-1 scrollbar-none" style={{ gap: 8 }}>
         <button onClick={() => setFilter('all')} className={`btn-pill${filter === 'all' ? ' active' : ''}`}>All</button>

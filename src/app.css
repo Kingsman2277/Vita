@@ -441,6 +441,82 @@ input::placeholder, textarea::placeholder {
   color: var(--primary-foreground);
 }
 
+/* ─── DAY PICKER ─── */
+.day-picker-wrapper {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding: 4px 0;
+  margin: -4px 0;
+}
+.day-picker-wrapper::-webkit-scrollbar { display: none; }
+
+.day-picker-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 42px;
+  height: 56px;
+  padding: 4px 6px;
+  border-radius: 12px;
+  border: none;
+  background: transparent;
+  color: var(--muted-foreground);
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  position: relative;
+  flex-shrink: 0;
+}
+.day-picker-item:hover {
+  background: var(--muted);
+  color: var(--foreground);
+}
+.day-picker-item.active {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+.day-picker-item.today {
+  border: 1px solid var(--primary);
+}
+
+.day-picker-weekday {
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+.day-picker-num {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  margin-top: 3px;
+}
+.day-picker-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--primary);
+  position: absolute;
+  bottom: 4px;
+}
+.day-picker-item.active .day-picker-dot {
+  background: var(--primary-foreground);
+}
+
+.day-picker-divider {
+  width: 1px;
+  height: 32px;
+  background: var(--border);
+  flex-shrink: 0;
+  align-self: center;
+  margin: 0 4px;
+}
+
 /* ─── PROGRESS RING ─── */
 .progress-ring-bg { stroke: var(--muted); fill: none; }
 .progress-ring-fill { fill: none; stroke-linecap: round; transition: stroke-dashoffset 0.6s ease; }

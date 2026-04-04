@@ -13,6 +13,33 @@ export function filterByMonth(items, year, month, dateField) {
 }
 
 /**
+ * Filter items to a specific day within a month. If day is null, returns all.
+ */
+export function filterByDay(items, day, dateField) {
+  if (day === null) return items
+  return (items || []).filter(item => {
+    const raw = item[dateField]
+    if (!raw) return false
+    const d = raw.includes('T') ? new Date(raw) : new Date(raw + 'T00:00:00')
+    return d.getDate() === day
+  })
+}
+
+/**
+ * Get a Set of day numbers that have data in a filtered array.
+ */
+export function getDaysWithData(items, dateField) {
+  const days = new Set()
+  for (const item of items || []) {
+    const raw = item[dateField]
+    if (!raw) continue
+    const d = raw.includes('T') ? new Date(raw) : new Date(raw + 'T00:00:00')
+    days.add(d.getDate())
+  }
+  return days
+}
+
+/**
  * Get the start and end Date objects for a given year/month.
  */
 export function getMonthRange(year, month) {
