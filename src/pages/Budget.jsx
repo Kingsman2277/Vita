@@ -8,10 +8,12 @@ import { useExpenses } from '../hooks/useExpenses'
 import { formatCurrency } from '../lib/helpers'
 
 export default function Budget() {
-  const { budget, recurring, loading, saveBudget, addRecurring, deleteRecurring, totalRecurring, monthlyIncome, savingsTarget, discretionary } = useBudget()
+  const { budget, recurring, loading, saveBudget, addRecurring, updateRecurring, deleteRecurring, totalRecurring, monthlyIncome, savingsTarget, discretionary } = useBudget()
   const { monthlyTotal } = useExpenses()
   const [editBudget, setEditBudget] = useState(false)
   const [addRecModal, setAddRecModal] = useState(false)
+  const [editRecModal, setEditRecModal] = useState(false)
+  const [editingItem, setEditingItem] = useState(null)
   const [incomeForm, setIncomeForm] = useState('')
   const [savingsForm, setSavingsForm] = useState('')
   const [recForm, setRecForm] = useState({ name: '', amount: '', day_of_month: '1', category: '' })
@@ -23,6 +25,17 @@ export default function Budget() {
     setIncomeForm(String(budget?.monthly_income || ''))
     setSavingsForm(String(budget?.savings_target || ''))
     setEditBudget(true)
+  }
+
+  const openEditRecurring = (item) => {
+    setEditingItem(item)
+    setRecForm({
+      name: item.name,
+      amount: String(item.amount),
+      day_of_month: String(item.day_of_month || 1),
+      category: item.category || '',
+    })
+    setEditRecModal(true)
   }
 
   const handleSaveBudget = async (e) => {
@@ -37,7 +50,44 @@ export default function Budget() {
     catch { toast.error('Failed to save') }
   }
 
+  const handleEditRecurring = async (e) => {
+    e.preventDefault()
+    if (!editingItem) return
+    try {
+      await updateRecurring(editingItem.id, { name: recForm.name, amount: Number(recForm.amount), day_of_month: Number(recForm.day_of_month), category: recForm.category || null })
+      toast.success('Updated!')
+      setEditRecModal(false)
+      setEditingItem(null)
+    } catch { toast.error('Failed to save') }
+  }
+
+  const handleDeleteFromEdit = async () => {
+    if (!editingItem) return
+    try {
+      await deleteRecurring(editingItem.id)
+      toast.success('Deleted!')
+      setEditRecModal(false)
+      setEditingItem(null)
+    } catch { toast.error('Failed to delete') }
+  }
+
   if (loading) return <div className="page-container"><SkeletonLoader count={5} height="h-28" /></div>
+
+  // Group recurring by category
+  const grouped = recurring.reduce((acc, r) => {
+    const cat = r.category || 'other'
+    if (!acc[cat]) acc[cat] = []
+    acc[cat].push(r)
+    return acc
+  }, {})
+
+  const categoryLabels = {
+    subscription: '📱 Subscriptions',
+    housing: '🏠 Housing',
+    car: '🚗 Car',
+    family: '👨‍👩‍👦 Family',
+    other: '📦 Other',
+  }
 
   return (
     <div className="page-container">
@@ -66,7 +116,10 @@ export default function Budget() {
       {/* Recurring */}
       <div className="flex items-center justify-between">
         <h2 className="section-title">Recurring Expenses</h2>
-        <button onClick={() => setAddRecModal(true)} className="btn-secondary" style={{ padding: '8px 18px', minWidth: 'auto' }}>+ Add</button>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">{formatCurrency(totalRecurring)}/mo</span>
+          <button onClick={() => { setRecForm({ name: '', amount: '', day_of_month: '1', category: '' }); setAddRecModal(true) }} className="btn-secondary" style={{ padding: '8px 18px', minWidth: 'auto' }}>+ Add</button>
+        </div>
       </div>
 
       {recurring.length === 0 ? (
@@ -79,24 +132,30 @@ export default function Budget() {
           </button>
         </div>
       ) : (
-        <div className="flex flex-col gap-2">
-          {recurring.map(r => (
-            <Card key={r.id} className="flex items-center justify-between" style={{ padding: '14px 16px' }}>
-              <div>
-                <p className="font-medium text-sm text-foreground">{r.name}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Day {r.day_of_month} of each month</p>
-              </div>
-              <div className="flex items-center gap-3">
-                <p className="font-semibold text-sm text-foreground">{formatCurrency(r.amount)}</p>
-                <button onClick={() => deleteRecurring(r.id)} className="text-muted-foreground hover:text-destructive p-1.5 rounded-lg hover:bg-muted transition-colors">
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
-              </div>
-            </Card>
-          ))}
-        </div>
+        Object.entries(grouped).map(([cat, items]) => (
+          <div key={cat}>
+            <p className="stat-label" style={{ marginBottom: 8 }}>{categoryLabels[cat] || cat}</p>
+            <div className="flex flex-col gap-2">
+              {items.map(r => (
+                <Card key={r.id} onClick={() => openEditRecurring(r)} className="flex items-center justify-between cursor-pointer" style={{ padding: '14px 16px' }}>
+                  <div>
+                    <p className="font-medium text-sm text-foreground">{r.name}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Day {r.day_of_month}</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <p className="font-semibold text-sm text-foreground">{formatCurrency(r.amount)}</p>
+                    <svg className="card-chevron w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                    </svg>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+        ))
       )}
 
+      {/* Edit Budget Modal */}
       <Modal open={editBudget} onClose={() => setEditBudget(false)} title="Edit Budget">
         <form onSubmit={handleSaveBudget}>
           <div className="form-group">
@@ -111,21 +170,78 @@ export default function Budget() {
         </form>
       </Modal>
 
+      {/* Add Recurring Modal */}
       <Modal open={addRecModal} onClose={() => setAddRecModal(false)} title="Add Recurring Expense">
         <form onSubmit={handleAddRecurring}>
           <div className="form-group">
             <label className="form-label">Name</label>
-            <input placeholder="Name (e.g. Rent)" value={recForm.name} onChange={e => setRecForm(f => ({ ...f, name: e.target.value }))} className="form-input" required />
+            <input placeholder="e.g. Netflix" value={recForm.name} onChange={e => setRecForm(f => ({ ...f, name: e.target.value }))} className="form-input" required />
           </div>
           <div className="form-group">
-            <label className="form-label">Amount</label>
-            <input placeholder="Amount" type="number" step="0.01" value={recForm.amount} onChange={e => setRecForm(f => ({ ...f, amount: e.target.value }))} className="form-input" required />
+            <label className="form-label">Amount ($/month)</label>
+            <input placeholder="0.00" type="number" step="0.01" value={recForm.amount} onChange={e => setRecForm(f => ({ ...f, amount: e.target.value }))} className="form-input" required />
           </div>
           <div className="form-group">
-            <label className="form-label">Day of Month</label>
-            <input placeholder="Day of month (1-31)" type="number" min="1" max="31" value={recForm.day_of_month} onChange={e => setRecForm(f => ({ ...f, day_of_month: e.target.value }))} className="form-input" />
+            <div className="form-row" style={{ gridTemplateColumns: '1fr 1fr' }}>
+              <div>
+                <label className="form-label">Day of Month</label>
+                <input type="number" min="1" max="31" value={recForm.day_of_month} onChange={e => setRecForm(f => ({ ...f, day_of_month: e.target.value }))} className="form-input" />
+              </div>
+              <div>
+                <label className="form-label">Category</label>
+                <select value={recForm.category} onChange={e => setRecForm(f => ({ ...f, category: e.target.value }))} className="form-input">
+                  <option value="">None</option>
+                  <option value="subscription">📱 Subscription</option>
+                  <option value="housing">🏠 Housing</option>
+                  <option value="car">🚗 Car</option>
+                  <option value="family">👨‍👩‍👦 Family</option>
+                  <option value="other">📦 Other</option>
+                </select>
+              </div>
+            </div>
           </div>
           <button type="submit" className="btn-primary w-full" style={{ padding: '12px 24px' }}>Add</button>
+        </form>
+      </Modal>
+
+      {/* Edit Recurring Modal */}
+      <Modal open={editRecModal} onClose={() => { setEditRecModal(false); setEditingItem(null) }} title="Edit Recurring Expense">
+        <form onSubmit={handleEditRecurring}>
+          <div className="form-group">
+            <label className="form-label">Name</label>
+            <input value={recForm.name} onChange={e => setRecForm(f => ({ ...f, name: e.target.value }))} className="form-input" required />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Amount ($/month)</label>
+            <input type="number" step="0.01" value={recForm.amount} onChange={e => setRecForm(f => ({ ...f, amount: e.target.value }))} className="form-input" required />
+          </div>
+          <div className="form-group">
+            <div className="form-row" style={{ gridTemplateColumns: '1fr 1fr' }}>
+              <div>
+                <label className="form-label">Day of Month</label>
+                <input type="number" min="1" max="31" value={recForm.day_of_month} onChange={e => setRecForm(f => ({ ...f, day_of_month: e.target.value }))} className="form-input" />
+              </div>
+              <div>
+                <label className="form-label">Category</label>
+                <select value={recForm.category} onChange={e => setRecForm(f => ({ ...f, category: e.target.value }))} className="form-input">
+                  <option value="">None</option>
+                  <option value="subscription">📱 Subscription</option>
+                  <option value="housing">🏠 Housing</option>
+                  <option value="car">🚗 Car</option>
+                  <option value="family">👨‍👩‍👦 Family</option>
+                  <option value="other">📦 Other</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <button type="button" onClick={handleDeleteFromEdit} className="btn-secondary flex-1" style={{ padding: '12px 24px', color: 'var(--destructive)', borderColor: 'var(--destructive)' }}>
+              Delete
+            </button>
+            <button type="submit" className="btn-primary flex-1" style={{ padding: '12px 24px' }}>
+              Save Changes
+            </button>
+          </div>
         </form>
       </Modal>
     </div>

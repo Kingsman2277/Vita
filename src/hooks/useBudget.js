@@ -48,6 +48,12 @@ export function useBudget() {
     await fetchBudget()
   }
 
+  const updateRecurring = async (id, updates) => {
+    const { error } = await supabase.from('recurring_expenses').update(updates).eq('id', id)
+    if (error) throw error
+    await fetchBudget()
+  }
+
   const deleteRecurring = async (id) => {
     const { error } = await supabase.from('recurring_expenses').delete().eq('id', id)
     if (error) throw error
@@ -60,7 +66,7 @@ export function useBudget() {
   const discretionary = monthlyIncome - totalRecurring - savingsTarget
 
   return {
-    budget, recurring, loading, saveBudget, addRecurring, deleteRecurring,
+    budget, recurring, loading, saveBudget, addRecurring, updateRecurring, deleteRecurring,
     totalRecurring, monthlyIncome, savingsTarget, discretionary, refetch: fetchBudget,
   }
 }
