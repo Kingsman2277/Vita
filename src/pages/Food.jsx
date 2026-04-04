@@ -39,8 +39,9 @@ export default function Food() {
         meal_type: result.meal_type_guess || getMealType(),
       })
       setSmartText('')
-    } catch {
-      toast.error('Could not analyze. Fill in manually below.')
+    } catch (err) {
+      console.error('AI analyze error:', err)
+      toast.error(err.message || 'Could not analyze. Fill in manually below.')
     }
     setAnalyzing(false)
   }
@@ -71,7 +72,7 @@ export default function Food() {
     try {
       const result = await analyzeFood(base64)
       setForm({ food_name: result.food_name || '', calories: String(result.calories || ''), protein: String(result.protein_g || ''), carbs: String(result.carbs_g || ''), fat: String(result.fat_g || ''), meal_type: result.meal_type_guess || getMealType() })
-    } catch { toast.error('Could not analyze photo. Enter manually.') }
+    } catch (err) { console.error('Photo analyze error:', err); toast.error(err.message || 'Could not analyze photo.') }
     setAnalyzing(false)
   }
 
@@ -84,7 +85,7 @@ export default function Food() {
       const base64 = await fileToBase64(file)
       const result = await analyzeFood(base64)
       setForm({ food_name: result.food_name || '', calories: String(result.calories || ''), protein: String(result.protein_g || ''), carbs: String(result.carbs_g || ''), fat: String(result.fat_g || ''), meal_type: result.meal_type_guess || getMealType() })
-    } catch { toast.error('Could not analyze photo. Enter manually.') }
+    } catch (err) { console.error('Photo analyze error:', err); toast.error(err.message || 'Could not analyze photo.') }
     setAnalyzing(false)
   }
 

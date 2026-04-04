@@ -10,19 +10,32 @@ function parseGeminiJSON(text) {
 }
 
 async function callGemini(contents) {
-  const response = await fetch(GEMINI_PROXY, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ contents }),
-  })
+  let response
+  try {
+    response = await fetch(GEMINI_PROXY, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents }),
+    })
+  } catch (networkErr) {
+    console.error('Network error calling Gemini proxy:', networkErr)
+    throw new Error('Network error — check your connection')
+  }
 
   if (!response.ok) {
     const err = await response.json().catch(() => ({}))
-    throw new Error(err.error?.message || 'Gemini API error')
+    console.error('Gemini proxy error:', response.status, err)
+    throw new Error(err.error?.message || `Gemini API error (${response.status})`)
   }
 
   const data = await response.json()
   const text = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
+
+  if (!text) {
+    console.error('Empty Gemini response:', JSON.stringify(data))
+    throw new Error('Empty response from Gemini')
+  }
+
   return parseGeminiJSON(text)
 }
 
