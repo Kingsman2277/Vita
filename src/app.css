@@ -165,6 +165,7 @@ body {
 
 /* ─── SAFE AREAS ─── */
 .safe-bottom {
+  padding-top: env(safe-area-inset-top, 0px);
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 5rem);
 }
 .nav-safe {
@@ -172,6 +173,7 @@ body {
 }
 @media (min-width: 768px) {
   .safe-bottom {
+    padding-top: 0;
     padding-bottom: 2rem;
     margin-left: 16rem;
   }
@@ -183,7 +185,7 @@ body {
   max-width: 40rem;
   margin-left: auto;
   margin-right: auto;
-  padding: 36px 20px 24px;
+  padding: 20px 20px 24px;
   display: flex;
   flex-direction: column;
   gap: 24px;

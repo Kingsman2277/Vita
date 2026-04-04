@@ -111,29 +111,31 @@ export default function Food() {
 
   return (
     <div className="page-container">
-      <div className="flex items-center justify-between">
-        <h1 className="page-title">Food Log</h1>
-        <div className="flex gap-2">
+      <div>
+        <div className="flex items-center justify-between">
+          <h1 className="page-title">Food Log</h1>
+        </div>
+        <div className="flex gap-2 mt-3">
           <div className="relative">
-            <button onClick={() => setPhotoMenuOpen(p => !p)} className="btn-secondary" style={{ padding: '10px 20px', borderRadius: 20, minWidth: 'auto' }}>
+            <button onClick={() => setPhotoMenuOpen(p => !p)} className="btn-secondary" style={{ padding: '10px 18px', borderRadius: 20, minWidth: 'auto', fontSize: 13 }}>
               📷 Photo
             </button>
             {photoMenuOpen && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setPhotoMenuOpen(false)} />
-                <div className="absolute right-0 top-full mt-2 z-50 bg-card border border-border rounded-lg shadow-lg overflow-hidden min-w-[180px]">
-                  <button onClick={() => { setPhotoMenuOpen(false); setCameraOpen(true) }} className="w-full text-left px-4 py-3 text-sm text-foreground hover:bg-muted transition-colors flex items-center gap-3">
+                <div className="absolute left-0 top-full mt-2 z-50 bg-card border border-border rounded-lg shadow-lg overflow-hidden min-w-[200px]" style={{ padding: '4px 0' }}>
+                  <button onClick={() => { setPhotoMenuOpen(false); setCameraOpen(true) }} className="w-full text-left text-sm text-foreground hover:bg-muted transition-colors flex items-center gap-3" style={{ padding: '12px 16px' }}>
                     <span>📸</span> Take Photo
                   </button>
                   <div className="border-t border-border" />
-                  <button onClick={() => { setPhotoMenuOpen(false); galleryRef.current.value = ''; galleryRef.current?.click() }} className="w-full text-left px-4 py-3 text-sm text-foreground hover:bg-muted transition-colors flex items-center gap-3">
+                  <button onClick={() => { setPhotoMenuOpen(false); galleryRef.current.value = ''; galleryRef.current?.click() }} className="w-full text-left text-sm text-foreground hover:bg-muted transition-colors flex items-center gap-3" style={{ padding: '12px 16px' }}>
                     <span>🖼️</span> Upload from Gallery
                   </button>
                 </div>
               </>
             )}
           </div>
-          <button onClick={() => { resetForm(); setModalOpen(true) }} className="btn-primary" style={{ padding: '10px 20px', borderRadius: 20, minWidth: 'auto' }}>
+          <button onClick={() => { resetForm(); setModalOpen(true) }} className="btn-primary" style={{ padding: '10px 18px', borderRadius: 20, minWidth: 'auto', fontSize: 13 }}>
             + Log Food
           </button>
         </div>
