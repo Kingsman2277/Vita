@@ -18,6 +18,7 @@ export default function Budget() {
   const [incomeForm, setIncomeForm] = useState('')
   const [savingsForm, setSavingsForm] = useState('')
   const [recForm, setRecForm] = useState({ name: '', amount: '', day_of_month: '1', category: '' })
+  const [expandedCats, setExpandedCats] = useState({})
 
   const spentSoFar = monthlyTotal
   const canSpend = discretionary - spentSoFar
@@ -136,27 +137,54 @@ export default function Budget() {
           </button>
         </div>
       ) : (
-        Object.entries(grouped).map(([cat, items]) => (
-          <div key={cat}>
-            <p className="stat-label" style={{ marginBottom: 8 }}>{categoryLabels[cat] || cat}</p>
-            <div className="flex flex-col gap-2">
-              {items.map(r => (
-                <Card key={r.id} onClick={() => openEditRecurring(r)} className="flex items-center justify-between cursor-pointer" style={{ padding: '14px 16px' }}>
-                  <div>
-                    <p className="font-medium text-sm text-foreground">{r.name}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Day {r.day_of_month}</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <p className="font-semibold text-sm text-foreground">{formatCurrency(r.amount)}</p>
-                    <svg className="card-chevron w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                    </svg>
-                  </div>
-                </Card>
-              ))}
+        Object.entries(grouped).map(([cat, items]) => {
+          const isOpen = expandedCats[cat] ?? false
+          const catTotal = items.reduce((s, r) => s + Number(r.amount), 0)
+          const toggleCat = () => setExpandedCats(prev => ({ ...prev, [cat]: !prev[cat] }))
+
+          return (
+            <div key={cat}>
+              {/* Collapsible header */}
+              <button
+                onClick={toggleCat}
+                className="w-full flex items-center justify-between"
+                style={{ padding: '10px 4px', cursor: 'pointer', background: 'none', border: 'none', fontFamily: 'inherit' }}
+              >
+                <div className="flex items-center gap-2">
+                  <svg
+                    width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"
+                    style={{ transition: 'transform 0.2s ease', transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)', color: 'var(--muted-foreground)' }}
+                  >
+                    <path d="M9 18l6-6-6-6" />
+                  </svg>
+                  <span className="stat-label" style={{ margin: 0 }}>{categoryLabels[cat] || cat}</span>
+                  <span className="text-[11px] text-muted-foreground">({items.length})</span>
+                </div>
+                <span className="text-[13px] font-semibold text-foreground">{formatCurrency(catTotal)}</span>
+              </button>
+
+              {/* Collapsible content */}
+              {isOpen && (
+                <div className="flex flex-col gap-2" style={{ marginBottom: 8 }}>
+                  {items.map(r => (
+                    <Card key={r.id} onClick={() => openEditRecurring(r)} className="flex items-center justify-between cursor-pointer" style={{ padding: '14px 16px' }}>
+                      <div>
+                        <p className="font-medium text-sm text-foreground">{r.name}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">Day {r.day_of_month}</p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <p className="font-semibold text-sm text-foreground">{formatCurrency(r.amount)}</p>
+                        <svg className="card-chevron w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                        </svg>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </div>
-          </div>
-        ))
+          )
+        })
       )}
 
       {/* Edit Budget Modal */}
