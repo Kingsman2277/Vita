@@ -15,6 +15,8 @@ export default function Finance() {
   const { selectedMonth, goToPrev, goToNext, goToCurrentMonth, isCurrentMonth, label } = useMonthNavigation()
   const [modalOpen, setModalOpen] = useState(false)
   const [editModalOpen, setEditModalOpen] = useState(false)
+  const [summaryOpen, setSummaryOpen] = useState(false)
+  const [drillCategory, setDrillCategory] = useState(null)
   const [editingExpense, setEditingExpense] = useState(null)
   const [filter, setFilter] = useState('all')
   const [selectedDay, setSelectedDay] = useState(null)
@@ -96,7 +98,10 @@ export default function Finance() {
             }
           </p>
         </div>
-        <button onClick={() => setModalOpen(true)} className="btn-primary" style={{ padding: '10px 20px', borderRadius: 20, minWidth: 'auto' }}>+ Expense</button>
+        <div className="flex gap-2">
+          <button onClick={() => setSummaryOpen(true)} className="btn-secondary" style={{ padding: '10px 20px', borderRadius: 20, minWidth: 'auto' }}>📊 Summary</button>
+          <button onClick={() => setModalOpen(true)} className="btn-primary" style={{ padding: '10px 20px', borderRadius: 20, minWidth: 'auto' }}>+ Expense</button>
+        </div>
       </div>
 
       <MonthPicker label={label} onPrev={() => { goToPrev(); setSelectedDay(null) }} onNext={() => { goToNext(); setSelectedDay(null) }} onToday={() => { goToCurrentMonth(); setSelectedDay(null) }} isCurrentMonth={isCurrentMonth} />
@@ -285,6 +290,160 @@ export default function Finance() {
           </div>
         </form>
       </Modal>
+
+      {/* Monthly Summary Modal */}
+      <Modal open={summaryOpen} onClose={() => setSummaryOpen(false)} title={`${label} Summary`}>
+        <SummaryView
+          monthExpenses={monthExpenses}
+          monthTotal={monthTotal}
+          onCategoryClick={(cat) => { setDrillCategory(cat); setSummaryOpen(false) }}
+        />
+      </Modal>
+
+      {/* Category Drill-down Modal */}
+      <Modal
+        open={drillCategory !== null}
+        onClose={() => setDrillCategory(null)}
+        title={`${getCategoryEmoji(drillCategory)} ${drillCategory ? drillCategory.charAt(0).toUpperCase() + drillCategory.slice(1) : ''} — ${label}`}
+      >
+        <CategoryDrillDown
+          expenses={monthExpenses.filter(e => e.category === drillCategory)}
+          onBack={() => { setDrillCategory(null); setSummaryOpen(true) }}
+        />
+      </Modal>
+    </div>
+  )
+}
+
+/* ─── Summary View (inside modal) ─── */
+function SummaryView({ monthExpenses, monthTotal, onCategoryClick }) {
+  // Build category totals
+  const catTotals = {}
+  for (const e of monthExpenses) {
+    const cat = e.category || 'other'
+    if (!catTotals[cat]) catTotals[cat] = { total: 0, count: 0, recurring: 0 }
+    catTotals[cat].total += Number(e.amount)
+    catTotals[cat].count += 1
+    if (e.is_recurring) catTotals[cat].recurring += Number(e.amount)
+  }
+
+  // Sort by total descending
+  const sorted = Object.entries(catTotals).sort((a, b) => b[1].total - a[1].total)
+
+  if (sorted.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-muted-foreground text-sm">No expenses this month</p>
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      {/* Total */}
+      <div style={{ textAlign: 'center', marginBottom: 24 }}>
+        <p className="stat-label">Total Spent</p>
+        <p className="stat-value" style={{ marginTop: 4 }}>{formatCurrency(monthTotal)}</p>
+        <p className="text-xs text-muted-foreground mt-1">{monthExpenses.length} transactions</p>
+      </div>
+
+      {/* Category bars */}
+      <div className="flex flex-col gap-3">
+        {sorted.map(([cat, data]) => {
+          const pct = monthTotal > 0 ? (data.total / monthTotal) * 100 : 0
+          return (
+            <button
+              key={cat}
+              onClick={() => onCategoryClick(cat)}
+              className="w-full text-left p-4 rounded-lg border border-border hover:border-primary/30 transition-all bg-card"
+              style={{ cursor: 'pointer' }}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">{getCategoryEmoji(cat)}</span>
+                  <span className="text-sm font-medium text-foreground capitalize">{cat}</span>
+                  <span className="text-[11px] text-muted-foreground">({data.count})</span>
+                </div>
+                <div className="text-right">
+                  <span className="text-sm font-semibold text-foreground">{formatCurrency(data.total)}</span>
+                  <span className="text-[11px] text-muted-foreground ml-1.5">{pct.toFixed(0)}%</span>
+                </div>
+              </div>
+              {/* Progress bar */}
+              <div className="h-[6px] bg-muted rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{ width: `${pct}%`, background: 'var(--primary)' }}
+                />
+              </div>
+              {data.recurring > 0 && (
+                <p className="text-[10px] text-muted-foreground mt-1.5">
+                  {formatCurrency(data.recurring)} recurring · {formatCurrency(data.total - data.recurring)} discretionary
+                </p>
+              )}
+            </button>
+          )
+        })}
+      </div>
+
+      <p className="text-hint text-center mt-4">Tap a category to see the day-by-day breakdown</p>
+    </div>
+  )
+}
+
+/* ─── Category Drill-down (inside modal) ─── */
+function CategoryDrillDown({ expenses, onBack }) {
+  const total = expenses.reduce((s, e) => s + Number(e.amount), 0)
+
+  // Group by date
+  const byDate = {}
+  for (const e of expenses) {
+    const dateLabel = formatDate(e.date)
+    if (!byDate[dateLabel]) byDate[dateLabel] = []
+    byDate[dateLabel].push(e)
+  }
+
+  return (
+    <div>
+      {/* Back button */}
+      <button onClick={onBack} className="flex items-center gap-1.5 text-sm text-primary font-medium mb-4 hover:opacity-80 transition-opacity">
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+        </svg>
+        Back to Summary
+      </button>
+
+      {/* Total for this category */}
+      <div style={{ textAlign: 'center', marginBottom: 20 }}>
+        <p className="stat-value">{formatCurrency(total)}</p>
+        <p className="text-xs text-muted-foreground mt-1">{expenses.length} transaction{expenses.length !== 1 ? 's' : ''}</p>
+      </div>
+
+      {/* Day-by-day entries */}
+      <div className="flex flex-col gap-4">
+        {Object.entries(byDate).map(([date, items]) => {
+          const dayTotal = items.reduce((s, e) => s + Number(e.amount), 0)
+          return (
+            <div key={date}>
+              <div className="flex justify-between items-center mb-2">
+                <p className="stat-label">{date}</p>
+                <p className="text-xs font-semibold text-foreground">{formatCurrency(dayTotal)}</p>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                {items.map(e => (
+                  <div key={e.id} className="flex justify-between items-center py-2 px-3 rounded-lg bg-muted">
+                    <div>
+                      <p className="text-sm text-foreground">{e.note || e.category}</p>
+                      {e.is_recurring && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-secondary text-secondary-foreground font-semibold uppercase tracking-wider">Recurring</span>}
+                    </div>
+                    <p className="text-sm font-semibold text-foreground">{formatCurrency(e.amount)}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
