@@ -15,7 +15,12 @@
       "Bash(npm list:*)",
       "Bash(vercel whoami:*)",
       "Bash(vercel --yes --prod -e VITE_SUPABASE_URL=https://cqouqsxjmbwujgdfkbol.supabase.co -e VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNxb3Vxc3hqbWJ3dWpnZGZrYm9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyNzMwNTcsImV4cCI6MjA5MDg0OTA1N30.5_Nei0BBWaOe0YpdTyp74bjZcNYqmIPeVsoU0uIE06w -e VITE_GEMINI_API_KEY=your_gemini_key_here)",
-      "Bash(vercel --yes --prod --name vita-life-os -e VITE_SUPABASE_URL=https://cqouqsxjmbwujgdfkbol.supabase.co -e VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNxb3Vxc3hqbWJ3dWpnZGZrYm9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyNzMwNTcsImV4cCI6MjA5MDg0OTA1N30.5_Nei0BBWaOe0YpdTyp74bjZcNYqmIPeVsoU0uIE06w -e VITE_GEMINI_API_KEY=your_gemini_key_here)"
+      "Bash(vercel --yes --prod --name vita-life-os -e VITE_SUPABASE_URL=https://cqouqsxjmbwujgdfkbol.supabase.co -e VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNxb3Vxc3hqbWJ3dWpnZGZrYm9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyNzMwNTcsImV4cCI6MjA5MDg0OTA1N30.5_Nei0BBWaOe0YpdTyp74bjZcNYqmIPeVsoU0uIE06w -e VITE_GEMINI_API_KEY=your_gemini_key_here)",
+      "Bash(vercel env:*)",
+      "Bash(vercel --prod --yes)",
+      "Bash(curl -s \"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyDgBiHdXKAUIK_DIczDjVXXvixHmisAvF4\" -H \"Content-Type: application/json\" -d '{\"\"contents\"\":[{\"\"parts\"\":[{\"\"text\"\":\"\"I ate two eggs and toast. Return JSON only: {\\\\\"\"food_name\\\\\"\": \\\\\"\"string\\\\\"\", \\\\\"\"calories\\\\\"\": number, \\\\\"\"protein_g\\\\\"\": number, \\\\\"\"carbs_g\\\\\"\": number, \\\\\"\"fat_g\\\\\"\": number, \\\\\"\"meal_type_guess\\\\\"\": \\\\\"\"breakfast\\\\\"\"}\"\"}]}]}')",
+      "Bash(curl -s \"https://generativelanguage.googleapis.com/v1beta/models?key=AIzaSyDgBiHdXKAUIK_DIczDjVXXvixHmisAvF4\")",
+      "Bash(curl -s \"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyDgBiHdXKAUIK_DIczDjVXXvixHmisAvF4\" -H \"Content-Type: application/json\" -d '{\"\"\"\"contents\"\"\"\":[{\"\"\"\"parts\"\"\"\":[{\"\"\"\"text\"\"\"\":\"\"\"\"I ate two eggs and toast. Return JSON only: {\\\\\"\"\"\"food_name\\\\\"\"\"\": \\\\\"\"\"\"string\\\\\"\"\"\", \\\\\"\"\"\"calories\\\\\"\"\"\": number, \\\\\"\"\"\"protein_g\\\\\"\"\"\": number, \\\\\"\"\"\"carbs_g\\\\\"\"\"\": number, \\\\\"\"\"\"fat_g\\\\\"\"\"\": number, \\\\\"\"\"\"meal_type_guess\\\\\"\"\"\": \\\\\"\"\"\"breakfast\\\\\"\"\"\"}\"\"\"\"}]}]}')"
     ]
   }
 }
