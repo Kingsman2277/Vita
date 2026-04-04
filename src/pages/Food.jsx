@@ -22,7 +22,7 @@ export default function Food() {
   const [analyzing, setAnalyzing] = useState(false)
   const [smartText, setSmartText] = useState('')
   const [form, setForm] = useState({ food_name: '', calories: '', protein: '', carbs: '', fat: '', meal_type: getMealType() })
-  const [selectedDay, setSelectedDay] = useState(null) // null = all days
+  const [selectedDay, setSelectedDay] = useState(new Date().getDate()) // default to today
   const galleryRef = useRef()
 
   const handleSmartAnalyze = async () => {
@@ -143,7 +143,7 @@ export default function Food() {
         <input ref={galleryRef} type="file" accept="image/*" className="hidden" onChange={handleGalleryUpload} />
       </div>
 
-      <MonthPicker label={label} onPrev={() => { goToPrev(); setSelectedDay(null) }} onNext={() => { goToNext(); setSelectedDay(null) }} onToday={() => { goToCurrentMonth(); setSelectedDay(null) }} isCurrentMonth={isCurrentMonth} />
+      <MonthPicker label={label} onPrev={() => { goToPrev(); setSelectedDay(null) }} onNext={() => { goToNext(); setSelectedDay(null) }} onToday={() => { goToCurrentMonth(); setSelectedDay(new Date().getDate()) }} isCurrentMonth={isCurrentMonth} />
 
       <DayPicker year={selectedMonth.year} month={selectedMonth.month} selectedDay={selectedDay} onSelectDay={setSelectedDay} daysWithData={foodDaysWithData} />
 

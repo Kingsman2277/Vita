@@ -19,7 +19,7 @@ export default function Finance() {
   const [drillCategory, setDrillCategory] = useState(null)
   const [editingExpense, setEditingExpense] = useState(null)
   const [filter, setFilter] = useState('all')
-  const [selectedDay, setSelectedDay] = useState(null)
+  const [selectedDay, setSelectedDay] = useState(new Date().getDate())
   const [form, setForm] = useState({ amount: '', category: 'food', note: '', date: getToday(), is_recurring: false })
   const [editForm, setEditForm] = useState({ amount: '', category: 'food', note: '', date: '', is_recurring: false })
 
@@ -104,7 +104,7 @@ export default function Finance() {
         </div>
       </div>
 
-      <MonthPicker label={label} onPrev={() => { goToPrev(); setSelectedDay(null) }} onNext={() => { goToNext(); setSelectedDay(null) }} onToday={() => { goToCurrentMonth(); setSelectedDay(null) }} isCurrentMonth={isCurrentMonth} />
+      <MonthPicker label={label} onPrev={() => { goToPrev(); setSelectedDay(null) }} onNext={() => { goToNext(); setSelectedDay(null) }} onToday={() => { goToCurrentMonth(); setSelectedDay(new Date().getDate()) }} isCurrentMonth={isCurrentMonth} />
 
       <DayPicker year={selectedMonth.year} month={selectedMonth.month} selectedDay={selectedDay} onSelectDay={setSelectedDay} daysWithData={expDaysWithData} />
 
