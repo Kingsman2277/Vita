@@ -25,6 +25,12 @@ export function useExpenses() {
     await fetchExpenses()
   }
 
+  const updateExpense = async (id, updates) => {
+    const { error } = await supabase.from('expenses').update(updates).eq('id', id)
+    if (error) throw error
+    await fetchExpenses()
+  }
+
   const deleteExpense = async (id) => {
     const { error } = await supabase.from('expenses').delete().eq('id', id)
     if (error) throw error
@@ -53,5 +59,5 @@ export function useExpenses() {
     .filter(e => e.is_recurring)
     .reduce((sum, e) => sum + Number(e.amount), 0)
 
-  return { expenses, loading, addExpense, deleteExpense, todayTotal, monthlyTotal, monthlyRecurringActual, refetch: fetchExpenses }
+  return { expenses, loading, addExpense, updateExpense, deleteExpense, todayTotal, monthlyTotal, monthlyRecurringActual, refetch: fetchExpenses }
 }

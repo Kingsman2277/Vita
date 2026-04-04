@@ -11,12 +11,15 @@ import { filterByMonth, filterByDay, getDaysWithData } from '../lib/dateFilters'
 import { formatCurrency, formatDate, getToday, EXPENSE_CATEGORIES, getCategoryEmoji } from '../lib/helpers'
 
 export default function Finance() {
-  const { expenses, loading, addExpense, deleteExpense } = useExpenses()
+  const { expenses, loading, addExpense, updateExpense, deleteExpense } = useExpenses()
   const { selectedMonth, goToPrev, goToNext, goToCurrentMonth, isCurrentMonth, label } = useMonthNavigation()
   const [modalOpen, setModalOpen] = useState(false)
+  const [editModalOpen, setEditModalOpen] = useState(false)
+  const [editingExpense, setEditingExpense] = useState(null)
   const [filter, setFilter] = useState('all')
   const [selectedDay, setSelectedDay] = useState(null)
   const [form, setForm] = useState({ amount: '', category: 'food', note: '', date: getToday(), is_recurring: false })
+  const [editForm, setEditForm] = useState({ amount: '', category: 'food', note: '', date: '', is_recurring: false })
 
   // Three-step filter: month → day → category
   const monthExpenses = filterByMonth(expenses, selectedMonth.year, selectedMonth.month, 'date')
@@ -40,6 +43,45 @@ export default function Finance() {
       setModalOpen(false)
       setForm({ amount: '', category: 'food', note: '', date: getToday(), is_recurring: false })
     } catch { toast.error('Failed to save') }
+  }
+
+  const openEditExpense = (exp) => {
+    setEditingExpense(exp)
+    setEditForm({
+      amount: String(exp.amount),
+      category: exp.category || 'food',
+      note: exp.note || '',
+      date: exp.date,
+      is_recurring: exp.is_recurring || false,
+    })
+    setEditModalOpen(true)
+  }
+
+  const handleEditExpense = async (e) => {
+    e.preventDefault()
+    if (!editingExpense) return
+    try {
+      await updateExpense(editingExpense.id, {
+        amount: Number(editForm.amount),
+        category: editForm.category,
+        note: editForm.note || null,
+        date: editForm.date,
+        is_recurring: editForm.is_recurring,
+      })
+      toast.success('Updated!')
+      setEditModalOpen(false)
+      setEditingExpense(null)
+    } catch { toast.error('Failed to save') }
+  }
+
+  const handleDeleteFromEdit = async () => {
+    if (!editingExpense) return
+    try {
+      await deleteExpense(editingExpense.id)
+      toast.success('Deleted!')
+      setEditModalOpen(false)
+      setEditingExpense(null)
+    } catch { toast.error('Failed to delete') }
   }
 
   return (
@@ -86,7 +128,7 @@ export default function Finance() {
       ) : (
         <div className="flex flex-col gap-2">
           {filtered.map(exp => (
-            <Card key={exp.id} className="flex items-center justify-between" style={{ padding: '14px 16px' }}>
+            <Card key={exp.id} onClick={() => openEditExpense(exp)} className="flex items-center justify-between cursor-pointer" style={{ padding: '14px 16px' }}>
               <div className="flex items-center gap-3 min-w-0 flex-1">
                 <span className="text-xl flex items-center justify-center rounded-lg bg-muted flex-shrink-0" style={{ width: 36, height: 36 }}>{getCategoryEmoji(exp.category)}</span>
                 <div className="min-w-0">
@@ -97,11 +139,11 @@ export default function Finance() {
                   <p className="text-xs text-muted-foreground mt-0.5">{formatDate(exp.date)}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3 flex-shrink-0">
+              <div className="flex items-center gap-2 flex-shrink-0">
                 <p className="font-semibold text-foreground">{formatCurrency(exp.amount)}</p>
-                <button onClick={() => deleteExpense(exp.id)} className="text-muted-foreground hover:text-destructive p-1.5 rounded-lg hover:bg-muted transition-colors">
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
+                <svg className="card-chevron w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                </svg>
               </div>
             </Card>
           ))}
@@ -185,6 +227,62 @@ export default function Finance() {
             </label>
           </div>
           <button type="submit" className="btn-primary w-full" style={{ padding: '12px 24px' }}>Save Expense</button>
+        </form>
+      </Modal>
+
+      {/* Edit Expense Modal */}
+      <Modal open={editModalOpen} onClose={() => { setEditModalOpen(false); setEditingExpense(null) }} title="Edit Expense">
+        <form onSubmit={handleEditExpense}>
+          <div className="form-group">
+            <label className="form-label">Amount</label>
+            <input type="number" step="0.01" value={editForm.amount} onChange={e => setEditForm(f => ({ ...f, amount: e.target.value }))} className="form-input text-2xl font-bold text-center" required />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Category</label>
+            <div className="grid grid-cols-3 gap-2 mt-1">
+              {EXPENSE_CATEGORIES.map(c => (
+                <button key={c.value} type="button" onClick={() => setEditForm(f => ({ ...f, category: c.value }))}
+                  className={`p-3 rounded-lg border text-center transition-all duration-200 ${editForm.category === c.value ? 'border-primary bg-secondary text-secondary-foreground' : 'border-border bg-muted text-muted-foreground hover:text-foreground hover:border-primary/30'}`}>
+                  <span className="text-lg">{c.emoji}</span>
+                  <p className="text-xs mt-1 font-medium">{c.label}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Note</label>
+            <input value={editForm.note} onChange={e => setEditForm(f => ({ ...f, note: e.target.value }))} className="form-input" placeholder="Note (optional)" />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Date</label>
+            <input type="date" value={editForm.date} onChange={e => setEditForm(f => ({ ...f, date: e.target.value }))} className="form-input" />
+          </div>
+          <div className="form-group">
+            <label
+              className="flex items-center gap-3 cursor-pointer p-3 rounded-lg border transition-all"
+              style={{
+                borderColor: editForm.is_recurring ? 'var(--primary)' : 'var(--border)',
+                background: editForm.is_recurring ? 'var(--secondary)' : 'transparent',
+              }}
+            >
+              <input type="checkbox" checked={editForm.is_recurring} onChange={e => setEditForm(f => ({ ...f, is_recurring: e.target.checked }))} className="sr-only" />
+              <div style={{ width: 40, height: 22, borderRadius: 11, background: editForm.is_recurring ? 'var(--primary)' : 'var(--muted)', position: 'relative', transition: 'background 0.2s ease', flexShrink: 0 }}>
+                <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#fff', position: 'absolute', top: 2, left: editForm.is_recurring ? 20 : 2, transition: 'left 0.2s ease', boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: editForm.is_recurring ? 'var(--secondary-foreground)' : 'var(--foreground)' }}>Part of monthly recurring</p>
+                <p className="text-[11px]" style={{ color: editForm.is_recurring ? 'var(--secondary-foreground)' : 'var(--muted-foreground)', opacity: 0.7 }}>Won't count against your discretionary budget</p>
+              </div>
+            </label>
+          </div>
+          <div className="flex gap-3">
+            <button type="button" onClick={handleDeleteFromEdit} className="btn-secondary flex-1" style={{ padding: '12px 24px', color: 'var(--destructive)', borderColor: 'var(--destructive)' }}>
+              Delete
+            </button>
+            <button type="submit" className="btn-primary flex-1" style={{ padding: '12px 24px' }}>
+              Save Changes
+            </button>
+          </div>
         </form>
       </Modal>
     </div>
