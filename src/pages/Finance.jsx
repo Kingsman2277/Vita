@@ -139,7 +139,7 @@ export default function Finance() {
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
                     <p className="font-medium text-sm truncate text-foreground">{exp.note || exp.category}</p>
-                    {exp.is_recurring && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-secondary text-secondary-foreground font-semibold uppercase tracking-wider flex-shrink-0">Recurring</span>}
+                    {exp.is_recurring && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-secondary text-secondary-foreground font-semibold uppercase tracking-wider flex-shrink-0">Reimbursable</span>}
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5">{formatDate(exp.date)}</p>
                 </div>
@@ -181,7 +181,7 @@ export default function Finance() {
             <label className="form-label">Date</label>
             <input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} className="form-input" />
           </div>
-          {/* Recurring toggle */}
+          {/* Work reimbursable toggle */}
           <div className="form-group">
             <label
               className="flex items-center gap-3 cursor-pointer p-3 rounded-lg border transition-all"
@@ -223,10 +223,10 @@ export default function Finance() {
               </div>
               <div>
                 <p className="text-sm font-medium" style={{ color: form.is_recurring ? 'var(--secondary-foreground)' : 'var(--foreground)' }}>
-                  Part of monthly recurring
+                  Work reimbursable
                 </p>
                 <p className="text-[11px]" style={{ color: form.is_recurring ? 'var(--secondary-foreground)' : 'var(--muted-foreground)', opacity: 0.7 }}>
-                  Won't count against your discretionary budget
+                  Tracked but won't count against your budget
                 </p>
               </div>
             </label>
@@ -275,8 +275,8 @@ export default function Finance() {
                 <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#fff', position: 'absolute', top: 2, left: editForm.is_recurring ? 20 : 2, transition: 'left 0.2s ease', boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} />
               </div>
               <div>
-                <p className="text-sm font-medium" style={{ color: editForm.is_recurring ? 'var(--secondary-foreground)' : 'var(--foreground)' }}>Part of monthly recurring</p>
-                <p className="text-[11px]" style={{ color: editForm.is_recurring ? 'var(--secondary-foreground)' : 'var(--muted-foreground)', opacity: 0.7 }}>Won't count against your discretionary budget</p>
+                <p className="text-sm font-medium" style={{ color: editForm.is_recurring ? 'var(--secondary-foreground)' : 'var(--foreground)' }}>Work reimbursable</p>
+                <p className="text-[11px]" style={{ color: editForm.is_recurring ? 'var(--secondary-foreground)' : 'var(--muted-foreground)', opacity: 0.7 }}>Tracked but won't count against your budget</p>
               </div>
             </label>
           </div>
@@ -380,7 +380,7 @@ function SummaryView({ monthExpenses, monthTotal, onCategoryClick }) {
               </div>
               {data.recurring > 0 && (
                 <p className="text-[11px] text-muted-foreground">
-                  {formatCurrency(data.recurring)} recurring · {formatCurrency(data.total - data.recurring)} discretionary
+                  {formatCurrency(data.recurring)} reimbursable · {formatCurrency(data.total - data.recurring)} out of pocket
                 </p>
               )}
             </button>
@@ -436,7 +436,7 @@ function CategoryDrillDown({ expenses, onBack }) {
                   <div key={e.id} className="flex justify-between items-center py-2 px-3 rounded-lg bg-muted">
                     <div>
                       <p className="text-sm text-foreground">{e.note || e.category}</p>
-                      {e.is_recurring && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-secondary text-secondary-foreground font-semibold uppercase tracking-wider">Recurring</span>}
+                      {e.is_recurring && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-secondary text-secondary-foreground font-semibold uppercase tracking-wider">Reimbursable</span>}
                     </div>
                     <p className="text-sm font-semibold text-foreground">{formatCurrency(e.amount)}</p>
                   </div>
