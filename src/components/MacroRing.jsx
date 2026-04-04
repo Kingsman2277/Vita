@@ -14,7 +14,7 @@ export default function MacroRing({ label, value, max, color = 'protein' }) {
   ]
 
   return (
-    <div className="flex flex-col items-center gap-1">
+    <div className="flex flex-col items-center" style={{ gap: 8 }}>
       <div className="relative w-16 h-16">
         <ResponsiveContainer>
           <PieChart>
@@ -36,7 +36,7 @@ export default function MacroRing({ label, value, max, color = 'protein' }) {
           <span className="text-xs font-semibold text-foreground">{Math.round(value)}</span>
         </div>
       </div>
-      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className="text-[11px] text-muted-foreground font-medium">{label}</span>
     </div>
   )
 }

@@ -42,14 +42,14 @@ export default function Budget() {
   return (
     <div className="page-container">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Budget</h1>
-        <button onClick={openEditBudget} className="text-primary text-sm font-semibold hover:text-primary/80 transition-colors">Edit</button>
+        <h1 className="page-title">Budget</h1>
+        <button onClick={openEditBudget} className="btn-secondary" style={{ padding: '8px 18px', minWidth: 'auto' }}>Edit</button>
       </div>
 
       {/* Cash Flow — hero card */}
-      <div className="hero-card p-6">
+      <div className="hero-card" style={{ padding: 24 }}>
         <p className="label text-[11px] font-semibold uppercase tracking-[0.1em] mb-4">Cash Flow Summary</p>
-        <div className="space-y-2.5">
+        <div className="flex flex-col" style={{ gap: 10 }}>
           <FlowRow label="Monthly Income" value={formatCurrency(monthlyIncome)} color="text-emerald-400" />
           <FlowRow label="Recurring Expenses" value={`-${formatCurrency(totalRecurring)}`} color="text-red-400" />
           <FlowRow label="Savings Target" value={`-${formatCurrency(savingsTarget)}`} color="text-blue-400" />
@@ -65,23 +65,23 @@ export default function Budget() {
 
       {/* Recurring */}
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-foreground">Recurring Expenses</h2>
-        <button onClick={() => setAddRecModal(true)} className="text-primary text-sm font-semibold hover:text-primary/80 transition-colors">+ Add</button>
+        <h2 className="section-title">Recurring Expenses</h2>
+        <button onClick={() => setAddRecModal(true)} className="btn-secondary" style={{ padding: '8px 18px', minWidth: 'auto' }}>+ Add</button>
       </div>
 
       {recurring.length === 0 ? (
-        <div className="empty-state">
+        <div className="empty-state" style={{ padding: '48px 16px' }}>
           <div className="empty-state-icon">📅</div>
           <p className="empty-state-title">No recurring expenses</p>
           <p className="empty-state-desc">Add rent, subscriptions, and bills to track your fixed costs</p>
-          <button onClick={() => setAddRecModal(true)} className="bg-primary text-primary-foreground text-sm font-semibold px-5 py-2.5 rounded-lg hover:bg-primary/80 transition-colors">
+          <button onClick={() => setAddRecModal(true)} className="btn-primary" style={{ padding: '10px 20px', borderRadius: 20, minWidth: 'auto' }}>
             Add recurring expense
           </button>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="flex flex-col gap-2">
           {recurring.map(r => (
-            <Card key={r.id} className="p-4 flex items-center justify-between">
+            <Card key={r.id} className="flex items-center justify-between" style={{ padding: '14px 16px' }}>
               <div>
                 <p className="font-medium text-sm text-foreground">{r.name}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">Day {r.day_of_month} of each month</p>
@@ -98,19 +98,34 @@ export default function Budget() {
       )}
 
       <Modal open={editBudget} onClose={() => setEditBudget(false)} title="Edit Budget">
-        <form onSubmit={handleSaveBudget} className="space-y-4">
-          <div><label className="stat-label">Monthly Income</label><input type="number" step="0.01" value={incomeForm} onChange={e => setIncomeForm(e.target.value)} className="w-full bg-muted border border-border rounded-lg px-3 py-3 text-sm mt-2" required /></div>
-          <div><label className="stat-label">Savings Target</label><input type="number" step="0.01" value={savingsForm} onChange={e => setSavingsForm(e.target.value)} className="w-full bg-muted border border-border rounded-lg px-3 py-3 text-sm mt-2" required /></div>
-          <button type="submit" className="w-full bg-primary text-primary-foreground font-semibold py-3 rounded-lg hover:bg-primary/80 transition-colors">Save</button>
+        <form onSubmit={handleSaveBudget}>
+          <div className="form-group">
+            <label className="form-label">Monthly Income</label>
+            <input type="number" step="0.01" value={incomeForm} onChange={e => setIncomeForm(e.target.value)} className="form-input" required />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Savings Target</label>
+            <input type="number" step="0.01" value={savingsForm} onChange={e => setSavingsForm(e.target.value)} className="form-input" required />
+          </div>
+          <button type="submit" className="btn-primary w-full" style={{ padding: '12px 24px' }}>Save</button>
         </form>
       </Modal>
 
       <Modal open={addRecModal} onClose={() => setAddRecModal(false)} title="Add Recurring Expense">
-        <form onSubmit={handleAddRecurring} className="space-y-4">
-          <input placeholder="Name (e.g. Rent)" value={recForm.name} onChange={e => setRecForm(f => ({ ...f, name: e.target.value }))} className="w-full bg-muted border border-border rounded-lg px-3 py-3 text-sm" required />
-          <input placeholder="Amount" type="number" step="0.01" value={recForm.amount} onChange={e => setRecForm(f => ({ ...f, amount: e.target.value }))} className="w-full bg-muted border border-border rounded-lg px-3 py-3 text-sm" required />
-          <input placeholder="Day of month (1-31)" type="number" min="1" max="31" value={recForm.day_of_month} onChange={e => setRecForm(f => ({ ...f, day_of_month: e.target.value }))} className="w-full bg-muted border border-border rounded-lg px-3 py-3 text-sm" />
-          <button type="submit" className="w-full bg-primary text-primary-foreground font-semibold py-3 rounded-lg hover:bg-primary/80 transition-colors">Add</button>
+        <form onSubmit={handleAddRecurring}>
+          <div className="form-group">
+            <label className="form-label">Name</label>
+            <input placeholder="Name (e.g. Rent)" value={recForm.name} onChange={e => setRecForm(f => ({ ...f, name: e.target.value }))} className="form-input" required />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Amount</label>
+            <input placeholder="Amount" type="number" step="0.01" value={recForm.amount} onChange={e => setRecForm(f => ({ ...f, amount: e.target.value }))} className="form-input" required />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Day of Month</label>
+            <input placeholder="Day of month (1-31)" type="number" min="1" max="31" value={recForm.day_of_month} onChange={e => setRecForm(f => ({ ...f, day_of_month: e.target.value }))} className="form-input" />
+          </div>
+          <button type="submit" className="btn-primary w-full" style={{ padding: '12px 24px' }}>Add</button>
         </form>
       </Modal>
     </div>
@@ -119,9 +134,9 @@ export default function Budget() {
 
 function FlowRow({ label, value, color, bold, large }) {
   return (
-    <div className="flex justify-between items-center">
-      <span className={`text-sm ${bold ? 'font-semibold' : 'opacity-70'}`}>{label}</span>
-      <span className={`font-medium ${large ? 'text-xl font-bold' : 'text-sm'} ${bold ? 'font-bold' : ''} ${color || ''}`}>{value}</span>
+    <div className="flex justify-between items-center" style={{ height: 40, fontSize: 14 }}>
+      <span className={bold ? 'font-bold' : 'opacity-70'} style={{ fontSize: bold ? 16 : 14 }}>{label}</span>
+      <span className={`font-medium ${bold ? 'font-bold' : ''} ${color || ''}`} style={{ fontSize: large ? 20 : bold ? 16 : 14 }}>{value}</span>
     </div>
   )
 }

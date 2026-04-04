@@ -65,10 +65,10 @@ export default function Food() {
   return (
     <div className="page-container">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Food Log</h1>
+        <h1 className="page-title">Food Log</h1>
         <div className="flex gap-2">
           <div className="relative">
-            <button onClick={() => setPhotoMenuOpen(p => !p)} className="bg-muted border border-border text-foreground text-sm px-4 py-2.5 rounded-lg hover:bg-accent transition-colors">
+            <button onClick={() => setPhotoMenuOpen(p => !p)} className="btn-secondary" style={{ padding: '10px 20px', borderRadius: 20, minWidth: 'auto' }}>
               📷 Photo
             </button>
             {photoMenuOpen && (
@@ -92,7 +92,7 @@ export default function Food() {
               </>
             )}
           </div>
-          <button onClick={() => { resetForm(); setModalOpen(true) }} className="bg-primary text-primary-foreground text-sm font-semibold px-4 py-2.5 rounded-lg hover:bg-primary/80 transition-colors">
+          <button onClick={() => { resetForm(); setModalOpen(true) }} className="btn-primary" style={{ padding: '10px 20px', borderRadius: 20, minWidth: 'auto' }}>
             + Log Food
           </button>
         </div>
@@ -100,14 +100,14 @@ export default function Food() {
       </div>
 
       {/* Today summary — hero treatment */}
-      <div className="hero-card p-5">
+      <div className="hero-card" style={{ padding: 24 }}>
         <p className="label text-[11px] font-semibold uppercase tracking-[0.1em] mb-3">Today</p>
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-4xl font-bold tracking-tight leading-none">{todayCalories}</p>
+            <p className="font-bold tracking-tight leading-none" style={{ fontSize: 42 }}>{todayCalories}</p>
             <p className="label text-xs mt-1.5">calories</p>
           </div>
-          <div className="flex gap-4">
+          <div className="flex" style={{ gap: 20 }}>
             <MacroRing label="Protein" value={todayProtein} max={150} color="protein" />
             <MacroRing label="Carbs" value={todayCarbs} max={250} color="carbs" />
             <MacroRing label="Fat" value={todayFat} max={65} color="fat" />
@@ -123,20 +123,20 @@ export default function Food() {
           <p className="empty-state-title">No food logged yet</p>
           <p className="empty-state-desc">Start tracking your meals to see calories and macros</p>
           <div className="flex gap-2">
-            <button onClick={() => setCameraOpen(true)} className="bg-muted border border-border text-foreground text-sm px-4 py-2.5 rounded-lg hover:bg-accent transition-colors">
+            <button onClick={() => setCameraOpen(true)} className="btn-secondary" style={{ padding: '10px 20px', borderRadius: 20, minWidth: 'auto' }}>
               📸 Take Photo
             </button>
-            <button onClick={() => { resetForm(); setModalOpen(true) }} className="bg-primary text-primary-foreground text-sm font-semibold px-5 py-2.5 rounded-lg hover:bg-primary/80 transition-colors">
+            <button onClick={() => { resetForm(); setModalOpen(true) }} className="btn-primary" style={{ padding: '10px 20px', borderRadius: 20, minWidth: 'auto' }}>
               + Log Manually
             </button>
           </div>
         </div>
       ) : (
         Object.entries(groupedByDate).map(([date, items]) => (
-          <div key={date} className="space-y-2">
+          <div key={date} className="flex flex-col" style={{ gap: 12 }}>
             <p className="stat-label">{date}</p>
             {items.map(item => (
-              <Card key={item.id} className="p-4 flex items-center justify-between">
+              <Card key={item.id} className="flex items-center justify-between" style={{ padding: '14px 16px' }}>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-semibold uppercase tracking-wider">{item.meal_type}</span>
@@ -160,20 +160,31 @@ export default function Food() {
             <p className="text-sm text-muted-foreground">Analyzing photo...</p>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <select value={form.meal_type} onChange={e => setForm(f => ({ ...f, meal_type: e.target.value }))} className="w-full bg-muted border border-border rounded-lg px-3 py-3 text-sm">
-              <option value="breakfast">🌅 Breakfast</option><option value="lunch">☀️ Lunch</option><option value="dinner">🌙 Dinner</option><option value="snack">🍿 Snack</option>
-            </select>
-            <input placeholder="Food name" value={form.food_name} onChange={e => setForm(f => ({ ...f, food_name: e.target.value }))} className="w-full bg-muted border border-border rounded-lg px-3 py-3 text-sm" required />
-            <div className="grid grid-cols-2 gap-3">
-              <input placeholder="Calories" type="number" value={form.calories} onChange={e => setForm(f => ({ ...f, calories: e.target.value }))} className="bg-muted border border-border rounded-lg px-3 py-3 text-sm" required />
-              <input placeholder="Protein (g)" type="number" value={form.protein} onChange={e => setForm(f => ({ ...f, protein: e.target.value }))} className="bg-muted border border-border rounded-lg px-3 py-3 text-sm" />
+          <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label className="form-label">Meal Type</label>
+              <select value={form.meal_type} onChange={e => setForm(f => ({ ...f, meal_type: e.target.value }))} className="form-input">
+                <option value="breakfast">🌅 Breakfast</option><option value="lunch">☀️ Lunch</option><option value="dinner">🌙 Dinner</option><option value="snack">🍿 Snack</option>
+              </select>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <input placeholder="Carbs (g)" type="number" value={form.carbs} onChange={e => setForm(f => ({ ...f, carbs: e.target.value }))} className="bg-muted border border-border rounded-lg px-3 py-3 text-sm" />
-              <input placeholder="Fat (g)" type="number" value={form.fat} onChange={e => setForm(f => ({ ...f, fat: e.target.value }))} className="bg-muted border border-border rounded-lg px-3 py-3 text-sm" />
+            <div className="form-group">
+              <label className="form-label">Food Name</label>
+              <input placeholder="Food name" value={form.food_name} onChange={e => setForm(f => ({ ...f, food_name: e.target.value }))} className="form-input" required />
             </div>
-            <button type="submit" className="w-full bg-primary text-primary-foreground font-semibold py-3 rounded-lg hover:bg-primary/80 transition-colors">Save</button>
+            <div className="form-group">
+              <label className="form-label">Nutrition</label>
+              <div className="form-row grid-cols-2">
+                <input placeholder="Calories" type="number" value={form.calories} onChange={e => setForm(f => ({ ...f, calories: e.target.value }))} className="form-input" required />
+                <input placeholder="Protein (g)" type="number" value={form.protein} onChange={e => setForm(f => ({ ...f, protein: e.target.value }))} className="form-input" />
+              </div>
+            </div>
+            <div className="form-group">
+              <div className="form-row grid-cols-2">
+                <input placeholder="Carbs (g)" type="number" value={form.carbs} onChange={e => setForm(f => ({ ...f, carbs: e.target.value }))} className="form-input" />
+                <input placeholder="Fat (g)" type="number" value={form.fat} onChange={e => setForm(f => ({ ...f, fat: e.target.value }))} className="form-input" />
+              </div>
+            </div>
+            <button type="submit" className="btn-primary w-full" style={{ padding: '12px 24px' }}>Save</button>
           </form>
         )}
       </Modal>

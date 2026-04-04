@@ -26,15 +26,15 @@ export default function Summary() {
   return (
     <div className="page-container">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Monthly Summary</h1>
+        <h1 className="page-title">Monthly Summary</h1>
         <p className="text-muted-foreground text-sm mt-1">{now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
       </div>
 
       {/* Spending — hero card */}
-      <div className="hero-card p-6">
+      <div className="hero-card" style={{ padding: '28px 24px' }}>
         <p className="label text-[11px] font-semibold uppercase tracking-[0.1em]">Spending Breakdown</p>
         <p className="text-[2.5rem] font-bold tracking-tight leading-none mt-2">{formatCurrency(monthlyTotal)}</p>
-        <div className="mt-5"><SpendingChart expenses={monthExpenses} /></div>
+        <div style={{ margin: '24px auto 0' }}><SpendingChart expenses={monthExpenses} /></div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
@@ -52,13 +52,13 @@ export default function Summary() {
 
       {bodyData && (
         <Card className="p-5">
-          <p className="stat-label mb-3">🏋️ Body Goal Progress</p>
+          <p className="stat-label mb-3">Body Goal Progress</p>
           <div className="flex justify-between text-sm mb-2">
             <span className="text-muted-foreground">Current: <span className="text-foreground font-medium">{bodyData.current_weight} lbs</span></span>
             <span className="text-muted-foreground">Target: <span className="text-primary font-medium">{bodyData.target_weight} lbs</span></span>
           </div>
-          <div className="h-2 bg-muted rounded-full overflow-hidden">
-            <div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: `${Math.max(5, Math.min(95, bodyData.current_weight <= bodyData.target_weight ? 100 : ((bodyData.current_weight - bodyData.target_weight) / bodyData.current_weight) * 100))}%` }} />
+          <div className="bg-muted rounded-full overflow-hidden" style={{ height: 6, borderRadius: 3 }}>
+            <div className="h-full bg-primary transition-all duration-500" style={{ borderRadius: 3, width: `${Math.max(5, Math.min(95, bodyData.current_weight <= bodyData.target_weight ? 100 : ((bodyData.current_weight - bodyData.target_weight) / bodyData.current_weight) * 100))}%` }} />
           </div>
           {bodyGoal.target_date && <p className="text-xs text-muted-foreground mt-2">Target: {new Date(bodyGoal.target_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>}
         </Card>
@@ -66,7 +66,7 @@ export default function Summary() {
 
       {finData && (
         <Card className="p-5">
-          <p className="stat-label mb-3">💰 Financial Goal</p>
+          <p className="stat-label mb-3">Financial Goal</p>
           <p className="text-sm text-foreground">Save <span className="font-bold text-primary">{formatCurrency(finData.savings_target)}</span> in {finData.timeline_months} months</p>
           <p className="text-xs text-muted-foreground mt-1">{formatCurrency(finData.savings_target / finData.timeline_months)}/month needed</p>
         </Card>
