@@ -2,17 +2,24 @@ import { useState } from 'react'
 import toast from 'react-hot-toast'
 import Card from '../components/Card'
 import Modal from '../components/Modal'
+import MonthPicker from '../components/MonthPicker'
 import SkeletonLoader from '../components/SkeletonLoader'
 import { useExpenses } from '../hooks/useExpenses'
+import { useMonthNavigation } from '../hooks/useMonthNavigation'
+import { filterByMonth } from '../lib/dateFilters'
 import { formatCurrency, formatDate, getToday, EXPENSE_CATEGORIES, getCategoryEmoji } from '../lib/helpers'
 
 export default function Finance() {
-  const { expenses, loading, addExpense, deleteExpense, monthlyTotal } = useExpenses()
+  const { expenses, loading, addExpense, deleteExpense } = useExpenses()
+  const { selectedMonth, goToPrev, goToNext, goToCurrentMonth, isCurrentMonth, label } = useMonthNavigation()
   const [modalOpen, setModalOpen] = useState(false)
   const [filter, setFilter] = useState('all')
   const [form, setForm] = useState({ amount: '', category: 'food', note: '', date: getToday() })
 
-  const filtered = filter === 'all' ? expenses : expenses.filter(e => e.category === filter)
+  // Two-step filter: month first, then category
+  const monthExpenses = filterByMonth(expenses, selectedMonth.year, selectedMonth.month, 'date')
+  const filtered = filter === 'all' ? monthExpenses : monthExpenses.filter(e => e.category === filter)
+  const monthTotal = monthExpenses.reduce((sum, e) => sum + Number(e.amount), 0)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -30,10 +37,12 @@ export default function Finance() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="page-title">Finance</h1>
-          <p className="text-muted-foreground text-sm mt-1">This month: <span className="text-foreground font-semibold">{formatCurrency(monthlyTotal)}</span></p>
+          <p className="text-muted-foreground text-sm mt-1">{label}: <span className="text-foreground font-semibold">{formatCurrency(monthTotal)}</span></p>
         </div>
         <button onClick={() => setModalOpen(true)} className="btn-primary" style={{ padding: '10px 20px', borderRadius: 20, minWidth: 'auto' }}>+ Expense</button>
       </div>
+
+      <MonthPicker label={label} onPrev={goToPrev} onNext={goToNext} onToday={goToCurrentMonth} isCurrentMonth={isCurrentMonth} />
 
       <div className="flex overflow-x-auto pb-1 scrollbar-none" style={{ gap: 8 }}>
         <button onClick={() => setFilter('all')} className={`btn-pill${filter === 'all' ? ' active' : ''}`}>All</button>
@@ -49,11 +58,13 @@ export default function Finance() {
       ) : filtered.length === 0 ? (
         <div className="empty-state">
           <div className="empty-state-icon">💰</div>
-          <p className="empty-state-title">No expenses yet</p>
-          <p className="empty-state-desc">Start tracking your spending to see where your money goes</p>
-          <button onClick={() => setModalOpen(true)} className="btn-primary" style={{ padding: '10px 20px', borderRadius: 20, minWidth: 'auto' }}>
-            Add your first expense
-          </button>
+          <p className="empty-state-title">{isCurrentMonth ? 'No expenses yet' : `No expenses in ${label}`}</p>
+          <p className="empty-state-desc">{isCurrentMonth ? 'Start tracking your spending to see where your money goes' : 'Try navigating to a different month'}</p>
+          {isCurrentMonth && (
+            <button onClick={() => setModalOpen(true)} className="btn-primary" style={{ padding: '10px 20px', borderRadius: 20, minWidth: 'auto' }}>
+              Add your first expense
+            </button>
+          )}
         </div>
       ) : (
         <div className="flex flex-col gap-2">

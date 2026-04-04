@@ -2,21 +2,36 @@ import { useState, useRef } from 'react'
 import toast from 'react-hot-toast'
 import Card from '../components/Card'
 import Modal from '../components/Modal'
+import MonthPicker from '../components/MonthPicker'
 import CameraModal from '../components/CameraModal'
 import MacroRing from '../components/MacroRing'
 import SkeletonLoader from '../components/SkeletonLoader'
 import { useFoodLogs } from '../hooks/useFoodLogs'
+import { useMonthNavigation } from '../hooks/useMonthNavigation'
+import { filterByMonth } from '../lib/dateFilters'
 import { analyzeFood } from '../lib/gemini'
 import { getMealType } from '../lib/helpers'
 
 export default function Food() {
   const { logs, todayCalories, todayProtein, todayCarbs, todayFat, loading, addFoodLog, deleteFoodLog } = useFoodLogs()
+  const { selectedMonth, goToPrev, goToNext, goToCurrentMonth, isCurrentMonth, label } = useMonthNavigation()
   const [modalOpen, setModalOpen] = useState(false)
   const [cameraOpen, setCameraOpen] = useState(false)
   const [photoMenuOpen, setPhotoMenuOpen] = useState(false)
   const [analyzing, setAnalyzing] = useState(false)
   const [form, setForm] = useState({ food_name: '', calories: '', protein: '', carbs: '', fat: '', meal_type: getMealType() })
   const galleryRef = useRef()
+
+  // Filter logs to selected month
+  const monthLogs = filterByMonth(logs, selectedMonth.year, selectedMonth.month, 'logged_at')
+
+  // Month aggregate stats (for past month hero)
+  const monthCalories = monthLogs.reduce((s, l) => s + Number(l.calories || 0), 0)
+  const monthProtein = monthLogs.reduce((s, l) => s + Number(l.protein || 0), 0)
+  const monthCarbs = monthLogs.reduce((s, l) => s + Number(l.carbs || 0), 0)
+  const monthFat = monthLogs.reduce((s, l) => s + Number(l.fat || 0), 0)
+  const daysWithLogs = new Set(monthLogs.map(l => new Date(l.logged_at).toDateString())).size
+  const avgDailyCalories = daysWithLogs > 0 ? Math.round(monthCalories / daysWithLogs) : 0
 
   const handleCameraCapture = async (base64) => {
     setCameraOpen(false)
@@ -55,7 +70,8 @@ export default function Food() {
 
   const resetForm = () => setForm({ food_name: '', calories: '', protein: '', carbs: '', fat: '', meal_type: getMealType() })
 
-  const groupedByDate = logs.reduce((acc, log) => {
+  // Group month-filtered logs by date
+  const groupedByDate = monthLogs.reduce((acc, log) => {
     const date = new Date(log.logged_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
     if (!acc[date]) acc[date] = []
     acc[date].push(log)
@@ -75,17 +91,11 @@ export default function Food() {
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setPhotoMenuOpen(false)} />
                 <div className="absolute right-0 top-full mt-2 z-50 bg-card border border-border rounded-lg shadow-lg overflow-hidden min-w-[180px]">
-                  <button
-                    onClick={() => { setPhotoMenuOpen(false); setCameraOpen(true) }}
-                    className="w-full text-left px-4 py-3 text-sm text-foreground hover:bg-muted transition-colors flex items-center gap-3"
-                  >
+                  <button onClick={() => { setPhotoMenuOpen(false); setCameraOpen(true) }} className="w-full text-left px-4 py-3 text-sm text-foreground hover:bg-muted transition-colors flex items-center gap-3">
                     <span>📸</span> Take Photo
                   </button>
                   <div className="border-t border-border" />
-                  <button
-                    onClick={() => { setPhotoMenuOpen(false); galleryRef.current.value = ''; galleryRef.current?.click() }}
-                    className="w-full text-left px-4 py-3 text-sm text-foreground hover:bg-muted transition-colors flex items-center gap-3"
-                  >
+                  <button onClick={() => { setPhotoMenuOpen(false); galleryRef.current.value = ''; galleryRef.current?.click() }} className="w-full text-left px-4 py-3 text-sm text-foreground hover:bg-muted transition-colors flex items-center gap-3">
                     <span>🖼️</span> Upload from Gallery
                   </button>
                 </div>
@@ -99,37 +109,59 @@ export default function Food() {
         <input ref={galleryRef} type="file" accept="image/*" className="hidden" onChange={handleGalleryUpload} />
       </div>
 
-      {/* Today summary — hero treatment */}
-      <div className="hero-card" style={{ padding: 24 }}>
-        <p className="label text-[11px] font-semibold uppercase tracking-[0.1em] mb-3">Today</p>
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="font-bold tracking-tight leading-none" style={{ fontSize: 42 }}>{todayCalories}</p>
-            <p className="label text-xs mt-1.5">calories</p>
-          </div>
-          <div className="flex" style={{ gap: 20 }}>
-            <MacroRing label="Protein" value={todayProtein} max={150} color="protein" />
-            <MacroRing label="Carbs" value={todayCarbs} max={250} color="carbs" />
-            <MacroRing label="Fat" value={todayFat} max={65} color="fat" />
+      <MonthPicker label={label} onPrev={goToPrev} onNext={goToNext} onToday={goToCurrentMonth} isCurrentMonth={isCurrentMonth} />
+
+      {/* Hero card — conditional: today vs month aggregate */}
+      {isCurrentMonth ? (
+        <div className="hero-card" style={{ padding: 24 }}>
+          <p className="label text-[11px] font-semibold uppercase tracking-[0.1em] mb-3">Today</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-bold tracking-tight leading-none" style={{ fontSize: 42 }}>{todayCalories}</p>
+              <p className="label text-xs mt-1.5">calories</p>
+            </div>
+            <div className="flex" style={{ gap: 20 }}>
+              <MacroRing label="Protein" value={todayProtein} max={150} color="protein" />
+              <MacroRing label="Carbs" value={todayCarbs} max={250} color="carbs" />
+              <MacroRing label="Fat" value={todayFat} max={65} color="fat" />
+            </div>
           </div>
         </div>
-      </div>
+      ) : (
+        <div className="hero-card" style={{ padding: 24 }}>
+          <p className="label text-[11px] font-semibold uppercase tracking-[0.1em] mb-3">{label}</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-bold tracking-tight leading-none" style={{ fontSize: 42 }}>{monthCalories.toLocaleString()}</p>
+              <p className="label text-xs mt-1.5">total calories &middot; ~{avgDailyCalories}/day avg</p>
+            </div>
+            <div className="flex" style={{ gap: 20 }}>
+              <MacroRing label="Protein" value={monthProtein} max={150 * daysWithLogs || 150} color="protein" />
+              <MacroRing label="Carbs" value={monthCarbs} max={250 * daysWithLogs || 250} color="carbs" />
+              <MacroRing label="Fat" value={monthFat} max={65 * daysWithLogs || 65} color="fat" />
+            </div>
+          </div>
+          <p className="label text-[11px] mt-3">{daysWithLogs} day{daysWithLogs !== 1 ? 's' : ''} logged &middot; {monthLogs.length} entries</p>
+        </div>
+      )}
 
       {loading ? (
         <SkeletonLoader count={4} />
       ) : Object.keys(groupedByDate).length === 0 ? (
         <div className="empty-state">
           <div className="empty-state-icon">🥗</div>
-          <p className="empty-state-title">No food logged yet</p>
-          <p className="empty-state-desc">Start tracking your meals to see calories and macros</p>
-          <div className="flex gap-2">
-            <button onClick={() => setCameraOpen(true)} className="btn-secondary" style={{ padding: '10px 20px', borderRadius: 20, minWidth: 'auto' }}>
-              📸 Take Photo
-            </button>
-            <button onClick={() => { resetForm(); setModalOpen(true) }} className="btn-primary" style={{ padding: '10px 20px', borderRadius: 20, minWidth: 'auto' }}>
-              + Log Manually
-            </button>
-          </div>
+          <p className="empty-state-title">{isCurrentMonth ? 'No food logged yet' : `No food logged in ${label}`}</p>
+          <p className="empty-state-desc">{isCurrentMonth ? 'Start tracking your meals to see calories and macros' : 'Try navigating to a different month'}</p>
+          {isCurrentMonth && (
+            <div className="flex gap-2">
+              <button onClick={() => setCameraOpen(true)} className="btn-secondary" style={{ padding: '10px 20px', borderRadius: 20, minWidth: 'auto' }}>
+                📸 Take Photo
+              </button>
+              <button onClick={() => { resetForm(); setModalOpen(true) }} className="btn-primary" style={{ padding: '10px 20px', borderRadius: 20, minWidth: 'auto' }}>
+                + Log Manually
+              </button>
+            </div>
+          )}
         </div>
       ) : (
         Object.entries(groupedByDate).map(([date, items]) => (
@@ -189,11 +221,7 @@ export default function Food() {
         )}
       </Modal>
 
-      <CameraModal
-        open={cameraOpen}
-        onClose={() => setCameraOpen(false)}
-        onCapture={handleCameraCapture}
-      />
+      <CameraModal open={cameraOpen} onClose={() => setCameraOpen(false)} onCapture={handleCameraCapture} />
     </div>
   )
 }

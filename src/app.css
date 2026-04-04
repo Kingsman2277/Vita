@@ -388,6 +388,59 @@ input::placeholder, textarea::placeholder {
 .empty-state-title { font-size: 15px; font-weight: 500; color: var(--foreground); margin-bottom: 4px; }
 .empty-state-desc { font-size: 13px; color: var(--muted-foreground); margin-bottom: 20px; }
 
+/* ─── MONTH PICKER ─── */
+.month-picker {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.month-picker-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--foreground);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+.month-picker-btn:hover:not(:disabled) {
+  background: var(--muted);
+  border-color: var(--primary);
+}
+.month-picker-btn:disabled {
+  cursor: not-allowed;
+}
+.month-picker-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--foreground);
+  min-width: 140px;
+  text-align: center;
+}
+.month-picker-today {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid var(--primary);
+  background: transparent;
+  color: var(--primary);
+}
+.month-picker-today:hover {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
 /* ─── PROGRESS RING ─── */
 .progress-ring-bg { stroke: var(--muted); fill: none; }
 .progress-ring-fill { fill: none; stroke-linecap: round; transition: stroke-dashoffset 0.6s ease; }
