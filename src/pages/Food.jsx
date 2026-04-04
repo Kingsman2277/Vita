@@ -268,14 +268,26 @@ export default function Food() {
               <div className="form-group">
                 <label className="form-label">Nutrition</label>
                 <div className="form-row grid-cols-2">
-                  <input placeholder="Calories" type="number" value={form.calories} onChange={e => setForm(f => ({ ...f, calories: e.target.value }))} className="form-input" required />
-                  <input placeholder="Protein (g)" type="number" value={form.protein} onChange={e => setForm(f => ({ ...f, protein: e.target.value }))} className="form-input" />
+                  <div>
+                    <label className="form-label" style={{ fontSize: 9, marginBottom: 4 }}>Calories</label>
+                    <input placeholder="0" type="number" value={form.calories} onChange={e => setForm(f => ({ ...f, calories: e.target.value }))} className="form-input" required />
+                  </div>
+                  <div>
+                    <label className="form-label" style={{ fontSize: 9, marginBottom: 4 }}>Protein (g)</label>
+                    <input placeholder="0" type="number" value={form.protein} onChange={e => setForm(f => ({ ...f, protein: e.target.value }))} className="form-input" />
+                  </div>
                 </div>
               </div>
               <div className="form-group">
                 <div className="form-row grid-cols-2">
-                  <input placeholder="Carbs (g)" type="number" value={form.carbs} onChange={e => setForm(f => ({ ...f, carbs: e.target.value }))} className="form-input" />
-                  <input placeholder="Fat (g)" type="number" value={form.fat} onChange={e => setForm(f => ({ ...f, fat: e.target.value }))} className="form-input" />
+                  <div>
+                    <label className="form-label" style={{ fontSize: 9, marginBottom: 4 }}>Carbs (g)</label>
+                    <input placeholder="0" type="number" value={form.carbs} onChange={e => setForm(f => ({ ...f, carbs: e.target.value }))} className="form-input" />
+                  </div>
+                  <div>
+                    <label className="form-label" style={{ fontSize: 9, marginBottom: 4 }}>Fat (g)</label>
+                    <input placeholder="0" type="number" value={form.fat} onChange={e => setForm(f => ({ ...f, fat: e.target.value }))} className="form-input" />
+                  </div>
                 </div>
               </div>
               <button type="submit" className="btn-primary w-full" style={{ padding: '12px 24px' }}>Save</button>
