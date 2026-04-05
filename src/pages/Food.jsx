@@ -14,15 +14,19 @@ import { analyzeFood, analyzeFoodText } from '../lib/gemini'
 import { getMealType } from '../lib/helpers'
 
 export default function Food() {
-  const { logs, todayCalories, todayProtein, todayCarbs, todayFat, loading, addFoodLog, deleteFoodLog } = useFoodLogs()
+  const { logs, todayCalories, todayProtein, todayCarbs, todayFat, loading, addFoodLog, updateFoodLog, deleteFoodLog } = useFoodLogs()
   const { selectedMonth, goToPrev, goToNext, goToCurrentMonth, isCurrentMonth, label } = useMonthNavigation()
   const [modalOpen, setModalOpen] = useState(false)
+  const [editModalOpen, setEditModalOpen] = useState(false)
+  const [editingEntry, setEditingEntry] = useState(null)
   const [cameraOpen, setCameraOpen] = useState(false)
   const [photoMenuOpen, setPhotoMenuOpen] = useState(false)
   const [analyzing, setAnalyzing] = useState(false)
   const [smartText, setSmartText] = useState('')
+  const [servings, setServings] = useState(1)
   const [form, setForm] = useState({ food_name: '', calories: '', protein: '', carbs: '', fat: '', meal_type: getMealType() })
-  const [selectedDay, setSelectedDay] = useState(new Date().getDate()) // default to today
+  const [editForm, setEditForm] = useState({ food_name: '', calories: '', protein: '', carbs: '', fat: '', meal_type: '', logged_at: '' })
+  const [selectedDay, setSelectedDay] = useState(new Date().getDate())
   const galleryRef = useRef()
 
   const handleSmartAnalyze = async () => {
@@ -92,12 +96,64 @@ export default function Food() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!form.food_name || !form.calories) return
+    const s = servings || 1
     try {
-      await addFoodLog({ food_name: form.food_name, calories: Number(form.calories), protein: Number(form.protein) || 0, carbs: Number(form.carbs) || 0, fat: Number(form.fat) || 0, meal_type: form.meal_type })
+      await addFoodLog({
+        food_name: s > 1 ? `${form.food_name} (x${s})` : form.food_name,
+        calories: Math.round(Number(form.calories) * s),
+        protein: Math.round((Number(form.protein) || 0) * s),
+        carbs: Math.round((Number(form.carbs) || 0) * s),
+        fat: Math.round((Number(form.fat) || 0) * s),
+        meal_type: form.meal_type,
+      })
       toast.success('Food logged!')
       setModalOpen(false)
       resetForm()
+      setServings(1)
     } catch { toast.error('Failed to save') }
+  }
+
+  const openEditEntry = (entry) => {
+    setEditingEntry(entry)
+    setEditForm({
+      food_name: entry.food_name || '',
+      calories: String(entry.calories || ''),
+      protein: String(entry.protein || ''),
+      carbs: String(entry.carbs || ''),
+      fat: String(entry.fat || ''),
+      meal_type: entry.meal_type || 'snack',
+      logged_at: entry.logged_at ? entry.logged_at.split('T')[0] : '',
+    })
+    setEditModalOpen(true)
+  }
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault()
+    if (!editingEntry) return
+    try {
+      await updateFoodLog(editingEntry.id, {
+        food_name: editForm.food_name,
+        calories: Number(editForm.calories),
+        protein: Number(editForm.protein) || 0,
+        carbs: Number(editForm.carbs) || 0,
+        fat: Number(editForm.fat) || 0,
+        meal_type: editForm.meal_type,
+        logged_at: editForm.logged_at ? new Date(editForm.logged_at + 'T12:00:00').toISOString() : editingEntry.logged_at,
+      })
+      toast.success('Updated!')
+      setEditModalOpen(false)
+      setEditingEntry(null)
+    } catch { toast.error('Failed to save') }
+  }
+
+  const handleDeleteFromEdit = async () => {
+    if (!editingEntry) return
+    try {
+      await deleteFoodLog(editingEntry.id)
+      toast.success('Deleted!')
+      setEditModalOpen(false)
+      setEditingEntry(null)
+    } catch { toast.error('Failed to delete') }
   }
 
   const resetForm = () => setForm({ food_name: '', calories: '', protein: '', carbs: '', fat: '', meal_type: getMealType() })
@@ -197,7 +253,7 @@ export default function Food() {
           <div key={date} className="flex flex-col" style={{ gap: 12 }}>
             <p className="stat-label">{date}</p>
             {items.map(item => (
-              <Card key={item.id} className="flex items-center justify-between" style={{ padding: '14px 16px' }}>
+              <Card key={item.id} onClick={() => openEditEntry(item)} className="flex items-center justify-between cursor-pointer" style={{ padding: '14px 16px' }}>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-semibold uppercase tracking-wider">{item.meal_type}</span>
@@ -205,9 +261,9 @@ export default function Food() {
                   </div>
                   <p className="text-xs text-muted-foreground mt-1.5">{item.calories} cal &middot; {item.protein}p &middot; {item.carbs}c &middot; {item.fat}f</p>
                 </div>
-                <button onClick={() => deleteFoodLog(item.id)} className="text-muted-foreground hover:text-destructive ml-3 p-1.5 rounded-lg hover:bg-muted transition-colors">
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
+                <svg className="card-chevron w-4 h-4 ml-2" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                </svg>
               </Card>
             ))}
           </div>
@@ -290,10 +346,75 @@ export default function Food() {
                   </div>
                 </div>
               </div>
-              <button type="submit" className="btn-primary w-full" style={{ padding: '12px 24px' }}>Save</button>
+              {/* Servings multiplier */}
+              <div className="form-group">
+                <label className="form-label">Servings</label>
+                <div className="flex items-center gap-3">
+                  <button type="button" onClick={() => setServings(s => Math.max(1, s - 1))} className="btn-secondary" style={{ padding: '8px 14px', minWidth: 'auto', fontSize: 16, fontWeight: 700 }}>−</button>
+                  <input type="number" min="1" max="20" value={servings} onChange={e => setServings(Math.max(1, Number(e.target.value) || 1))} className="form-input text-center font-bold" style={{ width: 60 }} />
+                  <button type="button" onClick={() => setServings(s => Math.min(20, s + 1))} className="btn-secondary" style={{ padding: '8px 14px', minWidth: 'auto', fontSize: 16, fontWeight: 700 }}>+</button>
+                  {servings > 1 && <span className="text-xs text-muted-foreground">= {Math.round(Number(form.calories || 0) * servings)} cal total</span>}
+                </div>
+              </div>
+              <button type="submit" className="btn-primary w-full" style={{ padding: '12px 24px' }}>
+                {servings > 1 ? `Save (${servings} servings)` : 'Save'}
+              </button>
             </form>
           </>
         )}
+      </Modal>
+
+      {/* Edit Food Entry Modal */}
+      <Modal open={editModalOpen} onClose={() => { setEditModalOpen(false); setEditingEntry(null) }} title="Edit Food Entry">
+        <form onSubmit={handleEditSubmit}>
+          <div className="form-group">
+            <label className="form-label">Meal Type</label>
+            <select value={editForm.meal_type} onChange={e => setEditForm(f => ({ ...f, meal_type: e.target.value }))} className="form-input">
+              <option value="breakfast">🌅 Breakfast</option><option value="lunch">☀️ Lunch</option><option value="dinner">🌙 Dinner</option><option value="snack">🍿 Snack</option>
+            </select>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Food Name</label>
+            <input value={editForm.food_name} onChange={e => setEditForm(f => ({ ...f, food_name: e.target.value }))} className="form-input" required />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Nutrition</label>
+            <div className="form-row grid-cols-2">
+              <div>
+                <label className="form-label" style={{ fontSize: 9, marginBottom: 4 }}>Calories</label>
+                <input type="number" value={editForm.calories} onChange={e => setEditForm(f => ({ ...f, calories: e.target.value }))} className="form-input" required />
+              </div>
+              <div>
+                <label className="form-label" style={{ fontSize: 9, marginBottom: 4 }}>Protein (g)</label>
+                <input type="number" value={editForm.protein} onChange={e => setEditForm(f => ({ ...f, protein: e.target.value }))} className="form-input" />
+              </div>
+            </div>
+          </div>
+          <div className="form-group">
+            <div className="form-row grid-cols-2">
+              <div>
+                <label className="form-label" style={{ fontSize: 9, marginBottom: 4 }}>Carbs (g)</label>
+                <input type="number" value={editForm.carbs} onChange={e => setEditForm(f => ({ ...f, carbs: e.target.value }))} className="form-input" />
+              </div>
+              <div>
+                <label className="form-label" style={{ fontSize: 9, marginBottom: 4 }}>Fat (g)</label>
+                <input type="number" value={editForm.fat} onChange={e => setEditForm(f => ({ ...f, fat: e.target.value }))} className="form-input" />
+              </div>
+            </div>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Date</label>
+            <input type="date" value={editForm.logged_at} onChange={e => setEditForm(f => ({ ...f, logged_at: e.target.value }))} className="form-input" />
+          </div>
+          <div className="flex gap-3">
+            <button type="button" onClick={handleDeleteFromEdit} className="btn-secondary flex-1" style={{ padding: '12px 24px', color: 'var(--destructive)', borderColor: 'var(--destructive)' }}>
+              Delete
+            </button>
+            <button type="submit" className="btn-primary flex-1" style={{ padding: '12px 24px' }}>
+              Save Changes
+            </button>
+          </div>
+        </form>
       </Modal>
 
       <CameraModal open={cameraOpen} onClose={() => setCameraOpen(false)} onCapture={handleCameraCapture} />

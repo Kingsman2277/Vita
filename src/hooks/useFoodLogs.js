@@ -23,6 +23,12 @@ export function useFoodLogs() {
     await fetchLogs()
   }
 
+  const updateFoodLog = async (id, updates) => {
+    const { error } = await supabase.from('food_logs').update(updates).eq('id', id)
+    if (error) throw error
+    await fetchLogs()
+  }
+
   const deleteFoodLog = async (id) => {
     const { error } = await supabase.from('food_logs').delete().eq('id', id)
     if (error) throw error
@@ -41,7 +47,7 @@ export function useFoodLogs() {
   const todayFat = todayLogs.reduce((sum, l) => sum + Number(l.fat || 0), 0)
 
   return {
-    logs, loading, addFoodLog, deleteFoodLog, refetch: fetchLogs,
+    logs, loading, addFoodLog, updateFoodLog, deleteFoodLog, refetch: fetchLogs,
     todayLogs, todayCalories, todayProtein, todayCarbs, todayFat,
   }
 }
