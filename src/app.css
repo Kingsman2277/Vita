@@ -208,7 +208,7 @@ body {
   border-radius: var(--radius);
   padding: 20px 24px;
   box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.03);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease, transform 0.1s ease;
 }
 .dark .glass-card {
   box-shadow: 0 1px 3px rgba(0,0,0,0.4), 0 4px 20px rgba(0,0,0,0.15);
@@ -230,7 +230,7 @@ body {
   border-radius: var(--radius);
   padding: 20px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.4);
-  transition: all 0.2s ease;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease, transform 0.1s ease;
   cursor: pointer;
 }
 .action-card:hover {
@@ -350,13 +350,12 @@ input::placeholder, textarea::placeholder {
   transform: translateX(2px);
 }
 
-/* ─── PAGE TRANSITION ─── */
-.page-enter { opacity: 0; transform: translateY(8px); }
-.page-active {
-  opacity: 1;
-  transform: translateY(0);
-  transition: opacity 0.3s ease, transform 0.3s ease;
+/* ─── TAP RESPONSIVENESS ─── */
+button, a, [role="button"] {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
+html { -webkit-text-size-adjust: 100%; }
 
 /* ─── SKELETON ─── */
 @keyframes shimmer {
@@ -397,7 +396,7 @@ input::placeholder, textarea::placeholder {
   max-height: 85vh;
   overflow-y: auto;
   padding: 28px 32px 32px;
-  animation: modal-slide-up 0.3s ease-out;
+  animation: modal-slide-up 0.18s ease-out;
 }
 @media (min-width: 640px) {
   .modal-panel {
@@ -406,7 +405,7 @@ input::placeholder, textarea::placeholder {
   }
 }
 @keyframes modal-slide-up {
-  from { transform: translateY(40px); opacity: 0; }
+  from { transform: translateY(20px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
 

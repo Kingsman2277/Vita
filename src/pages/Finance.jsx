@@ -100,7 +100,7 @@ export default function Finance() {
         </div>
         <div className="flex gap-2">
           <button onClick={() => setSummaryOpen(true)} className="btn-secondary" style={{ padding: '10px 20px', borderRadius: 20, minWidth: 'auto' }}>📊 Summary</button>
-          <button onClick={() => setModalOpen(true)} className="btn-primary" style={{ padding: '10px 20px', borderRadius: 20, minWidth: 'auto' }}>+ Expense</button>
+          <button onClick={() => { setForm({ amount: '', category: 'food', note: '', date: getToday(), is_recurring: false }); setModalOpen(true) }} className="btn-primary" style={{ padding: '10px 20px', borderRadius: 20, minWidth: 'auto' }}>+ Expense</button>
         </div>
       </div>
 
@@ -125,7 +125,7 @@ export default function Finance() {
           <p className="empty-state-title">{isCurrentMonth ? 'No expenses yet' : `No expenses in ${label}`}</p>
           <p className="empty-state-desc">{isCurrentMonth ? 'Start tracking your spending to see where your money goes' : 'Try navigating to a different month'}</p>
           {isCurrentMonth && (
-            <button onClick={() => setModalOpen(true)} className="btn-primary" style={{ padding: '10px 20px', borderRadius: 20, minWidth: 'auto' }}>
+            <button onClick={() => { setForm({ amount: '', category: 'food', note: '', date: getToday(), is_recurring: false }); setModalOpen(true) }} className="btn-primary" style={{ padding: '10px 20px', borderRadius: 20, minWidth: 'auto' }}>
               Add your first expense
             </button>
           )}

@@ -45,7 +45,13 @@ async function callGemini(contents) {
 export async function analyzeFood(imageBase64) {
   return callGemini([{
     parts: [
-      { text: 'Analyze this food photo. Return JSON only: {"food_name": "string", "calories": number, "protein_g": number, "carbs_g": number, "fat_g": number, "meal_type_guess": "breakfast|lunch|dinner|snack", "confidence": number}. Be realistic about portion size.' },
+      { text: `Analyze this food photo. Return JSON only:
+{"food_name": "short dish name (2-4 words max)", "description": "detailed list of items with portions", "calories": number, "protein_g": number, "carbs_g": number, "fat_g": number, "meal_type_guess": "breakfast|lunch|dinner|snack", "confidence": number}
+
+Rules:
+- food_name: 2-4 words MAX (e.g. "Breakfast Plate", "Chicken Salad", "Burger & Fries")
+- description: full breakdown with portions (e.g. "2 fried eggs, 2 slices bacon, hash browns, toast with butter")
+- Be realistic about portion sizes` },
       { inline_data: { mime_type: 'image/jpeg', data: imageBase64 } },
     ],
   }])
@@ -60,13 +66,14 @@ export async function analyzeFoodText(description) {
       text: `I ate the following meal: "${description}"
 
 Calculate the total combined nutrition for everything listed. Be realistic with standard portion sizes. Return JSON only, no other text:
-{"food_name": "brief summary of the meal", "calories": number, "protein_g": number, "carbs_g": number, "fat_g": number, "meal_type_guess": "breakfast|lunch|dinner|snack"}
+{"food_name": "short dish name (2-4 words max)", "description": "clean detailed list of items", "calories": number, "protein_g": number, "carbs_g": number, "fat_g": number, "meal_type_guess": "breakfast|lunch|dinner|snack"}
 
 Rules:
 - Combine ALL items into one total (not per-item)
 - Use typical serving sizes (1 medium apple, 8oz coffee, standard egg, etc.)
 - Round calories to nearest 5, macros to nearest 1
-- food_name should be a short readable summary like "Eggs, parathas, fruit & coffee"
+- food_name: 2-4 words MAX. General dish category like "Breakfast Plate", "Smoothie Bowl", "Mixed Meal"
+- description: clean readable list of what was eaten (e.g. "2 eggs, 2 parathas, 1 apple, orange juice, coffee")
 - Guess meal_type based on the foods and current time of day`
     }],
   }])

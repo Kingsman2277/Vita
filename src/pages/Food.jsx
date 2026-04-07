@@ -24,8 +24,8 @@ export default function Food() {
   const [analyzing, setAnalyzing] = useState(false)
   const [smartText, setSmartText] = useState('')
   const [servings, setServings] = useState(1)
-  const [form, setForm] = useState({ food_name: '', calories: '', protein: '', carbs: '', fat: '', meal_type: getMealType() })
-  const [editForm, setEditForm] = useState({ food_name: '', calories: '', protein: '', carbs: '', fat: '', meal_type: '', logged_at: '' })
+  const [form, setForm] = useState({ food_name: '', description: '', calories: '', protein: '', carbs: '', fat: '', meal_type: getMealType() })
+  const [editForm, setEditForm] = useState({ food_name: '', description: '', calories: '', protein: '', carbs: '', fat: '', meal_type: '', logged_at: '' })
   const [selectedDay, setSelectedDay] = useState(new Date().getDate())
   const galleryRef = useRef()
 
@@ -35,7 +35,8 @@ export default function Food() {
     try {
       const result = await analyzeFoodText(smartText.trim())
       setForm({
-        food_name: result.food_name || smartText.trim(),
+        food_name: result.food_name || 'Meal',
+        description: result.description || smartText.trim(),
         calories: String(result.calories || ''),
         protein: String(result.protein_g || ''),
         carbs: String(result.carbs_g || ''),
@@ -75,7 +76,7 @@ export default function Food() {
     setModalOpen(true)
     try {
       const result = await analyzeFood(base64)
-      setForm({ food_name: result.food_name || '', calories: String(result.calories || ''), protein: String(result.protein_g || ''), carbs: String(result.carbs_g || ''), fat: String(result.fat_g || ''), meal_type: result.meal_type_guess || getMealType() })
+      setForm({ food_name: result.food_name || 'Meal', description: result.description || '', calories: String(result.calories || ''), protein: String(result.protein_g || ''), carbs: String(result.carbs_g || ''), fat: String(result.fat_g || ''), meal_type: result.meal_type_guess || getMealType() })
     } catch (err) { console.error('Photo analyze error:', err); toast.error(err.message || 'Could not analyze photo.') }
     setAnalyzing(false)
   }
@@ -88,7 +89,7 @@ export default function Food() {
     try {
       const base64 = await fileToBase64(file)
       const result = await analyzeFood(base64)
-      setForm({ food_name: result.food_name || '', calories: String(result.calories || ''), protein: String(result.protein_g || ''), carbs: String(result.carbs_g || ''), fat: String(result.fat_g || ''), meal_type: result.meal_type_guess || getMealType() })
+      setForm({ food_name: result.food_name || 'Meal', description: result.description || '', calories: String(result.calories || ''), protein: String(result.protein_g || ''), carbs: String(result.carbs_g || ''), fat: String(result.fat_g || ''), meal_type: result.meal_type_guess || getMealType() })
     } catch (err) { console.error('Photo analyze error:', err); toast.error(err.message || 'Could not analyze photo.') }
     setAnalyzing(false)
   }
@@ -100,6 +101,7 @@ export default function Food() {
     try {
       await addFoodLog({
         food_name: s > 1 ? `${form.food_name} (x${s})` : form.food_name,
+        description: form.description || null,
         calories: Math.round(Number(form.calories) * s),
         protein: Math.round((Number(form.protein) || 0) * s),
         carbs: Math.round((Number(form.carbs) || 0) * s),
@@ -117,6 +119,7 @@ export default function Food() {
     setEditingEntry(entry)
     setEditForm({
       food_name: entry.food_name || '',
+      description: entry.description || '',
       calories: String(entry.calories || ''),
       protein: String(entry.protein || ''),
       carbs: String(entry.carbs || ''),
@@ -133,6 +136,7 @@ export default function Food() {
     try {
       await updateFoodLog(editingEntry.id, {
         food_name: editForm.food_name,
+        description: editForm.description || null,
         calories: Number(editForm.calories),
         protein: Number(editForm.protein) || 0,
         carbs: Number(editForm.carbs) || 0,
@@ -156,7 +160,15 @@ export default function Food() {
     } catch { toast.error('Failed to delete') }
   }
 
-  const resetForm = () => setForm({ food_name: '', calories: '', protein: '', carbs: '', fat: '', meal_type: getMealType() })
+  const resetForm = () => setForm({ food_name: '', description: '', calories: '', protein: '', carbs: '', fat: '', meal_type: getMealType() })
+
+  // Reset form date/values to today when add modal opens
+  const openAddModal = () => {
+    resetForm()
+    setServings(1)
+    setSmartText('')
+    setModalOpen(true)
+  }
 
   // Group month-filtered logs by date
   const groupedByDate = dayLogs.reduce((acc, log) => {
@@ -192,7 +204,7 @@ export default function Food() {
               </>
             )}
           </div>
-          <button onClick={() => { resetForm(); setModalOpen(true) }} className="btn-primary" style={{ padding: '10px 18px', borderRadius: 20, minWidth: 'auto', fontSize: 13 }}>
+          <button onClick={openAddModal} className="btn-primary" style={{ padding: '10px 18px', borderRadius: 20, minWidth: 'auto', fontSize: 13 }}>
             + Log Food
           </button>
         </div>
@@ -242,7 +254,7 @@ export default function Food() {
               <button onClick={() => setCameraOpen(true)} className="btn-secondary" style={{ padding: '10px 20px', borderRadius: 20, minWidth: 'auto' }}>
                 📸 Take Photo
               </button>
-              <button onClick={() => { resetForm(); setModalOpen(true) }} className="btn-primary" style={{ padding: '10px 20px', borderRadius: 20, minWidth: 'auto' }}>
+              <button onClick={openAddModal} className="btn-primary" style={{ padding: '10px 20px', borderRadius: 20, minWidth: 'auto' }}>
                 + Log Manually
               </button>
             </div>
@@ -259,6 +271,9 @@ export default function Food() {
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-semibold uppercase tracking-wider">{item.meal_type}</span>
                     <p className="font-medium text-sm truncate text-foreground">{item.food_name}</p>
                   </div>
+                  {item.description && (
+                    <p className="text-xs text-muted-foreground mt-1 truncate" style={{ opacity: 0.8 }}>{item.description}</p>
+                  )}
                   <p className="text-xs text-muted-foreground mt-1.5">{item.calories} cal &middot; {item.protein}p &middot; {item.carbs}c &middot; {item.fat}f</p>
                 </div>
                 <svg className="card-chevron w-4 h-4 ml-2" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -318,8 +333,12 @@ export default function Food() {
                 </select>
               </div>
               <div className="form-group">
-                <label className="form-label">Food Name</label>
-                <input placeholder="Food name" value={form.food_name} onChange={e => setForm(f => ({ ...f, food_name: e.target.value }))} className="form-input" required />
+                <label className="form-label">Name</label>
+                <input placeholder="e.g. Breakfast Plate" value={form.food_name} onChange={e => setForm(f => ({ ...f, food_name: e.target.value }))} className="form-input" required />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Description</label>
+                <textarea placeholder="What's in it? (optional)" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} className="form-input" rows={2} style={{ resize: 'none' }} />
               </div>
               <div className="form-group">
                 <label className="form-label">Nutrition</label>
@@ -374,8 +393,12 @@ export default function Food() {
             </select>
           </div>
           <div className="form-group">
-            <label className="form-label">Food Name</label>
+            <label className="form-label">Name</label>
             <input value={editForm.food_name} onChange={e => setEditForm(f => ({ ...f, food_name: e.target.value }))} className="form-input" required />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Description</label>
+            <textarea value={editForm.description} onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))} className="form-input" rows={2} style={{ resize: 'none' }} placeholder="What's in it? (optional)" />
           </div>
           <div className="form-group">
             <label className="form-label">Nutrition</label>
