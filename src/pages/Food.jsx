@@ -112,7 +112,7 @@ export default function Food() {
       setModalOpen(false)
       resetForm()
       setServings(1)
-    } catch { toast.error('Failed to save') }
+    } catch (err) { console.error('Save food error:', err); toast.error(err?.message || 'Failed to save') }
   }
 
   const openEditEntry = (entry) => {
@@ -147,7 +147,7 @@ export default function Food() {
       toast.success('Updated!')
       setEditModalOpen(false)
       setEditingEntry(null)
-    } catch { toast.error('Failed to save') }
+    } catch (err) { console.error('Update food error:', err); toast.error(err?.message || 'Failed to save') }
   }
 
   const handleDeleteFromEdit = async () => {
