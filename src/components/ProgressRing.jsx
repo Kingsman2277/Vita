@@ -1,4 +1,4 @@
-export default function ProgressRing({ percent = 0, size = 88, stroke = 7, color = '#c85a5a' }) {
+export default function ProgressRing({ percent = 0, size = 88, stroke = 7, color = 'var(--goal-body)' }) {
   const r = (size - stroke) / 2
   const circ = 2 * Math.PI * r
   const pct = Math.max(0, Math.min(100, percent))

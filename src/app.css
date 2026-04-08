@@ -65,7 +65,7 @@
   --sidebar-border: rgba(255, 224, 194, 0.06);
   --card-foreground: #eeeeee;
   --sidebar-primary: #1d4ed8;
-  --muted-foreground: #888888;
+  --muted-foreground: #999999;
   --accent-foreground: #eeeeee;
   --popover-foreground: #eeeeee;
   --primary-foreground: #1a1a0f;
@@ -74,6 +74,31 @@
   --destructive-foreground: #ffffff;
   --sidebar-accent-foreground: #f4f4f5;
   --sidebar-primary-foreground: #ffffff;
+
+  /* Semantic colors — meet WCAG AA on dark background */
+  --success: #5dc87a;
+  --success-soft: rgba(93, 200, 122, 0.12);
+  --danger: #e85d5d;
+  --danger-soft: rgba(232, 93, 93, 0.12);
+  --warning: #e8a83e;
+  --warning-soft: rgba(232, 168, 62, 0.12);
+  --info: #6bb6ff;
+  --info-soft: rgba(107, 182, 255, 0.12);
+
+  /* Goal-specific brand colors */
+  --goal-body: #e8757e;
+  --goal-body-soft: rgba(232, 117, 126, 0.12);
+  --goal-financial: #5dc87a;
+  --goal-financial-soft: rgba(93, 200, 122, 0.12);
+  --goal-card-bg: #1a1a18;
+
+  /* Chart category colors */
+  --cat-groceries: #5dc87a;
+  --cat-eating-out: #e8a83e;
+  --cat-transport: #6bb6ff;
+  --cat-shopping: #d97ee8;
+  --cat-pet: #e8757e;
+  --cat-savings: #ffe0c2;
 }
 
 @theme inline {
@@ -222,7 +247,7 @@ body {
   box-shadow: 0 1px 3px rgba(0,0,0,0.4), 0 4px 20px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,224,194,0.06);
 }
 .hero-card * { color: var(--secondary-foreground); }
-.hero-card .label { color: rgba(255, 224, 194, 0.6); }
+.hero-card .label { color: rgba(255, 224, 194, 0.85); }
 
 .action-card {
   background: var(--card);
@@ -238,6 +263,28 @@ body {
   box-shadow: 0 1px 3px rgba(0,0,0,0.4), 0 0 20px rgba(255,224,194,0.04);
   transform: translateY(-1px);
 }
+
+/* Reset button styles when our cards are rendered as buttons */
+.glass-button,
+.hero-button,
+.action-button {
+  font-family: inherit;
+  font-size: inherit;
+  text-align: left;
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  color: inherit;
+}
+.hero-button {
+  active: scale(0.98);
+}
+.hero-button:active {
+  transform: scale(0.985);
+  transition: transform 0.08s ease;
+}
+.glass-button:active { transform: scale(0.985); transition: transform 0.08s ease; }
 
 /* ─── BUTTONS ─── */
 .btn-primary {
@@ -309,11 +356,21 @@ input, select, textarea {
 }
 input:focus, select:focus, textarea:focus {
   border-color: var(--primary) !important;
-  box-shadow: 0 0 0 2px rgba(100, 74, 64, 0.15);
+  box-shadow: 0 0 0 3px rgba(100, 74, 64, 0.18);
 }
 .dark input:focus, .dark select:focus, .dark textarea:focus {
-  box-shadow: 0 0 0 2px rgba(232, 217, 181, 0.08);
+  box-shadow: 0 0 0 3px rgba(232, 217, 181, 0.18);
 }
+
+/* Visible keyboard focus for buttons & interactive elements */
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible,
+[role="switch"]:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+button:focus:not(:focus-visible) { outline: none; }
 input::placeholder, textarea::placeholder {
   color: var(--muted-foreground);
 }
@@ -432,14 +489,14 @@ html { -webkit-text-size-adjust: 100%; }
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   background: transparent;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 10px;
   color: var(--foreground);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease;
   flex-shrink: 0;
 }
 .month-picker-btn:hover:not(:disabled) {
@@ -492,8 +549,9 @@ html { -webkit-text-size-adjust: 100%; }
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-width: 42px;
-  height: 56px;
+  min-width: 48px;
+  width: 48px;
+  height: 60px;
   padding: 4px 6px;
   border-radius: 12px;
   border: none;
@@ -501,7 +559,7 @@ html { -webkit-text-size-adjust: 100%; }
   color: var(--muted-foreground);
   font-family: inherit;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background 0.12s ease, color 0.12s ease;
   position: relative;
   flex-shrink: 0;
 }

@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import Card from '../components/Card'
 import MonthPicker from '../components/MonthPicker'
 import SpendingChart from '../components/SpendingChart'
@@ -17,13 +18,23 @@ export default function Summary() {
   const { selectedMonth, goToPrev, goToNext, goToCurrentMonth, isCurrentMonth, label } = useMonthNavigation()
   const loading = expLoading || foodLoading || goalLoading
 
-  const monthExpenses = filterByMonth(expenses, selectedMonth.year, selectedMonth.month, 'date')
-  const monthLogs = filterByMonth(logs, selectedMonth.year, selectedMonth.month, 'logged_at')
+  const monthExpenses = useMemo(
+    () => filterByMonth(expenses, selectedMonth.year, selectedMonth.month, 'date'),
+    [expenses, selectedMonth.year, selectedMonth.month]
+  )
+  const monthLogs = useMemo(
+    () => filterByMonth(logs, selectedMonth.year, selectedMonth.month, 'logged_at'),
+    [logs, selectedMonth.year, selectedMonth.month]
+  )
 
-  const monthTotal = monthExpenses.reduce((sum, e) => sum + Number(e.amount), 0)
-  const daysWithLogs = new Set(monthLogs.map(l => new Date(l.logged_at).toDateString())).size
-  const totalCalories = monthLogs.reduce((sum, l) => sum + Number(l.calories || 0), 0)
-  const avgCalories = daysWithLogs > 0 ? Math.round(totalCalories / daysWithLogs) : 0
+  const stats = useMemo(() => {
+    const monthTotal = monthExpenses.reduce((sum, e) => sum + Number(e.amount), 0)
+    const daysWithLogs = new Set(monthLogs.map(l => new Date(l.logged_at).toDateString())).size
+    const totalCalories = monthLogs.reduce((sum, l) => sum + Number(l.calories || 0), 0)
+    const avgCalories = daysWithLogs > 0 ? Math.round(totalCalories / daysWithLogs) : 0
+    return { monthTotal, daysWithLogs, totalCalories, avgCalories }
+  }, [monthExpenses, monthLogs])
+  const { monthTotal, daysWithLogs, avgCalories } = stats
 
   const bodyData = bodyGoal?.data
   const finData = financialGoal?.data

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import toast from 'react-hot-toast'
 import Card from '../components/Card'
 import Modal from '../components/Modal'
@@ -23,13 +23,31 @@ export default function Finance() {
   const [form, setForm] = useState({ amount: '', category: 'food', note: '', date: getToday(), is_recurring: false })
   const [editForm, setEditForm] = useState({ amount: '', category: 'food', note: '', date: '', is_recurring: false })
 
-  // Three-step filter: month → day → category
-  const monthExpenses = filterByMonth(expenses, selectedMonth.year, selectedMonth.month, 'date')
-  const dayExpenses = filterByDay(monthExpenses, selectedDay, 'date')
-  const filtered = filter === 'all' ? dayExpenses : dayExpenses.filter(e => e.category === filter)
-  const monthTotal = monthExpenses.reduce((sum, e) => sum + Number(e.amount), 0)
-  const dayTotal = dayExpenses.reduce((sum, e) => sum + Number(e.amount), 0)
-  const expDaysWithData = getDaysWithData(monthExpenses, 'date')
+  // Three-step filter: month → day → category (memoized)
+  const monthExpenses = useMemo(
+    () => filterByMonth(expenses, selectedMonth.year, selectedMonth.month, 'date'),
+    [expenses, selectedMonth.year, selectedMonth.month]
+  )
+  const dayExpenses = useMemo(
+    () => filterByDay(monthExpenses, selectedDay, 'date'),
+    [monthExpenses, selectedDay]
+  )
+  const filtered = useMemo(
+    () => filter === 'all' ? dayExpenses : dayExpenses.filter(e => e.category === filter),
+    [dayExpenses, filter]
+  )
+  const monthTotal = useMemo(
+    () => monthExpenses.reduce((sum, e) => sum + Number(e.amount), 0),
+    [monthExpenses]
+  )
+  const dayTotal = useMemo(
+    () => dayExpenses.reduce((sum, e) => sum + Number(e.amount), 0),
+    [dayExpenses]
+  )
+  const expDaysWithData = useMemo(
+    () => getDaysWithData(monthExpenses, 'date'),
+    [monthExpenses]
+  )
 
   // Reset day when month changes
   const monthKey = `${selectedMonth.year}-${selectedMonth.month}`
@@ -192,11 +210,14 @@ export default function Finance() {
             >
               <input
                 type="checkbox"
+                role="switch"
+                aria-checked={form.is_recurring}
                 checked={form.is_recurring}
                 onChange={e => setForm(f => ({ ...f, is_recurring: e.target.checked }))}
                 className="sr-only"
               />
               <div
+                aria-hidden="true"
                 style={{
                   width: 40,
                   height: 22,
@@ -212,7 +233,7 @@ export default function Finance() {
                     width: 18,
                     height: 18,
                     borderRadius: '50%',
-                    background: '#fff',
+                    background: 'var(--background)',
                     position: 'absolute',
                     top: 2,
                     left: form.is_recurring ? 20 : 2,
@@ -270,9 +291,9 @@ export default function Finance() {
                 background: editForm.is_recurring ? 'var(--secondary)' : 'transparent',
               }}
             >
-              <input type="checkbox" checked={editForm.is_recurring} onChange={e => setEditForm(f => ({ ...f, is_recurring: e.target.checked }))} className="sr-only" />
-              <div style={{ width: 40, height: 22, borderRadius: 11, background: editForm.is_recurring ? 'var(--primary)' : 'var(--muted)', position: 'relative', transition: 'background 0.2s ease', flexShrink: 0 }}>
-                <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#fff', position: 'absolute', top: 2, left: editForm.is_recurring ? 20 : 2, transition: 'left 0.2s ease', boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} />
+              <input type="checkbox" role="switch" aria-checked={editForm.is_recurring} checked={editForm.is_recurring} onChange={e => setEditForm(f => ({ ...f, is_recurring: e.target.checked }))} className="sr-only" />
+              <div aria-hidden="true" style={{ width: 40, height: 22, borderRadius: 11, background: editForm.is_recurring ? 'var(--primary)' : 'var(--muted)', position: 'relative', transition: 'background 0.2s ease', flexShrink: 0 }}>
+                <div style={{ width: 18, height: 18, borderRadius: '50%', background: 'var(--background)', position: 'absolute', top: 2, left: editForm.is_recurring ? 20 : 2, transition: 'left 0.2s ease', boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} />
               </div>
               <div>
                 <p className="text-sm font-medium" style={{ color: editForm.is_recurring ? 'var(--secondary-foreground)' : 'var(--foreground)' }}>Work reimbursable</p>

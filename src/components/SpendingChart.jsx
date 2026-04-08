@@ -1,23 +1,32 @@
+import { useMemo } from 'react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import { getCategoryEmoji } from '../lib/helpers'
 
 const COLORS = {
-  food: 'var(--chart-1)',
-  groceries: '#22c55e',
-  girlfriend: '#ec4899',
-  fun: 'var(--chart-2)',
-  necessities: 'var(--chart-5)',
+  // New categories (in budget allocation order)
+  groceries: 'var(--cat-groceries)',
+  eating_out: 'var(--cat-eating-out)',
+  transport: 'var(--cat-transport)',
+  shopping: 'var(--cat-shopping)',
+  pet: 'var(--cat-pet)',
+  savings: 'var(--cat-savings)',
+  // Legacy fallbacks
+  food: 'var(--cat-eating-out)',
+  girlfriend: 'var(--cat-pet)',
+  fun: 'var(--cat-shopping)',
+  necessities: 'var(--cat-transport)',
   other: 'var(--chart-3)',
 }
 
 export default function SpendingChart({ expenses }) {
-  const byCategory = expenses.reduce((acc, e) => {
-    const cat = e.category || 'other'
-    acc[cat] = (acc[cat] || 0) + Number(e.amount)
-    return acc
-  }, {})
-
-  const data = Object.entries(byCategory).map(([name, value]) => ({ name, value }))
+  const data = useMemo(() => {
+    const byCategory = (expenses || []).reduce((acc, e) => {
+      const cat = e.category || 'other'
+      acc[cat] = (acc[cat] || 0) + Number(e.amount)
+      return acc
+    }, {})
+    return Object.entries(byCategory).map(([name, value]) => ({ name, value }))
+  }, [expenses])
 
   if (data.length === 0) {
     return (

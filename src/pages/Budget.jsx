@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import toast from 'react-hot-toast'
 import Card from '../components/Card'
 import Modal from '../components/Modal'
@@ -74,15 +74,18 @@ export default function Budget() {
     } catch { toast.error('Failed to delete') }
   }
 
-  if (loading) return <div className="page-container"><SkeletonLoader count={5} height="h-28" /></div>
+  // Group recurring by category (memoized — must run before any early return)
+  const grouped = useMemo(
+    () => (recurring || []).reduce((acc, r) => {
+      const cat = r.category || 'other'
+      if (!acc[cat]) acc[cat] = []
+      acc[cat].push(r)
+      return acc
+    }, {}),
+    [recurring]
+  )
 
-  // Group recurring by category
-  const grouped = recurring.reduce((acc, r) => {
-    const cat = r.category || 'other'
-    if (!acc[cat]) acc[cat] = []
-    acc[cat].push(r)
-    return acc
-  }, {})
+  if (loading) return <div className="page-container"><SkeletonLoader count={5} height="h-28" /></div>
 
   const categoryLabels = {
     subscription: '📱 Subscriptions',
@@ -115,7 +118,7 @@ export default function Budget() {
               </svg>
               <span className="label text-[11px] font-semibold uppercase tracking-[0.1em]" style={{ margin: 0 }}>You Can Spend</span>
             </div>
-            <span className={`text-[22px] font-bold ${canSpend >= 0 ? 'text-emerald-400' : 'text-red-400'}`} style={{ letterSpacing: '-0.02em' }}>
+            <span className="text-[22px] font-bold" style={{ letterSpacing: '-0.02em', color: canSpend >= 0 ? 'var(--success)' : 'var(--danger)' }}>
               {formatCurrency(canSpend)}
             </span>
           </div>
@@ -129,13 +132,13 @@ export default function Budget() {
 
         {cashFlowOpen && (
           <div className="flex flex-col" style={{ gap: 8, marginTop: 14, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-            <FlowRow label="Monthly Income" value={formatCurrency(monthlyIncome)} color="text-emerald-400" />
-            <FlowRow label="Recurring Expenses" value={`-${formatCurrency(totalRecurring)}`} color="text-red-400" />
-            <FlowRow label="Savings Target" value={`-${formatCurrency(savingsTarget)}`} color="text-blue-400" />
+            <FlowRow label="Monthly Income" value={formatCurrency(monthlyIncome)} colorVar="var(--success)" />
+            <FlowRow label="Recurring Expenses" value={`-${formatCurrency(totalRecurring)}`} colorVar="var(--danger)" />
+            <FlowRow label="Savings Target" value={`-${formatCurrency(savingsTarget)}`} colorVar="var(--info)" />
             <div className="border-t border-white/10 pt-2">
               <FlowRow label="Discretionary Budget" value={formatCurrency(discretionary)} bold />
             </div>
-            <FlowRow label="Spent So Far" value={`-${formatCurrency(spentSoFar)}`} color="text-orange-400" />
+            <FlowRow label="Spent So Far" value={`-${formatCurrency(spentSoFar)}`} colorVar="var(--warning)" />
           </div>
         )}
       </div>
@@ -305,28 +308,31 @@ export default function Budget() {
   )
 }
 
-function FlowRow({ label, value, color, bold, large }) {
+function FlowRow({ label, value, color, colorVar, bold, large }) {
+  const valueStyle = { fontSize: large ? 20 : bold ? 16 : 14 }
+  if (colorVar) valueStyle.color = colorVar
   return (
     <div className="flex justify-between items-center" style={{ height: 40, fontSize: 14 }}>
       <span className={bold ? 'font-bold' : 'opacity-70'} style={{ fontSize: bold ? 16 : 14 }}>{label}</span>
-      <span className={`font-medium ${bold ? 'font-bold' : ''} ${color || ''}`} style={{ fontSize: large ? 20 : bold ? 16 : 14 }}>{value}</span>
+      <span className={`font-medium ${bold ? 'font-bold' : ''} ${color || ''}`} style={valueStyle}>{value}</span>
     </div>
   )
 }
 
 /* ─── Budget Categories Allocation ─── */
 function BudgetCategories({ discretionary, expenses }) {
-  // Get current month expenses (non-reimbursable only)
-  const now = new Date()
-  const monthExpenses = filterByMonth(expenses, now.getFullYear(), now.getMonth(), 'date')
-    .filter(e => !e.is_recurring)
-
-  // Calculate spent per category
-  const spentByCategory = {}
-  for (const e of monthExpenses) {
-    const cat = e.category || 'other'
-    spentByCategory[cat] = (spentByCategory[cat] || 0) + Number(e.amount)
-  }
+  // Calculate spent per category for current month, non-reimbursable only (memoized)
+  const spentByCategory = useMemo(() => {
+    const now = new Date()
+    const monthExpenses = filterByMonth(expenses, now.getFullYear(), now.getMonth(), 'date')
+      .filter(e => !e.is_recurring)
+    const out = {}
+    for (const e of monthExpenses) {
+      const cat = e.category || 'other'
+      out[cat] = (out[cat] || 0) + Number(e.amount)
+    }
+    return out
+  }, [expenses])
 
   return (
     <div>

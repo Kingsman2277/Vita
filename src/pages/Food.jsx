@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useMemo } from 'react'
 import toast from 'react-hot-toast'
 import Card from '../components/Card'
 import Modal from '../components/Modal'
@@ -51,10 +51,19 @@ export default function Food() {
     setAnalyzing(false)
   }
 
-  // Filter logs: month → day
-  const monthLogs = filterByMonth(logs, selectedMonth.year, selectedMonth.month, 'logged_at')
-  const dayLogs = filterByDay(monthLogs, selectedDay, 'logged_at')
-  const foodDaysWithData = getDaysWithData(monthLogs, 'logged_at')
+  // Filter logs: month → day (memoized)
+  const monthLogs = useMemo(
+    () => filterByMonth(logs, selectedMonth.year, selectedMonth.month, 'logged_at'),
+    [logs, selectedMonth.year, selectedMonth.month]
+  )
+  const dayLogs = useMemo(
+    () => filterByDay(monthLogs, selectedDay, 'logged_at'),
+    [monthLogs, selectedDay]
+  )
+  const foodDaysWithData = useMemo(
+    () => getDaysWithData(monthLogs, 'logged_at'),
+    [monthLogs]
+  )
 
   // Reset day selection when month changes
   const monthKey = `${selectedMonth.year}-${selectedMonth.month}`
@@ -62,13 +71,17 @@ export default function Food() {
   if (monthKey !== prevMonthKey) { setPrevMonthKey(monthKey); setSelectedDay(null) }
 
   // Stats for the hero card (scoped to day if selected, else month)
-  const statsLogs = selectedDay !== null ? dayLogs : monthLogs
-  const statCalories = statsLogs.reduce((s, l) => s + Number(l.calories || 0), 0)
-  const statProtein = statsLogs.reduce((s, l) => s + Number(l.protein || 0), 0)
-  const statCarbs = statsLogs.reduce((s, l) => s + Number(l.carbs || 0), 0)
-  const statFat = statsLogs.reduce((s, l) => s + Number(l.fat || 0), 0)
-  const daysWithLogs = new Set(monthLogs.map(l => new Date(l.logged_at).toDateString())).size
-  const avgDailyCalories = daysWithLogs > 0 ? Math.round(statCalories / daysWithLogs) : 0
+  const stats = useMemo(() => {
+    const statsLogs = selectedDay !== null ? dayLogs : monthLogs
+    const statCalories = statsLogs.reduce((s, l) => s + Number(l.calories || 0), 0)
+    const statProtein = statsLogs.reduce((s, l) => s + Number(l.protein || 0), 0)
+    const statCarbs = statsLogs.reduce((s, l) => s + Number(l.carbs || 0), 0)
+    const statFat = statsLogs.reduce((s, l) => s + Number(l.fat || 0), 0)
+    const daysWithLogs = new Set(monthLogs.map(l => new Date(l.logged_at).toDateString())).size
+    const avgDailyCalories = daysWithLogs > 0 ? Math.round(statCalories / daysWithLogs) : 0
+    return { statCalories, statProtein, statCarbs, statFat, daysWithLogs, avgDailyCalories }
+  }, [selectedDay, dayLogs, monthLogs])
+  const { statCalories, statProtein, statCarbs, statFat, daysWithLogs, avgDailyCalories } = stats
 
   const handleCameraCapture = async (base64) => {
     setCameraOpen(false)
@@ -170,13 +183,16 @@ export default function Food() {
     setModalOpen(true)
   }
 
-  // Group month-filtered logs by date
-  const groupedByDate = dayLogs.reduce((acc, log) => {
-    const date = new Date(log.logged_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
-    if (!acc[date]) acc[date] = []
-    acc[date].push(log)
-    return acc
-  }, {})
+  // Group month-filtered logs by date (memoized)
+  const groupedByDate = useMemo(
+    () => dayLogs.reduce((acc, log) => {
+      const date = new Date(log.logged_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+      if (!acc[date]) acc[date] = []
+      acc[date].push(log)
+      return acc
+    }, {}),
+    [dayLogs]
+  )
 
   return (
     <div className="page-container">
@@ -186,19 +202,26 @@ export default function Food() {
         </div>
         <div className="flex gap-2 mt-3">
           <div className="relative">
-            <button onClick={() => setPhotoMenuOpen(p => !p)} className="btn-secondary" style={{ padding: '10px 18px', borderRadius: 20, minWidth: 'auto', fontSize: 13 }}>
+            <button
+              type="button"
+              onClick={() => setPhotoMenuOpen(p => !p)}
+              className="btn-secondary"
+              aria-haspopup="menu"
+              aria-expanded={photoMenuOpen}
+              style={{ padding: '10px 18px', borderRadius: 20, minWidth: 'auto', fontSize: 13 }}
+            >
               📷 Photo
             </button>
             {photoMenuOpen && (
               <>
-                <div className="fixed inset-0 z-40" onClick={() => setPhotoMenuOpen(false)} />
-                <div className="absolute left-0 top-full mt-2 z-50 bg-card border border-border rounded-lg shadow-lg overflow-hidden min-w-[200px]" style={{ padding: '4px 0' }}>
-                  <button onClick={() => { setPhotoMenuOpen(false); setCameraOpen(true) }} className="w-full text-left text-sm text-foreground hover:bg-muted transition-colors flex items-center gap-3" style={{ padding: '12px 16px' }}>
-                    <span>📸</span> Take Photo
+                <div className="fixed inset-0 z-40" onClick={() => setPhotoMenuOpen(false)} aria-hidden="true" />
+                <div role="menu" className="absolute left-0 top-full mt-2 z-50 bg-card border border-border rounded-lg shadow-lg overflow-hidden min-w-[200px]" style={{ padding: '4px 0' }}>
+                  <button type="button" role="menuitem" onClick={() => { setPhotoMenuOpen(false); setCameraOpen(true) }} className="w-full text-left text-sm text-foreground hover:bg-muted transition-colors flex items-center gap-3" style={{ padding: '12px 16px' }}>
+                    <span aria-hidden="true">📸</span> Take Photo
                   </button>
-                  <div className="border-t border-border" />
-                  <button onClick={() => { setPhotoMenuOpen(false); galleryRef.current.value = ''; galleryRef.current?.click() }} className="w-full text-left text-sm text-foreground hover:bg-muted transition-colors flex items-center gap-3" style={{ padding: '12px 16px' }}>
-                    <span>🖼️</span> Upload from Gallery
+                  <div className="border-t border-border" aria-hidden="true" />
+                  <button type="button" role="menuitem" onClick={() => { setPhotoMenuOpen(false); galleryRef.current.value = ''; galleryRef.current?.click() }} className="w-full text-left text-sm text-foreground hover:bg-muted transition-colors flex items-center gap-3" style={{ padding: '12px 16px' }}>
+                    <span aria-hidden="true">🖼️</span> Upload from Gallery
                   </button>
                 </div>
               </>

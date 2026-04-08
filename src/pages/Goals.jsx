@@ -94,10 +94,10 @@ export default function Goals() {
       {(hasBodyGoal || hasFinGoal) && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {hasBodyGoal && (
-            <div style={{ background: '#1a1a18', borderRadius: 16, padding: 24, border: '1px solid rgba(200,90,90,0.12)' }}>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.1em] mb-4" style={{ color: '#c85a5a' }}>🏆 Body Goal</p>
+            <div style={{ background: 'var(--goal-card-bg)', borderRadius: 16, padding: 24, border: '1px solid var(--goal-body-soft)' }}>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.1em] mb-4" style={{ color: 'var(--goal-body)' }}>🏆 Body Goal</p>
               <div className="flex items-center gap-5">
-                <ProgressRing percent={bodyProgress} color="#c85a5a" />
+                <ProgressRing percent={bodyProgress} color="var(--goal-body)" />
                 <div>
                   <p className="text-[28px] font-bold text-foreground leading-none">{startW}</p>
                   <p className="text-[12px] text-muted-foreground mt-1">current lbs</p>
@@ -110,18 +110,18 @@ export default function Goals() {
                   <span>{targetW} lbs</span>
                 </div>
                 <div className="h-[6px] bg-muted rounded-[3px] overflow-hidden">
-                  <div className="h-full rounded-[3px] transition-all duration-500" style={{ width: `${bodyProgress}%`, background: '#c85a5a' }} />
+                  <div className="h-full rounded-[3px] transition-[width] duration-500" style={{ width: `${bodyProgress}%`, background: 'var(--goal-body)' }} />
                 </div>
               </div>
               {/* Stats */}
               <div className="flex gap-2 mt-4">
                 {lbsPerWeek && (
-                  <span className="text-[10px] font-medium px-2.5 py-1 rounded-full" style={{ background: 'rgba(200,90,90,0.12)', color: '#c85a5a' }}>
+                  <span className="text-[10px] font-medium px-2.5 py-1 rounded-full" style={{ background: 'var(--goal-body-soft)', color: 'var(--goal-body)' }}>
                     {lbsPerWeek} lbs/week needed
                   </span>
                 )}
                 {daysRemaining != null && (
-                  <span className="text-[10px] font-medium px-2.5 py-1 rounded-full" style={{ background: 'rgba(200,90,90,0.12)', color: '#c85a5a' }}>
+                  <span className="text-[10px] font-medium px-2.5 py-1 rounded-full" style={{ background: 'var(--goal-body-soft)', color: 'var(--goal-body)' }}>
                     {daysRemaining} days left
                   </span>
                 )}
@@ -130,10 +130,10 @@ export default function Goals() {
           )}
 
           {hasFinGoal && (
-            <div style={{ background: '#1a1a18', borderRadius: 16, padding: 24, border: '1px solid rgba(93,200,122,0.12)' }}>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.1em] mb-4" style={{ color: '#5dc87a' }}>💰 Financial Goal</p>
+            <div style={{ background: 'var(--goal-card-bg)', borderRadius: 16, padding: 24, border: '1px solid var(--goal-financial-soft)' }}>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.1em] mb-4" style={{ color: 'var(--goal-financial)' }}>💰 Financial Goal</p>
               <div className="flex items-center gap-5">
-                <ProgressRing percent={finPct} color="#5dc87a" />
+                <ProgressRing percent={finPct} color="var(--goal-financial)" />
                 <div>
                   <p className="text-[28px] font-bold text-foreground leading-none">${savedSoFar.toLocaleString()}</p>
                   <p className="text-[12px] text-muted-foreground mt-1">saved of ${savingsTarget.toLocaleString()}</p>
@@ -146,18 +146,18 @@ export default function Goals() {
                   <span>${savingsTarget.toLocaleString()}</span>
                 </div>
                 <div className="h-[6px] bg-muted rounded-[3px] overflow-hidden">
-                  <div className="h-full rounded-[3px] transition-all duration-500" style={{ width: `${finPct}%`, background: '#5dc87a' }} />
+                  <div className="h-full rounded-[3px] transition-[width] duration-500" style={{ width: `${finPct}%`, background: 'var(--goal-financial)' }} />
                 </div>
               </div>
               {/* Stats */}
               <div className="flex gap-2 mt-4">
                 {perMonth && (
-                  <span className="text-[10px] font-medium px-2.5 py-1 rounded-full" style={{ background: 'rgba(93,200,122,0.12)', color: '#5dc87a' }}>
+                  <span className="text-[10px] font-medium px-2.5 py-1 rounded-full" style={{ background: 'var(--goal-financial-soft)', color: 'var(--goal-financial)' }}>
                     ${perMonth}/mo needed
                   </span>
                 )}
                 {monthsLeft > 0 && (
-                  <span className="text-[10px] font-medium px-2.5 py-1 rounded-full" style={{ background: 'rgba(93,200,122,0.12)', color: '#5dc87a' }}>
+                  <span className="text-[10px] font-medium px-2.5 py-1 rounded-full" style={{ background: 'var(--goal-financial-soft)', color: 'var(--goal-financial)' }}>
                     {monthsLeft} months left
                   </span>
                 )}
