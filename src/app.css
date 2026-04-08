@@ -350,6 +350,29 @@ section { display: block; }
     gap: 16px;
   }
 }
+
+/* ─── SUMMARY PAGE RESPONSIVE GRIDS ─── */
+.summary-stat-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+@media (min-width: 480px) {
+  .summary-stat-grid { grid-template-columns: 1fr 1fr; gap: 14px; }
+}
+@media (min-width: 768px) {
+  .summary-stat-grid { gap: 16px; }
+}
+
+.summary-goal-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+@media (min-width: 768px) {
+  .summary-goal-grid { grid-template-columns: 1fr 1fr; gap: 16px; }
+}
+
 .hero-macros {
   display: flex;
   gap: 22px;

@@ -30,45 +30,67 @@ export default function SpendingChart({ expenses }) {
 
   if (data.length === 0) {
     return (
-      <div className="flex items-center justify-center h-48 text-muted-foreground text-sm">
+      <div
+        className="flex items-center justify-center text-muted-foreground text-sm"
+        style={{ height: 200 }}
+      >
         No spending data yet
       </div>
     )
   }
 
   return (
-    <div className="h-48">
-      <ResponsiveContainer>
-        <PieChart>
-          <Pie
-            data={data}
-            innerRadius="55%"
-            outerRadius="80%"
-            paddingAngle={3}
-            dataKey="value"
-            stroke="none"
-          >
-            {data.map((entry) => (
-              <Cell key={entry.name} fill={COLORS[entry.name] || 'var(--chart-3)'} />
-            ))}
-          </Pie>
-          <Tooltip
-            contentStyle={{
-              background: 'var(--card)',
-              border: '1px solid var(--border)',
-              borderRadius: 'var(--radius)',
-              color: 'var(--foreground)',
-              fontSize: '0.75rem',
-            }}
-            formatter={(value, name) => [`$${value.toFixed(2)}`, `${getCategoryEmoji(name)} ${name}`]}
-          />
-        </PieChart>
-      </ResponsiveContainer>
-      <div className="flex flex-wrap gap-3 justify-center mt-2">
+    <div>
+      {/* Donut chart — fixed height so the ResponsiveContainer has room */}
+      <div style={{ width: '100%', height: 220 }}>
+        <ResponsiveContainer>
+          <PieChart>
+            <Pie
+              data={data}
+              innerRadius="58%"
+              outerRadius="82%"
+              paddingAngle={3}
+              dataKey="value"
+              stroke="none"
+            >
+              {data.map((entry) => (
+                <Cell key={entry.name} fill={COLORS[entry.name] || 'var(--chart-3)'} />
+              ))}
+            </Pie>
+            <Tooltip
+              contentStyle={{
+                background: 'var(--card)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius)',
+                color: 'var(--foreground)',
+                fontSize: '0.75rem',
+              }}
+              formatter={(value, name) => [`$${value.toFixed(2)}`, `${getCategoryEmoji(name)} ${name}`]}
+            />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Legend — separate block, wraps cleanly on narrow widths */}
+      <div
+        className="flex flex-wrap items-center justify-center"
+        style={{ gap: '10px 14px', marginTop: 18 }}
+      >
         {data.map(({ name, value }) => (
-          <div key={name} className="flex items-center gap-1.5 text-xs">
-            <div className="w-2 h-2 rounded-full" style={{ background: COLORS[name] || 'var(--chart-3)' }} />
-            <span className="text-muted-foreground">{getCategoryEmoji(name)} ${value.toFixed(0)}</span>
+          <div key={name} className="flex items-center" style={{ gap: 7, fontSize: 12, lineHeight: 1 }}>
+            <span
+              aria-hidden="true"
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                background: COLORS[name] || 'var(--chart-3)',
+                flexShrink: 0,
+              }}
+            />
+            <span style={{ whiteSpace: 'nowrap' }}>
+              {getCategoryEmoji(name)} ${value.toFixed(0)}
+            </span>
           </div>
         ))}
       </div>
