@@ -5,7 +5,7 @@ import Modal from '../components/Modal'
 import SkeletonLoader from '../components/SkeletonLoader'
 import { useBudget } from '../hooks/useBudget'
 import { useExpenses } from '../hooks/useExpenses'
-import { formatCurrency, BUDGET_ALLOCATIONS, getCategoryEmoji } from '../lib/helpers'
+import { formatCurrency, formatDate, BUDGET_ALLOCATIONS, getCategoryEmoji } from '../lib/helpers'
 import { filterByMonth } from '../lib/dateFilters'
 
 export default function Budget() {
@@ -324,18 +324,35 @@ function FlowRow({ label, value, color, colorVar, bold, large }) {
 
 /* ─── Budget Categories Allocation ─── */
 function BudgetCategories({ discretionary, expenses }) {
-  // Calculate spent per category for current month, non-reimbursable only (memoized)
-  const spentByCategory = useMemo(() => {
+  const [drillCategory, setDrillCategory] = useState(null)
+
+  // Current-month, non-reimbursable expenses (memoized)
+  const monthExpenses = useMemo(() => {
     const now = new Date()
-    const monthExpenses = filterByMonth(expenses, now.getFullYear(), now.getMonth(), 'date')
+    return filterByMonth(expenses, now.getFullYear(), now.getMonth(), 'date')
       .filter(e => !e.is_recurring)
+  }, [expenses])
+
+  const spentByCategory = useMemo(() => {
     const out = {}
     for (const e of monthExpenses) {
       const cat = e.category || 'other'
       out[cat] = (out[cat] || 0) + Number(e.amount)
     }
     return out
-  }, [expenses])
+  }, [monthExpenses])
+
+  const drillItems = useMemo(() => {
+    if (!drillCategory) return []
+    return monthExpenses
+      .filter(e => (e.category || 'other') === drillCategory.category)
+      .sort((a, b) => (a.date < b.date ? 1 : -1))
+  }, [monthExpenses, drillCategory])
+
+  const drillTotal = useMemo(
+    () => drillItems.reduce((s, e) => s + Number(e.amount), 0),
+    [drillItems]
+  )
 
   return (
     <section>
@@ -354,9 +371,13 @@ function BudgetCategories({ discretionary, expenses }) {
           const fillColor = isOver ? 'var(--danger)' : spentPct > 80 ? 'var(--warning)' : 'var(--primary)'
 
           return (
-            <div
+            <button
               key={category}
-              style={{ padding: '18px 20px', borderRadius: 14, border: '1px solid var(--border)', background: 'var(--card)' }}
+              type="button"
+              onClick={() => setDrillCategory({ category, label, emoji })}
+              aria-label={`View ${label} expenses for this month`}
+              className="text-left w-full transition-all hover:border-primary/40"
+              style={{ padding: '18px 20px', borderRadius: 14, border: '1px solid var(--border)', background: 'var(--card)', cursor: 'pointer', fontFamily: 'inherit', color: 'inherit' }}
             >
               {/* Header row */}
               <div className="flex items-center justify-between" style={{ marginBottom: 14, gap: 12 }}>
@@ -380,10 +401,51 @@ function BudgetCategories({ discretionary, expenses }) {
                 <span className="text-muted-foreground" style={{ fontSize: 12 }}>{formatCurrency(spent)} spent</span>
                 <span className="text-muted-foreground" style={{ fontSize: 12 }}>{formatCurrency(allocated)} budgeted</span>
               </div>
-            </div>
+            </button>
           )
         })}
       </div>
+
+      {/* Category Drill-down Modal */}
+      <Modal
+        open={drillCategory !== null}
+        onClose={() => setDrillCategory(null)}
+        title={drillCategory ? `${drillCategory.emoji} ${drillCategory.label}` : ''}
+      >
+        <div style={{ textAlign: 'center', marginBottom: 20 }}>
+          <p className="stat-label">Total this month</p>
+          <p className="stat-value" style={{ marginTop: 4 }}>{formatCurrency(drillTotal)}</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {drillItems.length} {drillItems.length === 1 ? 'expense' : 'expenses'}
+          </p>
+        </div>
+
+        {drillItems.length === 0 ? (
+          <div className="text-center py-6">
+            <p className="text-muted-foreground text-sm">No expenses in this category yet this month</p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {drillItems.map(e => (
+              <div
+                key={e.id}
+                className="flex items-center justify-between rounded-lg bg-muted"
+                style={{ padding: '12px 14px' }}
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-foreground truncate">
+                    {e.note || drillCategory.label}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{formatDate(e.date)}</p>
+                </div>
+                <p className="text-sm font-semibold text-foreground flex-shrink-0 ml-3">
+                  {formatCurrency(e.amount)}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </Modal>
     </section>
   )
 }
