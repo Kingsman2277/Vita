@@ -36,7 +36,7 @@ export default function Dashboard() {
             className="hero-card hero-button"
             aria-label={`Calories today: ${todayCalories}. Tap to log food.`}
           >
-            <div className="flex items-center justify-between" style={{ gap: 16 }}>
+            <div className="hero-row">
               <div className="text-left" style={{ minWidth: 0 }}>
                 <p className="label stat-label">Calories Today</p>
                 <p style={{ fontSize: 44, fontWeight: 700, letterSpacing: '-0.025em', lineHeight: 1, marginTop: 14 }}>{todayCalories.toLocaleString()}</p>
@@ -45,7 +45,7 @@ export default function Dashboard() {
                   <Chevron />
                 </p>
               </div>
-              <div className="flex" style={{ gap: 22, flexShrink: 0 }}>
+              <div className="hero-macros">
                 <MacroRing label="Protein" value={todayProtein} max={150} color="protein" />
                 <MacroRing label="Carbs" value={todayCarbs} max={250} color="carbs" />
                 <MacroRing label="Fat" value={todayFat} max={65} color="fat" />

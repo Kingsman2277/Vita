@@ -243,7 +243,7 @@ export default function Food() {
             ? new Date(selectedMonth.year, selectedMonth.month, selectedDay).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
             : isCurrentMonth ? 'Today' : label}
         </p>
-        <div className="flex items-center justify-between" style={{ gap: 16, marginTop: 14 }}>
+        <div className="hero-row" style={{ marginTop: 14 }}>
           <div style={{ minWidth: 0 }}>
             <p style={{ fontSize: 44, fontWeight: 700, letterSpacing: '-0.025em', lineHeight: 1 }}>
               {selectedDay !== null || !isCurrentMonth ? statCalories.toLocaleString() : todayCalories}
@@ -252,7 +252,7 @@ export default function Food() {
               {selectedDay !== null ? 'calories' : isCurrentMonth ? 'calories' : `total calories · ~${avgDailyCalories}/day avg`}
             </p>
           </div>
-          <div className="flex" style={{ gap: 22, flexShrink: 0 }}>
+          <div className="hero-macros">
             <MacroRing label="Protein" value={selectedDay !== null || !isCurrentMonth ? statProtein : todayProtein} max={150} color="protein" />
             <MacroRing label="Carbs" value={selectedDay !== null || !isCurrentMonth ? statCarbs : todayCarbs} max={250} color="carbs" />
             <MacroRing label="Fat" value={selectedDay !== null || !isCurrentMonth ? statFat : todayFat} max={65} color="fat" />
