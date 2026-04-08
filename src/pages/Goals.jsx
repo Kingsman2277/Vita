@@ -94,75 +94,39 @@ export default function Goals() {
       {(hasBodyGoal || hasFinGoal) && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {hasBodyGoal && (
-            <div style={{ background: 'var(--goal-card-bg)', borderRadius: 16, padding: 24, border: '1px solid var(--goal-body-soft)' }}>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.1em] mb-4" style={{ color: 'var(--goal-body)' }}>🏆 Body Goal</p>
-              <div className="flex items-center gap-5">
-                <ProgressRing percent={bodyProgress} color="var(--goal-body)" />
-                <div>
-                  <p className="text-[28px] font-bold text-foreground leading-none">{startW}</p>
-                  <p className="text-[12px] text-muted-foreground mt-1">current lbs</p>
-                </div>
-              </div>
-              {/* Progress bar */}
-              <div className="mt-5">
-                <div className="flex justify-between text-[11px] text-muted-foreground mb-2">
-                  <span>{startW} lbs</span>
-                  <span>{targetW} lbs</span>
-                </div>
-                <div className="h-[6px] bg-muted rounded-[3px] overflow-hidden">
-                  <div className="h-full rounded-[3px] transition-[width] duration-500" style={{ width: `${bodyProgress}%`, background: 'var(--goal-body)' }} />
-                </div>
-              </div>
-              {/* Stats */}
-              <div className="flex gap-2 mt-4">
-                {lbsPerWeek && (
-                  <span className="text-[10px] font-medium px-2.5 py-1 rounded-full" style={{ background: 'var(--goal-body-soft)', color: 'var(--goal-body)' }}>
-                    {lbsPerWeek} lbs/week needed
-                  </span>
-                )}
-                {daysRemaining != null && (
-                  <span className="text-[10px] font-medium px-2.5 py-1 rounded-full" style={{ background: 'var(--goal-body-soft)', color: 'var(--goal-body)' }}>
-                    {daysRemaining} days left
-                  </span>
-                )}
-              </div>
-            </div>
+            <GoalCard
+              icon="🏆"
+              title="Body Goal"
+              accent="var(--goal-body)"
+              accentSoft="var(--goal-body-soft)"
+              percent={bodyProgress}
+              metric={startW}
+              metricLabel="current lbs"
+              startLabel={`${startW} lbs`}
+              endLabel={`${targetW} lbs`}
+              chips={[
+                lbsPerWeek && `${lbsPerWeek} lbs/week needed`,
+                daysRemaining != null && `${daysRemaining} days left`,
+              ].filter(Boolean)}
+            />
           )}
 
           {hasFinGoal && (
-            <div style={{ background: 'var(--goal-card-bg)', borderRadius: 16, padding: 24, border: '1px solid var(--goal-financial-soft)' }}>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.1em] mb-4" style={{ color: 'var(--goal-financial)' }}>💰 Financial Goal</p>
-              <div className="flex items-center gap-5">
-                <ProgressRing percent={finPct} color="var(--goal-financial)" />
-                <div>
-                  <p className="text-[28px] font-bold text-foreground leading-none">${savedSoFar.toLocaleString()}</p>
-                  <p className="text-[12px] text-muted-foreground mt-1">saved of ${savingsTarget.toLocaleString()}</p>
-                </div>
-              </div>
-              {/* Progress bar */}
-              <div className="mt-5">
-                <div className="flex justify-between text-[11px] text-muted-foreground mb-2">
-                  <span>$0</span>
-                  <span>${savingsTarget.toLocaleString()}</span>
-                </div>
-                <div className="h-[6px] bg-muted rounded-[3px] overflow-hidden">
-                  <div className="h-full rounded-[3px] transition-[width] duration-500" style={{ width: `${finPct}%`, background: 'var(--goal-financial)' }} />
-                </div>
-              </div>
-              {/* Stats */}
-              <div className="flex gap-2 mt-4">
-                {perMonth && (
-                  <span className="text-[10px] font-medium px-2.5 py-1 rounded-full" style={{ background: 'var(--goal-financial-soft)', color: 'var(--goal-financial)' }}>
-                    ${perMonth}/mo needed
-                  </span>
-                )}
-                {monthsLeft > 0 && (
-                  <span className="text-[10px] font-medium px-2.5 py-1 rounded-full" style={{ background: 'var(--goal-financial-soft)', color: 'var(--goal-financial)' }}>
-                    {monthsLeft} months left
-                  </span>
-                )}
-              </div>
-            </div>
+            <GoalCard
+              icon="💰"
+              title="Financial Goal"
+              accent="var(--goal-financial)"
+              accentSoft="var(--goal-financial-soft)"
+              percent={finPct}
+              metric={`$${savedSoFar.toLocaleString()}`}
+              metricLabel={`saved of $${savingsTarget.toLocaleString()}`}
+              startLabel="$0"
+              endLabel={`$${savingsTarget.toLocaleString()}`}
+              chips={[
+                perMonth && `$${perMonth}/mo needed`,
+                monthsLeft > 0 && `${monthsLeft} months left`,
+              ].filter(Boolean)}
+            />
           )}
         </div>
       )}
@@ -226,6 +190,54 @@ export default function Goals() {
           <button type="submit" className="btn-primary w-full">Save Financial Goal</button>
         </form>
       </Card>
+    </div>
+  )
+}
+
+function GoalCard({ icon, title, accent, accentSoft, percent, metric, metricLabel, startLabel, endLabel, chips }) {
+  return (
+    <div style={{ background: 'var(--goal-card-bg)', borderRadius: 18, padding: 26, border: `1px solid ${accentSoft}` }}>
+      <p className="stat-label" style={{ color: accent, marginBottom: 20, letterSpacing: '0.09em' }}>
+        <span aria-hidden="true">{icon}</span> {title}
+      </p>
+      <div className="flex items-center" style={{ gap: 22 }}>
+        <ProgressRing percent={percent} color={accent} />
+        <div style={{ minWidth: 0 }}>
+          <p className="text-foreground" style={{ fontSize: 30, fontWeight: 700, letterSpacing: '-0.025em', lineHeight: 1 }}>{metric}</p>
+          <p className="text-muted-foreground" style={{ fontSize: 12, marginTop: 6 }}>{metricLabel}</p>
+        </div>
+      </div>
+      {/* Progress bar */}
+      <div style={{ marginTop: 22 }}>
+        <div className="flex justify-between" style={{ marginBottom: 8 }}>
+          <span className="text-muted-foreground" style={{ fontSize: 11 }}>{startLabel}</span>
+          <span className="text-muted-foreground" style={{ fontSize: 11 }}>{endLabel}</span>
+        </div>
+        <div className="progress-bar">
+          <div className="progress-bar-fill" style={{ width: `${percent}%`, background: accent }} />
+        </div>
+      </div>
+      {/* Stat chips */}
+      {chips.length > 0 && (
+        <div className="flex flex-wrap" style={{ gap: 8, marginTop: 16 }}>
+          {chips.map((chip, i) => (
+            <span
+              key={i}
+              style={{
+                fontSize: 11,
+                fontWeight: 500,
+                padding: '5px 11px',
+                borderRadius: 999,
+                background: accentSoft,
+                color: accent,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {chip}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

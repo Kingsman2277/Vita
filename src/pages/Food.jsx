@@ -196,11 +196,9 @@ export default function Food() {
 
   return (
     <div className="page-container">
-      <div>
-        <div className="flex items-center justify-between">
-          <h1 className="page-title">Food Log</h1>
-        </div>
-        <div className="flex gap-2 mt-3">
+      <header>
+        <h1 className="page-title">Food Log</h1>
+        <div className="flex" style={{ gap: 10, marginTop: 16 }}>
           <div className="relative">
             <button
               type="button"
@@ -208,7 +206,7 @@ export default function Food() {
               className="btn-secondary"
               aria-haspopup="menu"
               aria-expanded={photoMenuOpen}
-              style={{ padding: '10px 18px', borderRadius: 20, minWidth: 'auto', fontSize: 13 }}
+              style={{ padding: '11px 20px', borderRadius: 24, minWidth: 'auto', fontSize: 13 }}
             >
               📷 Photo
             </button>
@@ -227,41 +225,41 @@ export default function Food() {
               </>
             )}
           </div>
-          <button onClick={openAddModal} className="btn-primary" style={{ padding: '10px 18px', borderRadius: 20, minWidth: 'auto', fontSize: 13 }}>
+          <button onClick={openAddModal} className="btn-primary" style={{ padding: '11px 20px', borderRadius: 24, minWidth: 'auto', fontSize: 13 }}>
             + Log Food
           </button>
         </div>
         <input ref={galleryRef} type="file" accept="image/*" className="hidden" onChange={handleGalleryUpload} />
-      </div>
+      </header>
 
       <MonthPicker label={label} onPrev={() => { goToPrev(); setSelectedDay(null) }} onNext={() => { goToNext(); setSelectedDay(null) }} onToday={() => { goToCurrentMonth(); setSelectedDay(new Date().getDate()) }} isCurrentMonth={isCurrentMonth} />
 
       <DayPicker year={selectedMonth.year} month={selectedMonth.month} selectedDay={selectedDay} onSelectDay={setSelectedDay} daysWithData={foodDaysWithData} />
 
       {/* Hero card — shows stats for selected scope */}
-      <div className="hero-card" style={{ padding: 24 }}>
-        <p className="label text-[11px] font-semibold uppercase tracking-[0.1em] mb-3">
+      <div className="hero-card">
+        <p className="label stat-label">
           {selectedDay !== null
             ? new Date(selectedMonth.year, selectedMonth.month, selectedDay).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
             : isCurrentMonth ? 'Today' : label}
         </p>
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="font-bold tracking-tight leading-none" style={{ fontSize: 42 }}>
+        <div className="flex items-center justify-between" style={{ gap: 16, marginTop: 14 }}>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ fontSize: 44, fontWeight: 700, letterSpacing: '-0.025em', lineHeight: 1 }}>
               {selectedDay !== null || !isCurrentMonth ? statCalories.toLocaleString() : todayCalories}
             </p>
-            <p className="label text-xs mt-1.5">
+            <p className="label" style={{ fontSize: 12, marginTop: 8 }}>
               {selectedDay !== null ? 'calories' : isCurrentMonth ? 'calories' : `total calories · ~${avgDailyCalories}/day avg`}
             </p>
           </div>
-          <div className="flex" style={{ gap: 20 }}>
+          <div className="flex" style={{ gap: 22, flexShrink: 0 }}>
             <MacroRing label="Protein" value={selectedDay !== null || !isCurrentMonth ? statProtein : todayProtein} max={150} color="protein" />
             <MacroRing label="Carbs" value={selectedDay !== null || !isCurrentMonth ? statCarbs : todayCarbs} max={250} color="carbs" />
             <MacroRing label="Fat" value={selectedDay !== null || !isCurrentMonth ? statFat : todayFat} max={65} color="fat" />
           </div>
         </div>
         {selectedDay === null && !isCurrentMonth && (
-          <p className="label text-[11px] mt-3">{daysWithLogs} day{daysWithLogs !== 1 ? 's' : ''} logged · {monthLogs.length} entries</p>
+          <p className="label" style={{ fontSize: 11, marginTop: 14 }}>{daysWithLogs} day{daysWithLogs !== 1 ? 's' : ''} logged · {monthLogs.length} entries</p>
         )}
       </div>
 

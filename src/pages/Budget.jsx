@@ -103,39 +103,42 @@ export default function Budget() {
       </div>
 
       {/* Cash Flow — compact with expandable detail */}
-      <div className="hero-card" style={{ padding: '16px 20px' }}>
+      <div className="hero-card" style={{ padding: '20px 24px' }}>
         <button
+          type="button"
           onClick={() => setCashFlowOpen(o => !o)}
-          style={{ width: '100%', background: 'none', border: 'none', fontFamily: 'inherit', cursor: 'pointer', padding: 0 }}
+          aria-expanded={cashFlowOpen}
+          style={{ width: '100%', background: 'none', border: 'none', fontFamily: 'inherit', cursor: 'pointer', padding: 0, color: 'inherit', textAlign: 'left' }}
         >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center" style={{ gap: 10 }}>
+          <div className="flex items-center justify-between" style={{ gap: 12 }}>
+            <div className="flex items-center" style={{ gap: 10, minWidth: 0 }}>
               <svg
                 width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"
-                style={{ transition: 'transform 0.2s ease', transform: cashFlowOpen ? 'rotate(90deg)' : 'rotate(0deg)', opacity: 0.5 }}
+                aria-hidden="true"
+                style={{ transition: 'transform 0.2s ease', transform: cashFlowOpen ? 'rotate(90deg)' : 'rotate(0deg)', opacity: 0.5, flexShrink: 0 }}
               >
                 <path d="M9 18l6-6-6-6" />
               </svg>
-              <span className="label text-[11px] font-semibold uppercase tracking-[0.1em]" style={{ margin: 0 }}>You Can Spend</span>
+              <span className="label stat-label">You Can Spend</span>
             </div>
-            <span className="text-[22px] font-bold" style={{ letterSpacing: '-0.02em', color: canSpend >= 0 ? 'var(--success)' : 'var(--danger)' }}>
+            <span style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.025em', color: canSpend >= 0 ? 'var(--success)' : 'var(--danger)', flexShrink: 0 }}>
               {formatCurrency(canSpend)}
             </span>
           </div>
           {!cashFlowOpen && (
-            <div className="flex justify-between" style={{ marginTop: 4 }}>
-              <span className="text-[11px] opacity-50">of {formatCurrency(discretionary)} discretionary</span>
-              <span className="text-[11px] opacity-50">{formatCurrency(spentSoFar)} spent</span>
+            <div className="flex justify-between" style={{ marginTop: 8, gap: 12 }}>
+              <span className="label" style={{ fontSize: 11, opacity: 0.55 }}>of {formatCurrency(discretionary)} discretionary</span>
+              <span className="label" style={{ fontSize: 11, opacity: 0.55 }}>{formatCurrency(spentSoFar)} spent</span>
             </div>
           )}
         </button>
 
         {cashFlowOpen && (
-          <div className="flex flex-col" style={{ gap: 8, marginTop: 14, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+          <div className="flex flex-col" style={{ gap: 10, marginTop: 18, paddingTop: 18, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
             <FlowRow label="Monthly Income" value={formatCurrency(monthlyIncome)} colorVar="var(--success)" />
             <FlowRow label="Recurring Expenses" value={`-${formatCurrency(totalRecurring)}`} colorVar="var(--danger)" />
             <FlowRow label="Savings Target" value={`-${formatCurrency(savingsTarget)}`} colorVar="var(--info)" />
-            <div className="border-t border-white/10 pt-2">
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 10 }}>
               <FlowRow label="Discretionary Budget" value={formatCurrency(discretionary)} bold />
             </div>
             <FlowRow label="Spent So Far" value={`-${formatCurrency(spentSoFar)}`} colorVar="var(--warning)" />
@@ -312,8 +315,8 @@ function FlowRow({ label, value, color, colorVar, bold, large }) {
   const valueStyle = { fontSize: large ? 20 : bold ? 16 : 14 }
   if (colorVar) valueStyle.color = colorVar
   return (
-    <div className="flex justify-between items-center" style={{ height: 40, fontSize: 14 }}>
-      <span className={bold ? 'font-bold' : 'opacity-70'} style={{ fontSize: bold ? 16 : 14 }}>{label}</span>
+    <div className="flex justify-between items-center" style={{ minHeight: 32 }}>
+      <span className={bold ? 'font-semibold' : ''} style={{ fontSize: bold ? 15 : 14, opacity: bold ? 1 : 0.72 }}>{label}</span>
       <span className={`font-medium ${bold ? 'font-bold' : ''} ${color || ''}`} style={valueStyle}>{value}</span>
     </div>
   )
@@ -335,58 +338,52 @@ function BudgetCategories({ discretionary, expenses }) {
   }, [expenses])
 
   return (
-    <div>
-      <div className="flex items-center justify-between" style={{ marginBottom: 16 }}>
+    <section>
+      <header className="flex items-baseline justify-between" style={{ marginBottom: 18 }}>
         <h2 className="section-title">Budget Allocation</h2>
-        <span className="text-sm text-muted-foreground">of {formatCurrency(discretionary)}</span>
-      </div>
+        <span className="text-muted-foreground" style={{ fontSize: 13 }}>of {formatCurrency(discretionary)}</span>
+      </header>
 
-      <div className="flex flex-col" style={{ gap: 10 }}>
+      <div className="flex flex-col" style={{ gap: 12 }}>
         {BUDGET_ALLOCATIONS.map(({ category, label, emoji, percent }) => {
           const allocated = discretionary * (percent / 100)
           const spent = spentByCategory[category] || 0
           const remaining = allocated - spent
           const spentPct = allocated > 0 ? Math.min(100, (spent / allocated) * 100) : 0
           const isOver = remaining < 0
+          const fillColor = isOver ? 'var(--danger)' : spentPct > 80 ? 'var(--warning)' : 'var(--primary)'
 
           return (
             <div
               key={category}
-              style={{ padding: '14px 18px', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--card)' }}
+              style={{ padding: '18px 20px', borderRadius: 14, border: '1px solid var(--border)', background: 'var(--card)' }}
             >
               {/* Header row */}
-              <div className="flex items-center justify-between" style={{ marginBottom: 8 }}>
-                <div className="flex items-center" style={{ gap: 8 }}>
-                  <span style={{ fontSize: 18 }}>{emoji}</span>
-                  <span className="text-[13px] font-semibold text-foreground">{label}</span>
-                  <span className="text-[11px] text-muted-foreground">{percent}%</span>
+              <div className="flex items-center justify-between" style={{ marginBottom: 14, gap: 12 }}>
+                <div className="flex items-center" style={{ gap: 12, minWidth: 0 }}>
+                  <span style={{ fontSize: 20, lineHeight: 1, flexShrink: 0 }} aria-hidden="true">{emoji}</span>
+                  <span className="text-foreground" style={{ fontSize: 14, fontWeight: 600 }}>{label}</span>
+                  <span className="text-muted-foreground" style={{ fontSize: 11, fontWeight: 500, padding: '2px 8px', borderRadius: 999, background: 'var(--muted)', flexShrink: 0 }}>{percent}%</span>
                 </div>
-                <span className={`text-[13px] font-bold ${isOver ? 'text-destructive' : 'text-foreground'}`}>
+                <span style={{ fontSize: 14, fontWeight: 700, color: isOver ? 'var(--danger)' : 'var(--foreground)', flexShrink: 0, whiteSpace: 'nowrap' }}>
                   {formatCurrency(remaining)} left
                 </span>
               </div>
 
               {/* Progress bar */}
-              <div className="bg-muted rounded-full overflow-hidden" style={{ height: 6, borderRadius: 3 }}>
-                <div
-                  className="h-full rounded-full transition-all duration-500"
-                  style={{
-                    width: `${spentPct}%`,
-                    background: isOver ? 'var(--destructive)' : spentPct > 80 ? '#e8a83e' : 'var(--primary)',
-                    borderRadius: 3,
-                  }}
-                />
+              <div className="progress-bar">
+                <div className="progress-bar-fill" style={{ width: `${spentPct}%`, background: fillColor }} />
               </div>
 
               {/* Footer stats */}
-              <div className="flex justify-between" style={{ marginTop: 6 }}>
-                <span className="text-[11px] text-muted-foreground">{formatCurrency(spent)} spent</span>
-                <span className="text-[11px] text-muted-foreground">{formatCurrency(allocated)} budget</span>
+              <div className="flex justify-between" style={{ marginTop: 12 }}>
+                <span className="text-muted-foreground" style={{ fontSize: 12 }}>{formatCurrency(spent)} spent</span>
+                <span className="text-muted-foreground" style={{ fontSize: 12 }}>{formatCurrency(allocated)} budgeted</span>
               </div>
             </div>
           )
         })}
       </div>
-    </div>
+    </section>
   )
 }
