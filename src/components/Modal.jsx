@@ -6,7 +6,14 @@ const FOCUSABLE = 'a[href], button:not([disabled]), textarea:not([disabled]), in
 export default function Modal({ open, onClose, title, children }) {
   const panelRef = useRef(null)
   const previouslyFocused = useRef(null)
+  const onCloseRef = useRef(onClose)
   const titleId = useId()
+
+  // Keep latest onClose in a ref so the effect below doesn't re-run
+  // every time the parent re-renders (which would steal focus from inputs)
+  useEffect(() => {
+    onCloseRef.current = onClose
+  }, [onClose])
 
   useEffect(() => {
     if (!open) {
@@ -32,7 +39,7 @@ export default function Modal({ open, onClose, title, children }) {
     const handleKey = (e) => {
       if (e.key === 'Escape') {
         e.preventDefault()
-        onClose()
+        onCloseRef.current()
         return
       }
       if (e.key !== 'Tab') return
@@ -67,7 +74,7 @@ export default function Modal({ open, onClose, title, children }) {
         prev.focus({ preventScroll: true })
       }
     }
-  }, [open, onClose])
+  }, [open])
 
   if (!open) return null
 
