@@ -1,4 +1,6 @@
 import { NavLink } from 'react-router-dom'
+import toast from 'react-hot-toast'
+import { useAuth } from '../hooks/useAuth'
 
 const navItems = [
   { to: '/dashboard', label: 'Home', icon: HomeIcon },
@@ -10,6 +12,10 @@ const navItems = [
 ]
 
 export default function Sidebar() {
+  const { username, signOut } = useAuth()
+  const handleSignOut = async () => {
+    try { await signOut() } catch { toast.error('Sign out failed') }
+  }
   return (
     <aside className="hidden md:flex fixed left-0 top-0 bottom-0 w-64 bg-sidebar border-r border-sidebar-border flex-col z-50">
       <div className="px-6 pt-7 pb-2">
@@ -38,8 +44,22 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      <div className="px-5 py-4 border-t border-sidebar-border">
-        <p className="text-[11px] text-muted-foreground/50">Vita v1.0</p>
+      <div className="px-5 py-4 border-t border-sidebar-border flex items-center justify-between gap-2">
+        <div style={{ minWidth: 0 }}>
+          <p className="text-[11px] text-muted-foreground/50">Vita v1.0</p>
+          {username && <p className="text-[11px] text-muted-foreground truncate">{username}</p>}
+        </div>
+        {username && (
+          <button
+            type="button"
+            onClick={handleSignOut}
+            className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+            style={{ padding: '4px 8px', borderRadius: 6 }}
+            aria-label="Sign out"
+          >
+            Sign out
+          </button>
+        )}
       </div>
     </aside>
   )

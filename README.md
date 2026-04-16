@@ -95,6 +95,20 @@ create table if not exists body_metrics (
 create index if not exists body_metrics_date_idx on body_metrics (date desc);
 ```
 
+### 3c. Lock the app down to authenticated users only
+
+Once you're ready to deploy publicly, run [supabase-auth-migration.sql](./supabase-auth-migration.sql) in the SQL Editor. It drops all the wide-open policies and replaces them with "authenticated users only" read/write on every table.
+
+Then in the Supabase dashboard:
+
+1. **Authentication → Providers → Email** — turn **Confirm email OFF** (since the app uses fake `username@vita.local` emails internally).
+2. **Authentication → Providers → Email** — turn **Allow new users to sign up OFF**. This means only accounts you manually create can exist.
+3. **Authentication → Users → Add user** — create your own login:
+   - Email: `matteo@vita.local` (any `username@vita.local` — this is just internal)
+   - Password: pick a strong one
+   - Tick **Auto Confirm User**
+4. Sign in at your deployed URL with just the **username part** (e.g. `matteo`) and your password. The app will convert it to the internal email automatically.
+
 ### 4. Run dev server
 ```bash
 npm run dev
