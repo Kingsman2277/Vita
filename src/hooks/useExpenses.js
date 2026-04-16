@@ -1,6 +1,14 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { getToday } from '../lib/helpers'
+import {
+  getMonthExpenses,
+  isDiscretionary,
+  sumAmounts,
+  reconcileTotals,
+  validateExpense,
+  logAuditEntry,
+} from '../lib/financeReconciliation'
 
 export function useExpenses() {
   const [expenses, setExpenses] = useState([])
@@ -8,56 +16,80 @@ export function useExpenses() {
 
   const fetchExpenses = useCallback(async () => {
     setLoading(true)
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('expenses')
       .select('*')
       .order('date', { ascending: false })
       .order('created_at', { ascending: false })
-    setExpenses(data || [])
+    const rows = data || []
+    setExpenses(rows)
     setLoading(false)
+    logAuditEntry('fetch:expenses', {
+      count: rows.length,
+      ok: !error,
+      error: error?.message || null,
+    })
   }, [])
 
   useEffect(() => { fetchExpenses() }, [fetchExpenses])
 
   const addExpense = async (expense) => {
+    validateExpense(expense)
     const { error } = await supabase.from('expenses').insert(expense)
     if (error) throw error
+    logAuditEntry('insert:expense', { category: expense.category, amount: expense.amount })
     await fetchExpenses()
   }
 
   const updateExpense = async (id, updates) => {
+    validateExpense(updates)
     const { error } = await supabase.from('expenses').update(updates).eq('id', id)
     if (error) throw error
+    logAuditEntry('update:expense', { id, category: updates.category, amount: updates.amount })
     await fetchExpenses()
   }
 
   const deleteExpense = async (id) => {
     const { error } = await supabase.from('expenses').delete().eq('id', id)
     if (error) throw error
+    logAuditEntry('delete:expense', { id })
     await fetchExpenses()
   }
 
-  // Today totals (discretionary only — exclude recurring)
-  const todayTotal = expenses
-    .filter(e => e.date === getToday() && !e.is_recurring)
-    .reduce((sum, e) => sum + Number(e.amount), 0)
+  // Today totals (discretionary only — exclude reimbursable)
+  const todayTotal = useMemo(() => {
+    const today = getToday()
+    return sumAmounts(expenses.filter(e => e.date === today && isDiscretionary(e)))
+  }, [expenses])
 
-  // Monthly totals
-  const thisMonthExpenses = expenses.filter(e => {
-    const d = new Date(e.date + 'T00:00:00')
+  // Current-month slice — single source of truth shared with Budget tiles.
+  const thisMonthExpenses = useMemo(() => {
     const now = new Date()
-    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
-  })
+    return getMonthExpenses(expenses, now.getFullYear(), now.getMonth())
+  }, [expenses])
 
-  // Discretionary spending only (not recurring)
-  const monthlyTotal = thisMonthExpenses
-    .filter(e => !e.is_recurring)
-    .reduce((sum, e) => sum + Number(e.amount), 0)
+  // Reconcile after every data change so drift is caught immediately.
+  const reconciliation = useMemo(
+    () => reconcileTotals(thisMonthExpenses, { source: 'useExpenses' }),
+    [thisMonthExpenses]
+  )
 
-  // Recurring spending (actuals logged this month)
-  const monthlyRecurringActual = thisMonthExpenses
-    .filter(e => e.is_recurring)
-    .reduce((sum, e) => sum + Number(e.amount), 0)
+  const monthlyTotal = reconciliation.grandTotal
+  const monthlyRecurringActual = useMemo(
+    () => sumAmounts(thisMonthExpenses.filter(e => !isDiscretionary(e))),
+    [thisMonthExpenses]
+  )
 
-  return { expenses, loading, addExpense, updateExpense, deleteExpense, todayTotal, monthlyTotal, monthlyRecurringActual, refetch: fetchExpenses }
+  return {
+    expenses,
+    loading,
+    addExpense,
+    updateExpense,
+    deleteExpense,
+    todayTotal,
+    monthlyTotal,
+    monthlyRecurringActual,
+    reconciliation,
+    refetch: fetchExpenses,
+  }
 }

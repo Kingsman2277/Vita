@@ -1,14 +1,18 @@
 import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import Card from '../components/Card'
+import Modal from '../components/Modal'
 import ProgressRing from '../components/ProgressRing'
 import SkeletonLoader from '../components/SkeletonLoader'
 import { useGoals } from '../hooks/useGoals'
+import { formatCurrency } from '../lib/helpers'
 
 export default function Goals() {
   const { bodyGoal, financialGoal, loading, saveGoal } = useGoals()
   const [bodyForm, setBodyForm] = useState({ height_ft: '', height_in: '', current_weight: '', target_weight: '', target_date: '' })
   const [finForm, setFinForm] = useState({ savings_target: '', timeline_months: '', saved_so_far: '' })
+  const [savedModalOpen, setSavedModalOpen] = useState(false)
+  const [savedForm, setSavedForm] = useState('')
 
   useEffect(() => {
     if (bodyGoal?.data) {
@@ -54,6 +58,38 @@ export default function Goals() {
         target_date: targetDate.toISOString().split('T')[0],
       })
       toast.success('Financial goal saved!')
+    } catch { toast.error('Failed to save') }
+  }
+
+  const openSavedModal = () => {
+    const current = financialGoal?.data?.saved_so_far
+    setSavedForm(current != null ? String(current) : '')
+    setSavedModalOpen(true)
+  }
+
+  const handleSavedQuickSave = async (e) => {
+    e.preventDefault()
+    const fd = financialGoal?.data
+    if (!fd) return
+    const next = Number(savedForm)
+    if (!isFinite(next) || next < 0) {
+      toast.error('Enter a non-negative amount')
+      return
+    }
+    try {
+      await saveGoal({
+        type: 'financial',
+        data: {
+          savings_target: Number(fd.savings_target) || 0,
+          timeline_months: Number(fd.timeline_months) || 0,
+          saved_so_far: next,
+        },
+        target_date: financialGoal.target_date || null,
+      })
+      // Keep the edit form in sync with the fresh value.
+      setFinForm(f => ({ ...f, saved_so_far: String(next) }))
+      toast.success('Saved amount updated!')
+      setSavedModalOpen(false)
     } catch { toast.error('Failed to save') }
   }
 
@@ -126,6 +162,8 @@ export default function Goals() {
                 perMonth && `$${perMonth}/mo needed`,
                 monthsLeft > 0 && `${monthsLeft} months left`,
               ].filter(Boolean)}
+              onClick={openSavedModal}
+              onClickAriaLabel={`Edit amount saved. Currently ${formatCurrency(savedSoFar)} of ${formatCurrency(savingsTarget)}.`}
             />
           )}
         </div>
@@ -190,16 +228,88 @@ export default function Goals() {
           <button type="submit" className="btn-primary w-full">Save Financial Goal</button>
         </form>
       </Card>
+
+      {/* Quick-edit: Amount Saved */}
+      <Modal
+        open={savedModalOpen}
+        onClose={() => setSavedModalOpen(false)}
+        title="Update Amount Saved"
+      >
+        <form onSubmit={handleSavedQuickSave}>
+          <p className="text-muted-foreground" style={{ fontSize: 13, marginBottom: 16 }}>
+            Target: <span className="text-foreground font-semibold">{formatCurrency(savingsTarget)}</span>
+            {monthsLeft > 0 && <> over {monthsLeft} month{monthsLeft !== 1 ? 's' : ''}</>}
+          </p>
+          <div className="form-group">
+            <label className="form-label">Saved So Far ($)</label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={savedForm}
+              onChange={e => setSavedForm(e.target.value)}
+              className="form-input text-2xl font-bold text-center"
+              placeholder="0.00"
+              required
+              autoFocus
+            />
+          </div>
+          <button type="submit" className="btn-primary w-full" style={{ padding: '12px 24px' }}>
+            Save
+          </button>
+        </form>
+      </Modal>
     </div>
   )
 }
 
-function GoalCard({ icon, title, accent, accentSoft, percent, metric, metricLabel, startLabel, endLabel, chips }) {
+function GoalCard({ icon, title, accent, accentSoft, percent, metric, metricLabel, startLabel, endLabel, chips, onClick, onClickAriaLabel }) {
+  const clickable = typeof onClick === 'function'
+  const Tag = clickable ? 'button' : 'div'
+  const interactiveProps = clickable
+    ? {
+        type: 'button',
+        onClick,
+        'aria-label': onClickAriaLabel || `Edit ${title}`,
+      }
+    : {}
   return (
-    <div style={{ background: 'var(--goal-card-bg)', borderRadius: 18, padding: 26, border: `1px solid ${accentSoft}` }}>
-      <p className="stat-label" style={{ color: accent, marginBottom: 20, letterSpacing: '0.09em' }}>
-        <span aria-hidden="true">{icon}</span> {title}
-      </p>
+    <Tag
+      {...interactiveProps}
+      style={{
+        background: 'var(--goal-card-bg)',
+        borderRadius: 18,
+        padding: 26,
+        border: `1px solid ${accentSoft}`,
+        cursor: clickable ? 'pointer' : 'default',
+        fontFamily: 'inherit',
+        color: 'inherit',
+        textAlign: 'left',
+        width: '100%',
+        display: 'block',
+      }}
+      className={clickable ? 'transition-all hover:border-primary/40' : undefined}
+    >
+      <div className="flex items-center justify-between" style={{ marginBottom: 20 }}>
+        <p className="stat-label" style={{ color: accent, letterSpacing: '0.09em', margin: 0 }}>
+          <span aria-hidden="true">{icon}</span> {title}
+        </p>
+        {clickable && (
+          <span
+            aria-hidden="true"
+            style={{
+              fontSize: 10,
+              fontWeight: 600,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              color: accent,
+              opacity: 0.75,
+            }}
+          >
+            Tap to edit
+          </span>
+        )}
+      </div>
       <div className="flex items-center" style={{ gap: 22 }}>
         <ProgressRing percent={percent} color={accent} />
         <div style={{ minWidth: 0 }}>
@@ -238,6 +348,6 @@ function GoalCard({ icon, title, accent, accentSoft, percent, metric, metricLabe
           ))}
         </div>
       )}
-    </div>
+    </Tag>
   )
 }

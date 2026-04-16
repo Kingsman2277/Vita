@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import Card from '../components/Card'
 import Modal from '../components/Modal'
@@ -6,7 +6,12 @@ import SkeletonLoader from '../components/SkeletonLoader'
 import { useBudget } from '../hooks/useBudget'
 import { useExpenses } from '../hooks/useExpenses'
 import { formatCurrency, formatDate, BUDGET_ALLOCATIONS, getCategoryEmoji } from '../lib/helpers'
-import { filterByMonth } from '../lib/dateFilters'
+import {
+  getMonthExpenses,
+  isDiscretionary,
+  normalizeCategory,
+  reconcileTotals,
+} from '../lib/financeReconciliation'
 
 export default function Budget() {
   const { budget, recurring, loading, saveBudget, addRecurring, updateRecurring, deleteRecurring, totalRecurring, monthlyIncome, savingsTarget, discretionary } = useBudget()
@@ -326,26 +331,37 @@ function FlowRow({ label, value, color, colorVar, bold, large }) {
 function BudgetCategories({ discretionary, expenses }) {
   const [drillCategory, setDrillCategory] = useState(null)
 
-  // Current-month, non-reimbursable expenses (memoized)
+  // Current-month, non-reimbursable expenses — shared filter with useExpenses
+  // so tile totals and the grand total cannot drift.
   const monthExpenses = useMemo(() => {
     const now = new Date()
-    return filterByMonth(expenses, now.getFullYear(), now.getMonth(), 'date')
-      .filter(e => !e.is_recurring)
+    return getMonthExpenses(expenses, now.getFullYear(), now.getMonth())
+      .filter(isDiscretionary)
   }, [expenses])
 
-  const spentByCategory = useMemo(() => {
-    const out = {}
-    for (const e of monthExpenses) {
-      const cat = e.category || 'other'
-      out[cat] = (out[cat] || 0) + Number(e.amount)
+  // Reconciliation is the single source of truth for the tile numbers.
+  // It uses integer-cent math and normalizes legacy category names
+  // (e.g. old "food" entries roll into the Eating Out tile).
+  const reconciliation = useMemo(
+    () => reconcileTotals(monthExpenses, { source: 'Budget.BudgetCategories' }),
+    [monthExpenses]
+  )
+  const spentByCategory = reconciliation.byCategory
+
+  // Surface mismatches in the UI, not just the console.
+  useEffect(() => {
+    if (reconciliation.mismatch) {
+      toast.error(
+        `Totals out of sync: grand ${formatCurrency(reconciliation.grandTotal)} ≠ Σ tiles ${formatCurrency(reconciliation.sumOfCategories)}`,
+        { id: 'reconciliation-mismatch' }
+      )
     }
-    return out
-  }, [monthExpenses])
+  }, [reconciliation.mismatch, reconciliation.grandTotal, reconciliation.sumOfCategories])
 
   const drillItems = useMemo(() => {
     if (!drillCategory) return []
     return monthExpenses
-      .filter(e => (e.category || 'other') === drillCategory.category)
+      .filter(e => normalizeCategory(e.category) === drillCategory.category)
       .sort((a, b) => (a.date < b.date ? 1 : -1))
   }, [monthExpenses, drillCategory])
 

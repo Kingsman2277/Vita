@@ -9,13 +9,13 @@ const COLORS = {
   transport: 'var(--cat-transport)',
   shopping: 'var(--cat-shopping)',
   pet: 'var(--cat-pet)',
-  savings: 'var(--cat-savings)',
+  other: 'var(--cat-savings)',
   // Legacy fallbacks
   food: 'var(--cat-eating-out)',
   girlfriend: 'var(--cat-pet)',
   fun: 'var(--cat-shopping)',
   necessities: 'var(--cat-transport)',
-  other: 'var(--chart-3)',
+  savings: 'var(--cat-savings)',
 }
 
 export default function SpendingChart({ expenses }) {

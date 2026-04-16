@@ -39,7 +39,7 @@ export const EXPENSE_CATEGORIES = [
   { value: 'transport', label: 'Transport', emoji: '🚗' },
   { value: 'shopping', label: 'Shopping & Ent', emoji: '🛍️' },
   { value: 'pet', label: 'Pet', emoji: '🐾' },
-  { value: 'savings', label: 'Money Saved', emoji: '💰' },
+  { value: 'other', label: 'Other', emoji: '📦' },
 ]
 
 // Budget allocation percentages for discretionary spending
@@ -49,7 +49,7 @@ export const BUDGET_ALLOCATIONS = [
   { category: 'transport', label: 'Transport & Parking', emoji: '🚗', percent: 13 },
   { category: 'shopping', label: 'Shopping & Ent', emoji: '🛍️', percent: 20 },
   { category: 'pet', label: 'Pet', emoji: '🐾', percent: 7 },
-  { category: 'savings', label: 'Money Saved', emoji: '💰', percent: 10 },
+  { category: 'other', label: 'Other', emoji: '📦', percent: 10 },
 ]
 
 export function getCategoryEmoji(category) {

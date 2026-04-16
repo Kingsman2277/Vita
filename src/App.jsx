@@ -6,6 +6,7 @@ import Food from './pages/Food'
 import Finance from './pages/Finance'
 import Budget from './pages/Budget'
 import Goals from './pages/Goals'
+import BodyGoals from './pages/BodyGoals'
 import Summary from './pages/Summary'
 
 export default function App() {
@@ -20,6 +21,7 @@ export default function App() {
           <Route path="/finance" element={<Finance />} />
           <Route path="/budget" element={<Budget />} />
           <Route path="/goals" element={<Goals />} />
+          <Route path="/body-goals" element={<BodyGoals />} />
           <Route path="/summary" element={<Summary />} />
         </Routes>
       </div>
