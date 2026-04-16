@@ -95,6 +95,37 @@ create table if not exists body_metrics (
 create index if not exists body_metrics_date_idx on body_metrics (date desc);
 ```
 
+### 3d. AI corrections learning loop (optional but recommended)
+
+Enables the food-log AI to learn from your manual edits. Run
+[supabase-ai-corrections-migration.sql](./supabase-ai-corrections-migration.sql) in the SQL Editor — or paste this:
+
+```sql
+create table if not exists ai_corrections (
+  id uuid default gen_random_uuid() primary key,
+  source text not null,
+  ai_food_name text,
+  ai_description text,
+  ai_calories numeric,
+  ai_protein numeric,
+  ai_carbs numeric,
+  ai_fat numeric,
+  user_food_name text,
+  user_calories numeric,
+  user_protein numeric,
+  user_carbs numeric,
+  user_fat numeric,
+  created_at timestamptz default now()
+);
+create index if not exists ai_corrections_food_name_idx on ai_corrections using gin (to_tsvector('english', coalesce(ai_food_name, '')));
+create index if not exists ai_corrections_created_at_idx on ai_corrections (created_at desc);
+alter table ai_corrections enable row level security;
+create policy "auth all ai_corrections" on ai_corrections for all to authenticated using (true) with check (true);
+```
+
+If you skip this, the app still works — saves just fall through
+silently instead of being recorded.
+
 ### 3c. Lock the app down to authenticated users only
 
 Once you're ready to deploy publicly, run [supabase-auth-migration.sql](./supabase-auth-migration.sql) in the SQL Editor. It drops all the wide-open policies and replaces them with "authenticated users only" read/write on every table.

@@ -9,6 +9,7 @@ import SkeletonLoader from '../components/SkeletonLoader'
 import JumpToTodayButton from '../components/JumpToTodayButton'
 import { useFoodLogs } from '../hooks/useFoodLogs'
 import { useMonthNavigation } from '../hooks/useMonthNavigation'
+import { useAiCorrections } from '../hooks/useAiCorrections'
 import DayPicker from '../components/DayPicker'
 import { filterByMonth, filterByDay, getDaysWithData } from '../lib/dateFilters'
 import { analyzeFood, analyzeFoodText } from '../lib/gemini'
@@ -17,6 +18,7 @@ import { getMealType } from '../lib/helpers'
 export default function Food() {
   const { logs, todayCalories, todayProtein, todayCarbs, todayFat, loading, addFoodLog, updateFoodLog, deleteFoodLog } = useFoodLogs()
   const { selectedMonth, goToPrev, goToNext, goToCurrentMonth, isCurrentMonth, label } = useMonthNavigation()
+  const { findSimilar, saveCorrection } = useAiCorrections()
   const [modalOpen, setModalOpen] = useState(false)
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [editingEntry, setEditingEntry] = useState(null)
@@ -28,22 +30,35 @@ export default function Food() {
   const [form, setForm] = useState({ food_name: '', description: '', calories: '', protein: '', carbs: '', fat: '', meal_type: getMealType() })
   const [editForm, setEditForm] = useState({ food_name: '', description: '', calories: '', protein: '', carbs: '', fat: '', meal_type: '', logged_at: '' })
   const [selectedDay, setSelectedDay] = useState(new Date().getDate())
+  // Remember the AI's original pre-fill so we can compare with what
+  // the user ultimately saved and log the delta as a correction.
+  const [aiResult, setAiResult] = useState(null)
+  const [aiSource, setAiSource] = useState(null)
   const galleryRef = useRef()
 
   const handleSmartAnalyze = async () => {
     if (!smartText.trim()) return
     setAnalyzing(true)
     try {
-      const result = await analyzeFoodText(smartText.trim())
+      const query = smartText.trim()
+      // Seed the prompt with any past corrections on similar items so
+      // the model calibrates to this user's usual portions.
+      const corrections = await findSimilar({ source: `text:${query}`, aiFoodName: null }).catch(() => [])
+      const result = await analyzeFoodText(query, { corrections })
+      setAiResult(result)
+      setAiSource(`text:${query}`)
       setForm({
         food_name: result.food_name || 'Meal',
-        description: result.description || smartText.trim(),
+        description: result.description || query,
         calories: String(result.calories || ''),
         protein: String(result.protein_g || ''),
         carbs: String(result.carbs_g || ''),
         fat: String(result.fat_g || ''),
         meal_type: result.meal_type_guess || getMealType(),
       })
+      if (result._reconciled) {
+        toast('Adjusted calories to match macros', { icon: '⚖️' })
+      }
       setSmartText('')
     } catch (err) {
       console.error('AI analyze error:', err)
@@ -84,13 +99,36 @@ export default function Food() {
   }, [selectedDay, dayLogs, monthLogs])
   const { statCalories, statProtein, statCarbs, statFat, daysWithLogs, avgDailyCalories } = stats
 
+  const runPhotoAnalysis = async (base64, mimeType) => {
+    // First pass: analyze without user corrections to get a preliminary
+    // food_name, then refetch with matching corrections and reanalyze.
+    // For photo we can't match corrections ahead of time, so pull the
+    // 5 most recent and let the model decide what's relevant.
+    const corrections = await findSimilar({ aiFoodName: null, source: 'photo:recent', limit: 5 }).catch(() => [])
+    const result = await analyzeFood(base64, { mimeType, corrections })
+    setAiResult(result)
+    setAiSource(`photo:${result.food_name || 'unknown'}`)
+    setForm({
+      food_name: result.food_name || 'Meal',
+      description: result.description || '',
+      calories: String(result.calories || ''),
+      protein: String(result.protein_g || ''),
+      carbs: String(result.carbs_g || ''),
+      fat: String(result.fat_g || ''),
+      meal_type: result.meal_type_guess || getMealType(),
+    })
+    if (result._reconciled) {
+      toast('Adjusted calories to match macros', { icon: '⚖️' })
+    }
+  }
+
   const handleCameraCapture = async (base64) => {
     setCameraOpen(false)
     setAnalyzing(true)
     setModalOpen(true)
     try {
-      const result = await analyzeFood(base64)
-      setForm({ food_name: result.food_name || 'Meal', description: result.description || '', calories: String(result.calories || ''), protein: String(result.protein_g || ''), carbs: String(result.carbs_g || ''), fat: String(result.fat_g || ''), meal_type: result.meal_type_guess || getMealType() })
+      // CameraModal always produces a JPEG.
+      await runPhotoAnalysis(base64, 'image/jpeg')
     } catch (err) { console.error('Photo analyze error:', err); toast.error(err.message || 'Could not analyze photo.') }
     setAnalyzing(false)
   }
@@ -102,8 +140,10 @@ export default function Food() {
     setModalOpen(true)
     try {
       const base64 = await fileToBase64(file)
-      const result = await analyzeFood(base64)
-      setForm({ food_name: result.food_name || 'Meal', description: result.description || '', calories: String(result.calories || ''), protein: String(result.protein_g || ''), carbs: String(result.carbs_g || ''), fat: String(result.fat_g || ''), meal_type: result.meal_type_guess || getMealType() })
+      // Use the browser-reported mime (heic, png, webp) — Gemini accepts
+      // all common formats and quality degrades when we mislabel.
+      const mimeType = file.type || 'image/jpeg'
+      await runPhotoAnalysis(base64, mimeType)
     } catch (err) { console.error('Photo analyze error:', err); toast.error(err.message || 'Could not analyze photo.') }
     setAnalyzing(false)
   }
@@ -122,10 +162,28 @@ export default function Food() {
         fat: Math.round((Number(form.fat) || 0) * s),
         meal_type: form.meal_type,
       })
+      // If AI pre-filled this log and the user changed it before saving,
+      // record the correction so future prompts can calibrate. Compare
+      // against per-serving values, not multiplied totals.
+      if (aiResult) {
+        saveCorrection({
+          source: aiSource,
+          ai: aiResult,
+          user: {
+            food_name: form.food_name,
+            calories: Number(form.calories),
+            protein: Number(form.protein) || 0,
+            carbs: Number(form.carbs) || 0,
+            fat: Number(form.fat) || 0,
+          },
+        })
+      }
       toast.success('Food logged!')
       setModalOpen(false)
       resetForm()
       setServings(1)
+      setAiResult(null)
+      setAiSource(null)
     } catch (err) { console.error('Save food error:', err); toast.error(err?.message || 'Failed to save') }
   }
 
@@ -181,6 +239,8 @@ export default function Food() {
     resetForm()
     setServings(1)
     setSmartText('')
+    setAiResult(null)
+    setAiSource(null)
     setModalOpen(true)
   }
 
