@@ -4,6 +4,7 @@ import Card from '../components/Card'
 import Modal from '../components/Modal'
 import ProgressRing from '../components/ProgressRing'
 import SkeletonLoader from '../components/SkeletonLoader'
+import BodyGoalProgressCard from '../components/BodyGoalProgressCard'
 import { useGoals } from '../hooks/useGoals'
 import { formatCurrency } from '../lib/helpers'
 
@@ -95,22 +96,6 @@ export default function Goals() {
 
   if (loading) return <div className="page-container"><SkeletonLoader count={4} height="h-36" /></div>
 
-  // Body goal calculations
-  const bd = bodyGoal?.data || {}
-  const startW = bd.current_weight || 0
-  const targetW = bd.target_weight || 0
-  const weightDiff = startW - targetW
-  const bodyPct = weightDiff > 0 ? Math.max(0, Math.min(100, ((startW - startW) / weightDiff) * 100)) : 0
-  // Since we don't track starting weight separately, show current distance
-  const bodyProgress = startW && targetW && weightDiff !== 0 ? Math.max(0, Math.min(100, 100 - (Math.abs(startW - targetW) / Math.max(startW, targetW)) * 100)) : 0
-
-  // Days remaining
-  const daysRemaining = bodyGoal?.target_date
-    ? Math.max(0, Math.ceil((new Date(bodyGoal.target_date + 'T00:00:00') - new Date()) / (1000 * 60 * 60 * 24)))
-    : null
-  const weeksRemaining = daysRemaining != null ? Math.ceil(daysRemaining / 7) : null
-  const lbsPerWeek = weeksRemaining && weightDiff > 0 ? (weightDiff / weeksRemaining).toFixed(1) : null
-
   // Financial goal calculations
   const fd = financialGoal?.data || {}
   const savedSoFar = fd.saved_so_far || 0
@@ -119,7 +104,9 @@ export default function Goals() {
   const monthsLeft = fd.timeline_months || 0
   const perMonth = savingsTarget > 0 && monthsLeft > 0 ? ((savingsTarget - savedSoFar) / monthsLeft).toFixed(0) : null
 
-  const hasBodyGoal = startW > 0 && targetW > 0
+  // The body card pulls from weight_logs itself, so we just need to know
+  // whether there's any body goal/entry to show a card for.
+  const hasBodyGoal = !!bodyGoal?.data?.target_weight
   const hasFinGoal = savingsTarget > 0
 
   return (
@@ -129,23 +116,7 @@ export default function Goals() {
       {/* Progress Cards */}
       {(hasBodyGoal || hasFinGoal) && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {hasBodyGoal && (
-            <GoalCard
-              icon="🏆"
-              title="Body Goal"
-              accent="var(--goal-body)"
-              accentSoft="var(--goal-body-soft)"
-              percent={bodyProgress}
-              metric={startW}
-              metricLabel="current lbs"
-              startLabel={`${startW} lbs`}
-              endLabel={`${targetW} lbs`}
-              chips={[
-                lbsPerWeek && `${lbsPerWeek} lbs/week needed`,
-                daysRemaining != null && `${daysRemaining} days left`,
-              ].filter(Boolean)}
-            />
-          )}
+          {hasBodyGoal && <BodyGoalProgressCard />}
 
           {hasFinGoal && (
             <GoalCard
