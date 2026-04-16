@@ -405,6 +405,11 @@ export default function Food() {
               <p className="text-hint">AI calculates calories & macros for you. Press Enter or click Analyze.</p>
             </div>
 
+            {/* AI breakdown — shows the per-item math after a smart analyze */}
+            {aiResult && Array.isArray(aiResult.items) && aiResult.items.length > 0 && (
+              <AiBreakdown result={aiResult} />
+            )}
+
             {/* Divider */}
             <div className="flex items-center gap-4" style={{ marginBottom: 24 }}>
               <div className="flex-1 border-t border-border" />
@@ -540,4 +545,117 @@ function fileToBase64(file) {
     reader.onerror = reject
     reader.readAsDataURL(file)
   })
+}
+
+/**
+ * Renders the AI's per-item breakdown so the user can spot hallucinated
+ * items, wrong portion sizes, or other over/under-estimation before
+ * they save. Collapsed by default.
+ */
+function AiBreakdown({ result }) {
+  const [open, setOpen] = useState(true)
+  const lowConfidence = typeof result.confidence === 'number' && result.confidence < 0.6
+  const reconciled = !!result._reconciled
+
+  return (
+    <div
+      style={{
+        marginBottom: 24,
+        padding: '14px 16px',
+        border: '1px solid var(--border)',
+        borderRadius: 12,
+        background: 'var(--card)',
+      }}
+    >
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        aria-expanded={open}
+        style={{
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 8,
+          background: 'none',
+          border: 'none',
+          padding: 0,
+          color: 'inherit',
+          fontFamily: 'inherit',
+          cursor: 'pointer',
+          textAlign: 'left',
+        }}
+      >
+        <span className="stat-label" style={{ margin: 0 }}>
+          ✨ How the AI calculated this
+        </span>
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2.5}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+          style={{ transition: 'transform 0.15s ease', transform: open ? 'rotate(90deg)' : 'none', opacity: 0.6 }}
+        >
+          <path d="M9 18l6-6-6-6" />
+        </svg>
+      </button>
+
+      {open && (
+        <div style={{ marginTop: 12 }}>
+          {(lowConfidence || reconciled) && (
+            <div className="flex flex-wrap" style={{ gap: 6, marginBottom: 10 }}>
+              {lowConfidence && (
+                <span style={{
+                  fontSize: 10, fontWeight: 500, padding: '3px 8px', borderRadius: 999,
+                  background: 'var(--warning-soft)', color: 'var(--warning)',
+                }}>
+                  Low confidence ({Math.round((result.confidence || 0) * 100)}%)
+                </span>
+              )}
+              {reconciled && (
+                <span style={{
+                  fontSize: 10, fontWeight: 500, padding: '3px 8px', borderRadius: 999,
+                  background: 'var(--muted)', color: 'var(--muted-foreground)',
+                }}>
+                  Calories adjusted {result._reconciled.fromCalories} → {result._reconciled.toCalories}
+                </span>
+              )}
+            </div>
+          )}
+          <div className="flex flex-col" style={{ gap: 6 }}>
+            {result.items.map((it, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between"
+                style={{ padding: '6px 0', borderBottom: i === result.items.length - 1 ? 'none' : '1px solid var(--border)', gap: 10 }}
+              >
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <p className="text-foreground" style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.2 }}>{it.name}</p>
+                  {it.portion && (
+                    <p className="text-muted-foreground" style={{ fontSize: 11, marginTop: 2 }}>{it.portion}</p>
+                  )}
+                </div>
+                <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                  <p className="text-foreground" style={{ fontSize: 13, fontWeight: 600 }}>{Math.round(it.calories || 0)} cal</p>
+                  {(it.protein_g != null || it.carbs_g != null || it.fat_g != null) && (
+                    <p className="text-muted-foreground" style={{ fontSize: 10, marginTop: 2 }}>
+                      {Math.round(it.protein_g || 0)}P · {Math.round(it.carbs_g || 0)}C · {Math.round(it.fat_g || 0)}F
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-hint" style={{ marginTop: 10 }}>
+            If anything looks wrong, edit the totals below — your corrections teach the AI over time.
+          </p>
+        </div>
+      )}
+    </div>
+  )
 }
