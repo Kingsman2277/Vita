@@ -23,9 +23,31 @@ async function callGemini(contents) {
   }
 
   if (!response.ok) {
-    const err = await response.json().catch(() => ({}))
-    console.error('Gemini proxy error:', response.status, err)
-    throw new Error(err.error?.message || `Gemini API error (${response.status})`)
+    // Try JSON first — Gemini and our proxy return structured JSON.
+    // Fall back to text because Vercel's routing/edge 404s are HTML,
+    // which would otherwise collapse into a useless generic message.
+    let detail = ''
+    let parsed = null
+    try {
+      const raw = await response.text()
+      try { parsed = JSON.parse(raw) } catch { /* not JSON */ }
+      if (parsed) {
+        detail =
+          parsed.error?.message ||
+          parsed.details ||
+          (typeof parsed.error === 'string' ? parsed.error : '') ||
+          raw.slice(0, 200)
+      } else {
+        detail = raw.slice(0, 200)
+      }
+    } catch {
+      // body already consumed or unreadable
+    }
+    console.error('[gemini] proxy error', { status: response.status, url: response.url, detail, parsed })
+    const headline = response.status === 404
+      ? 'AI service not reachable (404). Reload the page — if it persists the /api/gemini proxy may be down.'
+      : `Gemini error (${response.status})`
+    throw new Error(detail ? `${headline} — ${detail}` : headline)
   }
 
   const data = await response.json()
@@ -33,7 +55,9 @@ async function callGemini(contents) {
 
   if (!text) {
     console.error('Empty Gemini response:', JSON.stringify(data))
-    throw new Error('Empty response from Gemini')
+    // Common cause: safety filter blocked the output.
+    const block = data.promptFeedback?.blockReason || data.candidates?.[0]?.finishReason
+    throw new Error(block ? `AI blocked the response (${block})` : 'Empty response from AI')
   }
 
   return parseGeminiJSON(text)
