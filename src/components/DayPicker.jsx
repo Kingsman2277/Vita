@@ -1,9 +1,10 @@
-import { useMemo } from 'react'
+import { useMemo, useRef, useEffect } from 'react'
 
 /**
  * Horizontal scrollable day strip for a given month.
  * Shows all days in the month, highlights the selected one,
- * and dots for days that have data.
+ * and dots for days that have data. Auto-scrolls so the selected
+ * day (or today, when viewing the whole month) is always in view.
  */
 export default function DayPicker({ year, month, selectedDay, onSelectDay, daysWithData = new Set() }) {
   const days = useMemo(() => {
@@ -23,8 +24,25 @@ export default function DayPicker({ year, month, selectedDay, onSelectDay, daysW
   const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month
   const todayDay = today.getDate()
 
+  // Keep the relevant day in view. Prefers the explicitly selected day;
+  // otherwise (whole-month view) centers on today when we're in the
+  // current month, or on day 1 when viewing a historical month.
+  const wrapperRef = useRef(null)
+  const itemRefs = useRef({})
+  useEffect(() => {
+    const targetDay = selectedDay ?? (isCurrentMonth ? todayDay : 1)
+    const el = itemRefs.current[targetDay]
+    const wrapper = wrapperRef.current
+    if (!el || !wrapper) return
+    // scrollIntoView({inline:'center'}) scrolls the PAGE too on iOS —
+    // do a manual horizontal scroll on the wrapper only.
+    const elCenter = el.offsetLeft + el.offsetWidth / 2
+    const targetScroll = elCenter - wrapper.clientWidth / 2
+    wrapper.scrollTo({ left: Math.max(0, targetScroll), behavior: 'smooth' })
+  }, [selectedDay, year, month, isCurrentMonth, todayDay])
+
   return (
-    <div className="day-picker-wrapper" role="tablist" aria-label="Select day to view">
+    <div ref={wrapperRef} className="day-picker-wrapper" role="tablist" aria-label="Select day to view">
       {/* "All" button to show all days */}
       <button
         type="button"
@@ -49,6 +67,10 @@ export default function DayPicker({ year, month, selectedDay, onSelectDay, daysW
         return (
           <button
             key={day}
+            ref={el => {
+              if (el) itemRefs.current[day] = el
+              else delete itemRefs.current[day]
+            }}
             type="button"
             onClick={() => onSelectDay(day)}
             className={`day-picker-item ${isSelected ? 'active' : ''} ${isToday && !isSelected ? 'today' : ''}`}
