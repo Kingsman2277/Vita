@@ -5,6 +5,7 @@ import Modal from '../components/Modal'
 import MonthPicker from '../components/MonthPicker'
 import DayPicker from '../components/DayPicker'
 import SkeletonLoader from '../components/SkeletonLoader'
+import JumpToTodayButton from '../components/JumpToTodayButton'
 import { useExpenses } from '../hooks/useExpenses'
 import { useMonthNavigation } from '../hooks/useMonthNavigation'
 import { filterByMonth, filterByDay, getDaysWithData } from '../lib/dateFilters'
@@ -125,6 +126,12 @@ export default function Finance() {
       <MonthPicker label={label} onPrev={() => { goToPrev(); setSelectedDay(null) }} onNext={() => { goToNext(); setSelectedDay(null) }} onToday={() => { goToCurrentMonth(); setSelectedDay(new Date().getDate()) }} isCurrentMonth={isCurrentMonth} />
 
       <DayPicker year={selectedMonth.year} month={selectedMonth.month} selectedDay={selectedDay} onSelectDay={setSelectedDay} daysWithData={expDaysWithData} />
+
+      <JumpToTodayButton
+        isCurrentMonth={isCurrentMonth}
+        selectedDay={selectedDay}
+        onJump={() => { goToCurrentMonth(); setSelectedDay(new Date().getDate()) }}
+      />
 
       <div className="flex overflow-x-auto pb-1 scrollbar-none" style={{ gap: 8 }}>
         <button onClick={() => setFilter('all')} className={`btn-pill${filter === 'all' ? ' active' : ''}`}>All</button>

@@ -6,6 +6,7 @@ import MonthPicker from '../components/MonthPicker'
 import CameraModal from '../components/CameraModal'
 import MacroRing from '../components/MacroRing'
 import SkeletonLoader from '../components/SkeletonLoader'
+import JumpToTodayButton from '../components/JumpToTodayButton'
 import { useFoodLogs } from '../hooks/useFoodLogs'
 import { useMonthNavigation } from '../hooks/useMonthNavigation'
 import DayPicker from '../components/DayPicker'
@@ -235,6 +236,12 @@ export default function Food() {
       <MonthPicker label={label} onPrev={() => { goToPrev(); setSelectedDay(null) }} onNext={() => { goToNext(); setSelectedDay(null) }} onToday={() => { goToCurrentMonth(); setSelectedDay(new Date().getDate()) }} isCurrentMonth={isCurrentMonth} />
 
       <DayPicker year={selectedMonth.year} month={selectedMonth.month} selectedDay={selectedDay} onSelectDay={setSelectedDay} daysWithData={foodDaysWithData} />
+
+      <JumpToTodayButton
+        isCurrentMonth={isCurrentMonth}
+        selectedDay={selectedDay}
+        onJump={() => { goToCurrentMonth(); setSelectedDay(new Date().getDate()) }}
+      />
 
       {/* Hero card — shows stats for selected scope */}
       <div className="hero-card">
