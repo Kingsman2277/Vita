@@ -43,6 +43,24 @@ const NUTRITION_SCHEMA = {
     protein_g: { type: 'number' },
     carbs_g: { type: 'number' },
     fat_g: { type: 'number' },
+    micronutrients: {
+      type: 'object',
+      description: 'Key micronutrient totals for the whole meal. Estimate from typical values for the identified items.',
+      properties: {
+        fiber_g: { type: 'number', description: 'Dietary fiber in grams' },
+        sugar_g: { type: 'number', description: 'Total sugars in grams' },
+        sodium_mg: { type: 'number', description: 'Sodium in milligrams' },
+        cholesterol_mg: { type: 'number', description: 'Cholesterol in milligrams' },
+        saturated_fat_g: { type: 'number', description: 'Saturated fat in grams' },
+        vitamin_a_mcg: { type: 'number', description: 'Vitamin A in mcg RAE' },
+        vitamin_c_mg: { type: 'number', description: 'Vitamin C in milligrams' },
+        vitamin_d_mcg: { type: 'number', description: 'Vitamin D in micrograms' },
+        calcium_mg: { type: 'number', description: 'Calcium in milligrams' },
+        iron_mg: { type: 'number', description: 'Iron in milligrams' },
+        potassium_mg: { type: 'number', description: 'Potassium in milligrams' },
+        magnesium_mg: { type: 'number', description: 'Magnesium in milligrams' },
+      },
+    },
     meal_type_guess: {
       type: 'string',
       enum: ['breakfast', 'lunch', 'dinner', 'snack'],
@@ -95,7 +113,9 @@ Descriptor cues — interpret literally and conservatively:
 - "a side of X" with no size hint → home portion default, not large.
 - Condiments (ketchup, mustard, onion, pickles) add < 20 cal total; don't inflate them.
 
-When ambiguous, pick the lower estimate and drop confidence accordingly. Do not pad portions "to be safe" — the user will manually bump them if off.`
+When ambiguous, pick the lower estimate and drop confidence accordingly. Do not pad portions "to be safe" — the user will manually bump them if off.
+
+Micronutrients: estimate fiber, sugar, sodium, cholesterol, saturated fat, vitamins A/C/D, calcium, iron, potassium, and magnesium in the micronutrients object. Use typical USDA values for each identified item and sum them. These are estimates — round to whole numbers.`
 
 function userCorrectionsHint(corrections) {
   if (!corrections || corrections.length === 0) return ''

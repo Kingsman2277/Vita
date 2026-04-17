@@ -63,3 +63,40 @@ export function useFoodLogs() {
     todayLogs, todayCalories, todayProtein, todayCarbs, todayFat,
   }
 }
+
+/**
+ * Sum micronutrients across an array of food_log rows.
+ * Returns { fiber_g, sugar_g, sodium_mg, ... } with totals.
+ * Gracefully ignores entries with no micronutrients column.
+ */
+export const MICRO_KEYS = [
+  { key: 'fiber_g', label: 'Fiber', unit: 'g', rda: 28 },
+  { key: 'sugar_g', label: 'Sugar', unit: 'g', rda: 30, isLimit: true },
+  { key: 'sodium_mg', label: 'Sodium', unit: 'mg', rda: 2300, isLimit: true },
+  { key: 'cholesterol_mg', label: 'Cholesterol', unit: 'mg', rda: 300, isLimit: true },
+  { key: 'saturated_fat_g', label: 'Sat Fat', unit: 'g', rda: 20, isLimit: true },
+  { key: 'vitamin_a_mcg', label: 'Vitamin A', unit: 'mcg', rda: 900 },
+  { key: 'vitamin_c_mg', label: 'Vitamin C', unit: 'mg', rda: 90 },
+  { key: 'vitamin_d_mcg', label: 'Vitamin D', unit: 'mcg', rda: 15 },
+  { key: 'calcium_mg', label: 'Calcium', unit: 'mg', rda: 1000 },
+  { key: 'iron_mg', label: 'Iron', unit: 'mg', rda: 18 },
+  { key: 'potassium_mg', label: 'Potassium', unit: 'mg', rda: 3400 },
+  { key: 'magnesium_mg', label: 'Magnesium', unit: 'mg', rda: 420 },
+]
+
+export function sumMicronutrients(foodLogs) {
+  const totals = {}
+  for (const { key } of MICRO_KEYS) totals[key] = 0
+  let anyData = false
+  for (const log of foodLogs || []) {
+    const m = log.micronutrients
+    if (!m || typeof m !== 'object') continue
+    anyData = true
+    for (const { key } of MICRO_KEYS) {
+      if (m[key] != null && isFinite(Number(m[key]))) {
+        totals[key] += Number(m[key])
+      }
+    }
+  }
+  return anyData ? totals : null
+}

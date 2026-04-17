@@ -7,7 +7,7 @@ import CameraModal from '../components/CameraModal'
 import MacroRing from '../components/MacroRing'
 import SkeletonLoader from '../components/SkeletonLoader'
 import JumpToTodayButton from '../components/JumpToTodayButton'
-import { useFoodLogs } from '../hooks/useFoodLogs'
+import { useFoodLogs, MICRO_KEYS, sumMicronutrients } from '../hooks/useFoodLogs'
 import { useMonthNavigation } from '../hooks/useMonthNavigation'
 import { useAiCorrections } from '../hooks/useAiCorrections'
 import DayPicker from '../components/DayPicker'
@@ -153,6 +153,15 @@ export default function Food() {
     if (!form.food_name || !form.calories) return
     const s = servings || 1
     try {
+      // Scale micronutrients by serving count alongside macros.
+      const micros = aiResult?.micronutrients
+      let scaledMicros = null
+      if (micros && typeof micros === 'object') {
+        scaledMicros = {}
+        for (const [k, v] of Object.entries(micros)) {
+          scaledMicros[k] = v != null ? Math.round(Number(v) * s) : null
+        }
+      }
       await addFoodLog({
         food_name: s > 1 ? `${form.food_name} (x${s})` : form.food_name,
         description: form.description || null,
@@ -161,6 +170,7 @@ export default function Food() {
         carbs: Math.round((Number(form.carbs) || 0) * s),
         fat: Math.round((Number(form.fat) || 0) * s),
         meal_type: form.meal_type,
+        micronutrients: scaledMicros,
       })
       // If AI pre-filled this log and the user changed it before saving,
       // record the correction so future prompts can calibrate. Compare
@@ -329,6 +339,9 @@ export default function Food() {
           <p className="label" style={{ fontSize: 11, marginTop: 14 }}>{daysWithLogs} day{daysWithLogs !== 1 ? 's' : ''} logged · {monthLogs.length} entries</p>
         )}
       </div>
+
+      {/* Micronutrients — daily totals when a day is selected */}
+      <MicronutrientsCard logs={selectedDay !== null ? dayLogs : monthLogs} label={selectedDay !== null ? 'today' : 'this month'} />
 
       {loading ? (
         <SkeletonLoader count={4} />
@@ -548,6 +561,93 @@ function fileToBase64(file) {
 }
 
 /**
+ * Collapsible micronutrient summary card. Shows daily or monthly totals
+ * with % of RDA bars. Only renders if at least one logged entry has
+ * micronutrient data.
+ */
+function MicronutrientsCard({ logs, label }) {
+  const [open, setOpen] = useState(false)
+  const totals = useMemo(() => sumMicronutrients(logs), [logs])
+  if (!totals) return null
+
+  return (
+    <div
+      style={{
+        border: '1px solid var(--border)',
+        borderRadius: 14,
+        background: 'var(--card)',
+        overflow: 'hidden',
+      }}
+    >
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        aria-expanded={open}
+        style={{
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 10,
+          padding: '16px 18px',
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          fontFamily: 'inherit',
+          color: 'inherit',
+          textAlign: 'left',
+        }}
+      >
+        <span className="stat-label" style={{ margin: 0 }}>Micronutrients</span>
+        <div className="flex items-center gap-2">
+          <span className="text-muted-foreground" style={{ fontSize: 11 }}>
+            {label}
+          </span>
+          <svg
+            width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
+            style={{ transition: 'transform 0.15s ease', transform: open ? 'rotate(90deg)' : 'none', opacity: 0.5 }}
+          >
+            <path d="M9 18l6-6-6-6" />
+          </svg>
+        </div>
+      </button>
+
+      {open && (
+        <div style={{ padding: '0 18px 18px' }}>
+          <div className="flex flex-col" style={{ gap: 10 }}>
+            {MICRO_KEYS.map(({ key, label: name, unit, rda, isLimit }) => {
+              const val = Math.round(totals[key] || 0)
+              const pct = rda > 0 ? Math.min(100, (val / rda) * 100) : 0
+              const overLimit = isLimit && val > rda
+              const barColor = isLimit
+                ? (pct > 100 ? 'var(--danger)' : pct > 80 ? 'var(--warning)' : 'var(--primary)')
+                : (pct >= 80 ? 'var(--success)' : pct >= 40 ? 'var(--primary)' : 'var(--muted-foreground)')
+              return (
+                <div key={key}>
+                  <div className="flex items-center justify-between" style={{ marginBottom: 4, gap: 8 }}>
+                    <span className="text-foreground" style={{ fontSize: 12, fontWeight: 500 }}>{name}</span>
+                    <span style={{ fontSize: 11, color: overLimit ? 'var(--danger)' : 'var(--muted-foreground)', fontWeight: overLimit ? 600 : 400 }}>
+                      {val}{unit} / {rda}{unit} {isLimit ? 'limit' : 'RDA'}
+                    </span>
+                  </div>
+                  <div className="progress-bar" style={{ height: 5 }}>
+                    <div className="progress-bar-fill" style={{ width: `${pct}%`, background: barColor, borderRadius: 3 }} />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+          <p className="text-hint" style={{ marginTop: 12 }}>
+            RDA = Recommended Daily Allowance. Limits (sugar, sodium, sat fat, cholesterol) are upper bounds — lower is better.
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/**
  * Renders the AI's per-item breakdown so the user can spot hallucinated
  * items, wrong portion sizes, or other over/under-estimation before
  * they save. Collapsed by default.
@@ -651,6 +751,23 @@ function AiBreakdown({ result }) {
               </div>
             ))}
           </div>
+          {/* Inline micronutrient preview */}
+          {result.micronutrients && typeof result.micronutrients === 'object' && (
+            <div style={{ marginTop: 12, padding: '10px 12px', borderRadius: 8, background: 'var(--muted)' }}>
+              <p className="stat-label" style={{ margin: '0 0 6px', fontSize: 9 }}>Estimated Micronutrients</p>
+              <div className="flex flex-wrap" style={{ gap: '4px 10px' }}>
+                {MICRO_KEYS.map(({ key, label: name, unit }) => {
+                  const v = result.micronutrients[key]
+                  if (v == null || v === 0) return null
+                  return (
+                    <span key={key} className="text-muted-foreground" style={{ fontSize: 11 }}>
+                      {name} <span className="text-foreground" style={{ fontWeight: 500 }}>{Math.round(v)}{unit}</span>
+                    </span>
+                  )
+                })}
+              </div>
+            </div>
+          )}
           <p className="text-hint" style={{ marginTop: 10 }}>
             If anything looks wrong, edit the totals below — your corrections teach the AI over time.
           </p>
