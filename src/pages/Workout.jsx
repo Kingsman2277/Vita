@@ -373,7 +373,7 @@ function ExerciseRow({ exercise, isExpanded, onExpand, onToggle, onWeightChange,
                 onBlur={() => weight !== (exercise.weight_used || '') && onWeightChange(weight)}
                 placeholder="140 lbs / lvl 8"
                 className="form-input"
-                style={{ padding: '8px 12px', fontSize: 13 }}
+                style={{ padding: '8px 12px' }}
               />
             </div>
             <div>
@@ -385,7 +385,7 @@ function ExerciseRow({ exercise, isExpanded, onExpand, onToggle, onWeightChange,
                 onBlur={() => note !== (exercise.note || '') && onNoteChange(note)}
                 placeholder="Felt strong"
                 className="form-input"
-                style={{ padding: '8px 12px', fontSize: 13 }}
+                style={{ padding: '8px 12px' }}
               />
             </div>
           </div>
