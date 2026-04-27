@@ -184,7 +184,7 @@ export default function Finance() {
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label className="form-label">Amount</label>
-            <input placeholder="0.00" type="number" step="0.01" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} className="form-input text-2xl font-bold text-center" required autoFocus />
+            <input placeholder="0.00" type="number" inputMode="decimal" step="0.01" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} className="form-input text-2xl font-bold text-center" required autoFocus />
           </div>
           <div className="form-group">
             <label className="form-label">Category</label>
@@ -268,7 +268,7 @@ export default function Finance() {
         <form onSubmit={handleEditExpense}>
           <div className="form-group">
             <label className="form-label">Amount</label>
-            <input type="number" step="0.01" value={editForm.amount} onChange={e => setEditForm(f => ({ ...f, amount: e.target.value }))} className="form-input text-2xl font-bold text-center" required />
+            <input type="number" inputMode="decimal" step="0.01" value={editForm.amount} onChange={e => setEditForm(f => ({ ...f, amount: e.target.value }))} className="form-input text-2xl font-bold text-center" required />
           </div>
           <div className="form-group">
             <label className="form-label">Category</label>

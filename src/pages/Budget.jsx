@@ -228,11 +228,11 @@ export default function Budget() {
         <form onSubmit={handleSaveBudget}>
           <div className="form-group">
             <label className="form-label">Monthly Income</label>
-            <input type="number" step="0.01" value={incomeForm} onChange={e => setIncomeForm(e.target.value)} className="form-input" required />
+            <input type="number" inputMode="decimal" step="0.01" value={incomeForm} onChange={e => setIncomeForm(e.target.value)} className="form-input" required />
           </div>
           <div className="form-group">
             <label className="form-label">Savings Target</label>
-            <input type="number" step="0.01" value={savingsForm} onChange={e => setSavingsForm(e.target.value)} className="form-input" required />
+            <input type="number" inputMode="decimal" step="0.01" value={savingsForm} onChange={e => setSavingsForm(e.target.value)} className="form-input" required />
           </div>
           <button type="submit" className="btn-primary w-full" style={{ padding: '12px 24px' }}>Save</button>
         </form>
@@ -247,13 +247,13 @@ export default function Budget() {
           </div>
           <div className="form-group">
             <label className="form-label">Amount ($/month)</label>
-            <input placeholder="0.00" type="number" step="0.01" value={recForm.amount} onChange={e => setRecForm(f => ({ ...f, amount: e.target.value }))} className="form-input" required />
+            <input placeholder="0.00" type="number" inputMode="decimal" step="0.01" value={recForm.amount} onChange={e => setRecForm(f => ({ ...f, amount: e.target.value }))} className="form-input" required />
           </div>
           <div className="form-group">
             <div className="form-row" style={{ gridTemplateColumns: '1fr 1fr' }}>
               <div>
                 <label className="form-label">Day of Month</label>
-                <input type="number" min="1" max="31" value={recForm.day_of_month} onChange={e => setRecForm(f => ({ ...f, day_of_month: e.target.value }))} className="form-input" />
+                <input type="number" inputMode="numeric" min="1" max="31" value={recForm.day_of_month} onChange={e => setRecForm(f => ({ ...f, day_of_month: e.target.value }))} className="form-input" />
               </div>
               <div>
                 <label className="form-label">Category</label>
@@ -281,13 +281,13 @@ export default function Budget() {
           </div>
           <div className="form-group">
             <label className="form-label">Amount ($/month)</label>
-            <input type="number" step="0.01" value={recForm.amount} onChange={e => setRecForm(f => ({ ...f, amount: e.target.value }))} className="form-input" required />
+            <input type="number" inputMode="decimal" step="0.01" value={recForm.amount} onChange={e => setRecForm(f => ({ ...f, amount: e.target.value }))} className="form-input" required />
           </div>
           <div className="form-group">
             <div className="form-row" style={{ gridTemplateColumns: '1fr 1fr' }}>
               <div>
                 <label className="form-label">Day of Month</label>
-                <input type="number" min="1" max="31" value={recForm.day_of_month} onChange={e => setRecForm(f => ({ ...f, day_of_month: e.target.value }))} className="form-input" />
+                <input type="number" inputMode="numeric" min="1" max="31" value={recForm.day_of_month} onChange={e => setRecForm(f => ({ ...f, day_of_month: e.target.value }))} className="form-input" />
               </div>
               <div>
                 <label className="form-label">Category</label>

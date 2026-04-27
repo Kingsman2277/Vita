@@ -351,7 +351,7 @@ export default function BodyGoals() {
           </div>
           <div className="form-group">
             <label className="form-label">Weight (lbs)</label>
-            <input type="number" step="0.1" min="0" value={logForm.weight} onChange={e => setLogForm(f => ({ ...f, weight: e.target.value }))} className="form-input text-2xl font-bold text-center" required autoFocus placeholder="0.0" />
+            <input type="number" inputMode="decimal" step="0.1" min="0" value={logForm.weight} onChange={e => setLogForm(f => ({ ...f, weight: e.target.value }))} className="form-input text-2xl font-bold text-center" required autoFocus placeholder="0.0" />
           </div>
           <div className="form-group">
             <div className="form-row" style={{ gridTemplateColumns: '1fr 1fr' }}>
@@ -397,11 +397,11 @@ export default function BodyGoals() {
             <div className="form-row" style={{ gridTemplateColumns: '1fr 1fr' }}>
               <div>
                 <label className="form-label">Waist (in)</label>
-                <input type="number" step="0.1" value={metricForm.waist} onChange={e => setMetricForm(f => ({ ...f, waist: e.target.value }))} className="form-input" />
+                <input type="number" inputMode="decimal" step="0.1" value={metricForm.waist} onChange={e => setMetricForm(f => ({ ...f, waist: e.target.value }))} className="form-input" />
               </div>
               <div>
                 <label className="form-label">Chest (in)</label>
-                <input type="number" step="0.1" value={metricForm.chest} onChange={e => setMetricForm(f => ({ ...f, chest: e.target.value }))} className="form-input" />
+                <input type="number" inputMode="decimal" step="0.1" value={metricForm.chest} onChange={e => setMetricForm(f => ({ ...f, chest: e.target.value }))} className="form-input" />
               </div>
             </div>
           </div>
@@ -409,11 +409,11 @@ export default function BodyGoals() {
             <div className="form-row" style={{ gridTemplateColumns: '1fr 1fr' }}>
               <div>
                 <label className="form-label">Hips (in)</label>
-                <input type="number" step="0.1" value={metricForm.hips} onChange={e => setMetricForm(f => ({ ...f, hips: e.target.value }))} className="form-input" />
+                <input type="number" inputMode="decimal" step="0.1" value={metricForm.hips} onChange={e => setMetricForm(f => ({ ...f, hips: e.target.value }))} className="form-input" />
               </div>
               <div>
                 <label className="form-label">Body fat (%)</label>
-                <input type="number" step="0.1" value={metricForm.body_fat} onChange={e => setMetricForm(f => ({ ...f, body_fat: e.target.value }))} className="form-input" />
+                <input type="number" inputMode="decimal" step="0.1" value={metricForm.body_fat} onChange={e => setMetricForm(f => ({ ...f, body_fat: e.target.value }))} className="form-input" />
               </div>
             </div>
           </div>
@@ -439,7 +439,7 @@ export default function BodyGoals() {
         <form onSubmit={handleSaveGoal}>
           <div className="form-group">
             <label className="form-label">Target Weight (lbs)</label>
-            <input type="number" step="0.1" value={goalForm.target_weight} onChange={e => setGoalForm(f => ({ ...f, target_weight: e.target.value }))} className="form-input" required />
+            <input type="number" inputMode="decimal" step="0.1" value={goalForm.target_weight} onChange={e => setGoalForm(f => ({ ...f, target_weight: e.target.value }))} className="form-input" required />
           </div>
           <div className="form-group">
             <label className="form-label">Target Date</label>

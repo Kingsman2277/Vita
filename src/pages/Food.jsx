@@ -451,11 +451,11 @@ export default function Food() {
                 <div className="form-row grid-cols-2">
                   <div>
                     <label className="form-label" style={{ fontSize: 9, marginBottom: 4 }}>Calories</label>
-                    <input placeholder="0" type="number" value={form.calories} onChange={e => setForm(f => ({ ...f, calories: e.target.value }))} className="form-input" required />
+                    <input placeholder="0" type="number" inputMode="numeric" value={form.calories} onChange={e => setForm(f => ({ ...f, calories: e.target.value }))} className="form-input" required />
                   </div>
                   <div>
                     <label className="form-label" style={{ fontSize: 9, marginBottom: 4 }}>Protein (g)</label>
-                    <input placeholder="0" type="number" value={form.protein} onChange={e => setForm(f => ({ ...f, protein: e.target.value }))} className="form-input" />
+                    <input placeholder="0" type="number" inputMode="numeric" value={form.protein} onChange={e => setForm(f => ({ ...f, protein: e.target.value }))} className="form-input" />
                   </div>
                 </div>
               </div>
@@ -463,11 +463,11 @@ export default function Food() {
                 <div className="form-row grid-cols-2">
                   <div>
                     <label className="form-label" style={{ fontSize: 9, marginBottom: 4 }}>Carbs (g)</label>
-                    <input placeholder="0" type="number" value={form.carbs} onChange={e => setForm(f => ({ ...f, carbs: e.target.value }))} className="form-input" />
+                    <input placeholder="0" type="number" inputMode="numeric" value={form.carbs} onChange={e => setForm(f => ({ ...f, carbs: e.target.value }))} className="form-input" />
                   </div>
                   <div>
                     <label className="form-label" style={{ fontSize: 9, marginBottom: 4 }}>Fat (g)</label>
-                    <input placeholder="0" type="number" value={form.fat} onChange={e => setForm(f => ({ ...f, fat: e.target.value }))} className="form-input" />
+                    <input placeholder="0" type="number" inputMode="numeric" value={form.fat} onChange={e => setForm(f => ({ ...f, fat: e.target.value }))} className="form-input" />
                   </div>
                 </div>
               </div>
@@ -476,7 +476,7 @@ export default function Food() {
                 <label className="form-label">Servings</label>
                 <div className="flex items-center gap-3">
                   <button type="button" onClick={() => setServings(s => Math.max(1, s - 1))} className="btn-secondary" style={{ padding: '8px 14px', minWidth: 'auto', fontSize: 16, fontWeight: 700 }}>−</button>
-                  <input type="number" min="1" max="20" value={servings} onChange={e => setServings(Math.max(1, Number(e.target.value) || 1))} className="form-input text-center font-bold" style={{ width: 60 }} />
+                  <input type="number" inputMode="numeric" min="1" max="20" value={servings} onChange={e => setServings(Math.max(1, Number(e.target.value) || 1))} className="form-input text-center font-bold" style={{ width: 60 }} />
                   <button type="button" onClick={() => setServings(s => Math.min(20, s + 1))} className="btn-secondary" style={{ padding: '8px 14px', minWidth: 'auto', fontSize: 16, fontWeight: 700 }}>+</button>
                   {servings > 1 && <span className="text-xs text-muted-foreground">= {Math.round(Number(form.calories || 0) * servings)} cal total</span>}
                 </div>
@@ -511,11 +511,11 @@ export default function Food() {
             <div className="form-row grid-cols-2">
               <div>
                 <label className="form-label" style={{ fontSize: 9, marginBottom: 4 }}>Calories</label>
-                <input type="number" value={editForm.calories} onChange={e => setEditForm(f => ({ ...f, calories: e.target.value }))} className="form-input" required />
+                <input type="number" inputMode="numeric" value={editForm.calories} onChange={e => setEditForm(f => ({ ...f, calories: e.target.value }))} className="form-input" required />
               </div>
               <div>
                 <label className="form-label" style={{ fontSize: 9, marginBottom: 4 }}>Protein (g)</label>
-                <input type="number" value={editForm.protein} onChange={e => setEditForm(f => ({ ...f, protein: e.target.value }))} className="form-input" />
+                <input type="number" inputMode="numeric" value={editForm.protein} onChange={e => setEditForm(f => ({ ...f, protein: e.target.value }))} className="form-input" />
               </div>
             </div>
           </div>
@@ -523,11 +523,11 @@ export default function Food() {
             <div className="form-row grid-cols-2">
               <div>
                 <label className="form-label" style={{ fontSize: 9, marginBottom: 4 }}>Carbs (g)</label>
-                <input type="number" value={editForm.carbs} onChange={e => setEditForm(f => ({ ...f, carbs: e.target.value }))} className="form-input" />
+                <input type="number" inputMode="numeric" value={editForm.carbs} onChange={e => setEditForm(f => ({ ...f, carbs: e.target.value }))} className="form-input" />
               </div>
               <div>
                 <label className="form-label" style={{ fontSize: 9, marginBottom: 4 }}>Fat (g)</label>
-                <input type="number" value={editForm.fat} onChange={e => setEditForm(f => ({ ...f, fat: e.target.value }))} className="form-input" />
+                <input type="number" inputMode="numeric" value={editForm.fat} onChange={e => setEditForm(f => ({ ...f, fat: e.target.value }))} className="form-input" />
               </div>
             </div>
           </div>

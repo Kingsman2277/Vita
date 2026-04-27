@@ -151,11 +151,11 @@ export default function Goals() {
             <label className="form-label">Height</label>
             <div className="form-row" style={{ gridTemplateColumns: '1fr 1fr' }}>
               <div className="relative">
-                <input type="number" value={bodyForm.height_ft} onChange={e => setBodyForm(f => ({ ...f, height_ft: e.target.value }))} className="form-input pr-10" placeholder="5" />
+                <input type="number" inputMode="numeric" value={bodyForm.height_ft} onChange={e => setBodyForm(f => ({ ...f, height_ft: e.target.value }))} className="form-input pr-10" placeholder="5" />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">ft</span>
               </div>
               <div className="relative">
-                <input type="number" value={bodyForm.height_in} onChange={e => setBodyForm(f => ({ ...f, height_in: e.target.value }))} className="form-input pr-10" placeholder="10" min="0" max="11" />
+                <input type="number" inputMode="numeric" value={bodyForm.height_in} onChange={e => setBodyForm(f => ({ ...f, height_in: e.target.value }))} className="form-input pr-10" placeholder="10" min="0" max="11" />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">in</span>
               </div>
             </div>
@@ -164,11 +164,11 @@ export default function Goals() {
             <div className="form-row" style={{ gridTemplateColumns: '1fr 1fr' }}>
               <div>
                 <label className="form-label">Current Weight (lbs)</label>
-                <input type="number" value={bodyForm.current_weight} onChange={e => setBodyForm(f => ({ ...f, current_weight: e.target.value }))} className="form-input" placeholder="190" />
+                <input type="number" inputMode="numeric" value={bodyForm.current_weight} onChange={e => setBodyForm(f => ({ ...f, current_weight: e.target.value }))} className="form-input" placeholder="190" />
               </div>
               <div>
                 <label className="form-label">Target Weight (lbs)</label>
-                <input type="number" value={bodyForm.target_weight} onChange={e => setBodyForm(f => ({ ...f, target_weight: e.target.value }))} className="form-input" placeholder="170" />
+                <input type="number" inputMode="numeric" value={bodyForm.target_weight} onChange={e => setBodyForm(f => ({ ...f, target_weight: e.target.value }))} className="form-input" placeholder="170" />
               </div>
             </div>
           </div>
@@ -186,15 +186,15 @@ export default function Goals() {
         <form onSubmit={handleFinSave}>
           <div className="form-group">
             <label className="form-label">Savings Target ($)</label>
-            <input type="number" step="0.01" value={finForm.savings_target} onChange={e => setFinForm(f => ({ ...f, savings_target: e.target.value }))} className="form-input" placeholder="10000" />
+            <input type="number" inputMode="decimal" step="0.01" value={finForm.savings_target} onChange={e => setFinForm(f => ({ ...f, savings_target: e.target.value }))} className="form-input" placeholder="10000" />
           </div>
           <div className="form-group">
             <label className="form-label">Saved So Far ($)</label>
-            <input type="number" step="0.01" value={finForm.saved_so_far} onChange={e => setFinForm(f => ({ ...f, saved_so_far: e.target.value }))} className="form-input" placeholder="0" />
+            <input type="number" inputMode="decimal" step="0.01" value={finForm.saved_so_far} onChange={e => setFinForm(f => ({ ...f, saved_so_far: e.target.value }))} className="form-input" placeholder="0" />
           </div>
           <div className="form-group">
             <label className="form-label">Timeline (months)</label>
-            <input type="number" value={finForm.timeline_months} onChange={e => setFinForm(f => ({ ...f, timeline_months: e.target.value }))} className="form-input" placeholder="12" />
+            <input type="number" inputMode="numeric" value={finForm.timeline_months} onChange={e => setFinForm(f => ({ ...f, timeline_months: e.target.value }))} className="form-input" placeholder="12" />
           </div>
           <button type="submit" className="btn-primary w-full">Save Financial Goal</button>
         </form>
@@ -214,7 +214,7 @@ export default function Goals() {
           <div className="form-group">
             <label className="form-label">Saved So Far ($)</label>
             <input
-              type="number"
+              type="number" inputMode="numeric"
               step="0.01"
               min="0"
               value={savedForm}
