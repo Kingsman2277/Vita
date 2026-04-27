@@ -3,7 +3,10 @@ import toast from 'react-hot-toast'
 import Card from '../components/Card'
 import SkeletonLoader from '../components/SkeletonLoader'
 import JumpToTodayButton from '../components/JumpToTodayButton'
+import MonthPicker from '../components/MonthPicker'
+import DayPicker from '../components/DayPicker'
 import { useWorkoutLogs } from '../hooks/useWorkoutLogs'
+import { useMonthNavigation } from '../hooks/useMonthNavigation'
 import { getToday } from '../lib/helpers'
 
 // Muscle-group → color. Maps to existing semantic tokens where possible
@@ -25,23 +28,34 @@ function parseISODateLocal(s) {
   return new Date(y, m - 1, d)
 }
 
-function shiftDate(iso, deltaDays) {
-  const d = parseISODateLocal(iso)
-  d.setDate(d.getDate() + deltaDays)
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
-}
-
 function formatLongDate(iso) {
   const d = parseISODateLocal(iso)
   return d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
 }
 
 export default function Workout() {
-  const [selectedDate, setSelectedDate] = useState(getToday())
-  const dateObj = useMemo(() => parseISODateLocal(selectedDate), [selectedDate])
+  const today = new Date()
+  const { selectedMonth, goToPrev, goToNext, goToCurrentMonth, isCurrentMonth, label } = useMonthNavigation()
+  const [selectedDay, setSelectedDay] = useState(today.getDate())
+
+  // Reset day when month changes — same pattern as Food/Finance.
+  const monthKey = `${selectedMonth.year}-${selectedMonth.month}`
+  const [prevMonthKey, setPrevMonthKey] = useState(monthKey)
+  if (monthKey !== prevMonthKey) {
+    setPrevMonthKey(monthKey)
+    setSelectedDay(isCurrentMonth ? today.getDate() : 1)
+  }
+
+  const dateObj = useMemo(
+    () => new Date(selectedMonth.year, selectedMonth.month, selectedDay),
+    [selectedMonth.year, selectedMonth.month, selectedDay]
+  )
+  const selectedDate = useMemo(() => {
+    const y = dateObj.getFullYear()
+    const m = String(dateObj.getMonth() + 1).padStart(2, '0')
+    const d = String(dateObj.getDate()).padStart(2, '0')
+    return `${y}-${m}-${d}`
+  }, [dateObj])
 
   const {
     dayTemplate,
@@ -55,6 +69,7 @@ export default function Workout() {
     updateWeight,
     streak,
     weekStats,
+    daysWithData,
     loading,
     hasTemplates,
   } = useWorkoutLogs(dateObj)
@@ -71,8 +86,8 @@ export default function Workout() {
     }
   }, [allDone, prevAllDone, totalCount])
 
-  const today = getToday()
-  const isToday = selectedDate === today
+  const todayStr = getToday()
+  const isToday = selectedDate === todayStr
 
   if (loading) {
     return (
@@ -85,24 +100,33 @@ export default function Workout() {
   return (
     <div className="page-container">
       {/* ─── Header ─── */}
-      <header className="flex items-center justify-between" style={{ gap: 12 }}>
-        <div style={{ minWidth: 0 }}>
-          <h1 className="page-title">Workout</h1>
-          <p className="text-muted-foreground" style={{ fontSize: 13, marginTop: 4 }}>
-            {isToday ? "Today's session" : formatLongDate(selectedDate)}
-          </p>
-        </div>
-        <DateStepper
-          selectedDate={selectedDate}
-          today={today}
-          onChange={setSelectedDate}
-        />
+      <header>
+        <h1 className="page-title">Workout</h1>
+        <p className="text-muted-foreground" style={{ fontSize: 13, marginTop: 4 }}>
+          {isToday ? "Today's session" : formatLongDate(selectedDate)}
+        </p>
       </header>
 
+      <MonthPicker
+        label={label}
+        onPrev={goToPrev}
+        onNext={goToNext}
+        onToday={() => { goToCurrentMonth(); setSelectedDay(today.getDate()) }}
+        isCurrentMonth={isCurrentMonth}
+      />
+
+      <DayPicker
+        year={selectedMonth.year}
+        month={selectedMonth.month}
+        selectedDay={selectedDay}
+        onSelectDay={d => { if (d != null) setSelectedDay(d) }}
+        daysWithData={daysWithData}
+      />
+
       <JumpToTodayButton
-        isCurrentMonth={true}
-        selectedDay={selectedDate === today ? new Date().getDate() : -1}
-        onJump={() => setSelectedDate(today)}
+        isCurrentMonth={isCurrentMonth}
+        selectedDay={selectedDay}
+        onJump={() => { goToCurrentMonth(); setSelectedDay(today.getDate()) }}
       />
 
       {/* ─── Hero stats card ─── */}
@@ -208,37 +232,6 @@ export default function Workout() {
 }
 
 /* ─── Components ───────────────────────────────────────────────────────── */
-
-function DateStepper({ selectedDate, today, onChange }) {
-  const isToday = selectedDate === today
-  return (
-    <div className="flex items-center" style={{ gap: 8 }}>
-      <button
-        type="button"
-        aria-label="Previous day"
-        onClick={() => onChange(shiftDate(selectedDate, -1))}
-        className="month-picker-btn"
-        style={{ width: 36, height: 36 }}
-      >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-          <path d="M15 18l-6-6 6-6" />
-        </svg>
-      </button>
-      <button
-        type="button"
-        aria-label="Next day"
-        onClick={() => onChange(shiftDate(selectedDate, 1))}
-        disabled={isToday}
-        className="month-picker-btn"
-        style={{ width: 36, height: 36, opacity: isToday ? 0.3 : 1 }}
-      >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-          <path d="M9 18l6-6-6-6" />
-        </svg>
-      </button>
-    </div>
-  )
-}
 
 function WeekDots({ weekStats }) {
   return (

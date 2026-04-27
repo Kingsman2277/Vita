@@ -285,6 +285,69 @@ export function useWorkoutLogs(selectedDate) {
   const allDoneForDate = exercises.length > 0 && exercises.every(e => e.completed === true)
   const completedCountForDate = exercises.filter(e => e.completed === true).length
 
+  /**
+   * Days of the current selected month that have at least one
+   * completed exercise — used by DayPicker to show dots.
+   */
+  const daysWithData = useMemo(() => {
+    const days = new Set()
+    const y = dateObj.getFullYear()
+    const m = dateObj.getMonth()
+    for (const log of allLogs) {
+      if (!log.completed) continue
+      const d = parseDateLocal(log.date)
+      if (!d) continue
+      if (d.getFullYear() === y && d.getMonth() === m) {
+        days.add(d.getDate())
+      }
+    }
+    return days
+  }, [allLogs, dateObj])
+
+  /**
+   * Aggregate stats for ANY month — used by the Summary page card and
+   * for the Workout-page hero subtitle. Returns counts of fully-done
+   * weekdays + per-muscle-group exercise tallies.
+   */
+  const monthStats = useCallback((year, month) => {
+    const byDate = new Map()
+    for (const l of allLogs) {
+      const d = parseDateLocal(l.date)
+      if (!d) continue
+      if (d.getFullYear() !== year || d.getMonth() !== month) continue
+      if (!byDate.has(l.date)) byDate.set(l.date, [])
+      byDate.get(l.date).push(l)
+    }
+    let workoutsCompleted = 0
+    let exercisesCompleted = 0
+    const muscleGroupCounts = {}
+    for (const [, rows] of byDate) {
+      const fullyDone = rows.length > 0 && rows.every(r => r.completed === true)
+      if (fullyDone) workoutsCompleted += 1
+      for (const r of rows) {
+        if (!r.completed) continue
+        exercisesCompleted += 1
+        const tmpl = templates.find(
+          t => t.day_of_week === r.day_of_week && t.exercise_order === r.exercise_order
+        )
+        const grp = tmpl?.muscle_group || 'other'
+        muscleGroupCounts[grp] = (muscleGroupCounts[grp] || 0) + 1
+      }
+    }
+    let topMuscleGroup = null
+    let topCount = 0
+    for (const [grp, n] of Object.entries(muscleGroupCounts)) {
+      if (n > topCount) { topCount = n; topMuscleGroup = grp }
+    }
+    return {
+      workoutsCompleted,
+      exercisesCompleted,
+      muscleGroupCounts,
+      topMuscleGroup,
+      activeDays: byDate.size,
+    }
+  }, [allLogs, templates])
+
   return {
     // Selected day
     dateStr,
@@ -304,6 +367,8 @@ export function useWorkoutLogs(selectedDate) {
     // Stats
     streak,
     weekStats,
+    daysWithData,
+    monthStats,
 
     // Lifecycle
     loading,

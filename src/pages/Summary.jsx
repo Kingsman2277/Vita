@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Card from '../components/Card'
 import MonthPicker from '../components/MonthPicker'
 import SpendingChart from '../components/SpendingChart'
@@ -9,19 +10,22 @@ import { useFoodLogs } from '../hooks/useFoodLogs'
 import { useGoals } from '../hooks/useGoals'
 import { useBudget } from '../hooks/useBudget'
 import { useWeightLogs } from '../hooks/useWeightLogs'
+import { useWorkoutLogs } from '../hooks/useWorkoutLogs'
 import { useMonthNavigation } from '../hooks/useMonthNavigation'
 import { filterByMonth } from '../lib/dateFilters'
 import { exportExpensesCSV, exportFoodLogsCSV } from '../lib/csvExport'
 import { formatCurrency } from '../lib/helpers'
 
 export default function Summary() {
+  const navigate = useNavigate()
   const { expenses, loading: expLoading } = useExpenses()
   const { logs, loading: foodLoading } = useFoodLogs()
   const { bodyGoal, financialGoal, loading: goalLoading } = useGoals()
   const { discretionary, loading: budgetLoading } = useBudget()
   const { logs: weightLogs, loading: weightLoading } = useWeightLogs()
+  const { streak: workoutStreak, monthStats: workoutMonthStats, loading: workoutLoading } = useWorkoutLogs()
   const { selectedMonth, goToPrev, goToNext, goToCurrentMonth, isCurrentMonth, label } = useMonthNavigation()
-  const loading = expLoading || foodLoading || goalLoading || budgetLoading || weightLoading
+  const loading = expLoading || foodLoading || goalLoading || budgetLoading || weightLoading || workoutLoading
 
   const monthExpenses = useMemo(
     () => filterByMonth(expenses, selectedMonth.year, selectedMonth.month, 'date'),
@@ -109,6 +113,13 @@ export default function Summary() {
           )}
         </Card>
       </section>
+
+      {/* Workout */}
+      <WorkoutSummaryCard
+        streak={workoutStreak}
+        monthStats={workoutMonthStats(selectedMonth.year, selectedMonth.month)}
+        onOpen={() => navigate('/workout')}
+      />
 
       {/* Goals */}
       {(hasBodyCard || finData) && (
@@ -216,5 +227,80 @@ function computeCalorieTrend(foodLogs) {
     arrow: delta > 0 ? '↑' : '↓',
     color: delta > 0 ? 'var(--warning)' : 'var(--success)',
   }
+}
+
+/* ─── Workout summary card ─── */
+const MUSCLE_LABEL = {
+  cardio: '🔥 Cardio',
+  legs: '🦵 Legs',
+  push: '💪 Push',
+  pull: '🤸 Pull',
+  arms: '💪 Arms',
+}
+
+function WorkoutSummaryCard({ streak, monthStats, onOpen }) {
+  const { workoutsCompleted, exercisesCompleted, topMuscleGroup, activeDays } = monthStats
+  // Hide the card entirely if no workouts have ever been logged.
+  if (activeDays === 0 && streak === 0) return null
+
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      aria-label="Open Workout"
+      className="text-left transition-all hover:border-primary/40"
+      style={{
+        padding: 22,
+        borderRadius: 14,
+        border: '1px solid var(--border)',
+        background: 'var(--card)',
+        cursor: 'pointer',
+        fontFamily: 'inherit',
+        color: 'inherit',
+        width: '100%',
+      }}
+    >
+      <div className="flex items-center justify-between" style={{ marginBottom: 14, gap: 12 }}>
+        <p className="stat-label" style={{ margin: 0 }}>Workout</p>
+        <svg
+          className="card-chevron w-4 h-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          strokeWidth={2}
+          stroke="currentColor"
+          aria-hidden="true"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+        </svg>
+      </div>
+
+      <div className="grid grid-cols-3 gap-3" style={{ marginBottom: 12 }}>
+        <div>
+          <p className="text-foreground" style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1 }}>
+            {workoutsCompleted}
+          </p>
+          <p className="text-muted-foreground" style={{ fontSize: 11, marginTop: 6 }}>workouts done</p>
+        </div>
+        <div>
+          <p className="text-foreground" style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1 }}>
+            {exercisesCompleted}
+          </p>
+          <p className="text-muted-foreground" style={{ fontSize: 11, marginTop: 6 }}>exercises</p>
+        </div>
+        <div>
+          <p className="text-foreground" style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1 }}>
+            🔥 {streak}
+          </p>
+          <p className="text-muted-foreground" style={{ fontSize: 11, marginTop: 6 }}>day streak</p>
+        </div>
+      </div>
+
+      {topMuscleGroup && (
+        <p className="text-muted-foreground" style={{ fontSize: 12 }}>
+          Most trained: <span className="text-foreground" style={{ fontWeight: 600 }}>{MUSCLE_LABEL[topMuscleGroup] || topMuscleGroup}</span>
+        </p>
+      )}
+    </button>
+  )
 }
 
