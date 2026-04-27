@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom'
 const navItems = [
   { to: '/dashboard', label: 'Home', icon: HomeIcon },
   { to: '/food', label: 'Food', icon: FoodIcon },
+  { to: '/workout', label: 'Workout', icon: WorkoutIcon },
   { to: '/finance', label: 'Finance', icon: FinanceIcon },
   { to: '/budget', label: 'Budget', icon: BudgetIcon },
   { to: '/goals', label: 'Goals', icon: GoalsIcon },
@@ -52,4 +53,14 @@ function GoalsIcon({ className }) {
 
 function SummaryIcon({ className }) {
   return (<svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5M9 11.25v1.5M12 9v3.75m3-6v6" /></svg>)
+}
+
+function WorkoutIcon({ className }) {
+  // Dumbbell — two weighted ends + handle. Matches the existing
+  // 24x24 viewBox / 1.5 strokeWidth / round caps of the other nav icons.
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 6.75v10.5M3.75 9v6M17.25 6.75v10.5M20.25 9v6M6.75 12h10.5" />
+    </svg>
+  )
 }

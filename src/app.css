@@ -274,7 +274,7 @@ section { display: block; }
   align-items: stretch;
   justify-content: space-between;
   height: 56px;
-  max-width: 36rem;
+  max-width: 42rem;
   margin: 0 auto;
   padding: 0 4px;
 }
@@ -286,10 +286,16 @@ section { display: block; }
   align-items: center;
   justify-content: center;
   gap: 3px;
+  padding: 0 2px;
   text-decoration: none;
   color: var(--muted-foreground);
   transition: color 0.12s ease;
   -webkit-tap-highlight-color: transparent;
+}
+.bottom-nav-label {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .bottom-nav-item:hover { color: var(--foreground); }
 .bottom-nav-item.active { color: var(--primary); }

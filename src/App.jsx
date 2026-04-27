@@ -8,6 +8,7 @@ import Finance from './pages/Finance'
 import Budget from './pages/Budget'
 import Goals from './pages/Goals'
 import BodyGoals from './pages/BodyGoals'
+import Workout from './pages/Workout'
 import Summary from './pages/Summary'
 import Login from './pages/Login'
 import { useAuth } from './hooks/useAuth'
@@ -39,6 +40,7 @@ export default function App() {
           <Route path="/budget" element={<Budget />} />
           <Route path="/goals" element={<Goals />} />
           <Route path="/body-goals" element={<BodyGoals />} />
+          <Route path="/workout" element={<Workout />} />
           <Route path="/summary" element={<Summary />} />
         </Routes>
       </div>
