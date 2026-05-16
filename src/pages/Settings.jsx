@@ -4,10 +4,10 @@ import Card from '../components/Card'
 import { useAuth } from '../hooks/useAuth'
 
 export default function Settings() {
-  const { username, user, signOut, updateUsername, updatePassword } = useAuth()
+  const { username, user, signOut, updateUsername, updatePassword, verifyPassword } = useAuth()
   const [usernameForm, setUsernameForm] = useState(username || '')
   const [savingUsername, setSavingUsername] = useState(false)
-  const [pwForm, setPwForm] = useState({ next: '', confirm: '' })
+  const [pwForm, setPwForm] = useState({ current: '', next: '', confirm: '' })
   const [savingPw, setSavingPw] = useState(false)
   const [signingOut, setSigningOut] = useState(false)
 
@@ -32,16 +32,23 @@ export default function Settings() {
 
   const handlePassword = async (e) => {
     e.preventDefault()
-    if (!pwForm.next || !pwForm.confirm) return
+    if (!pwForm.current || !pwForm.next || !pwForm.confirm) return
     if (pwForm.next !== pwForm.confirm) {
-      toast.error("Passwords don't match")
+      toast.error("New passwords don't match")
+      return
+    }
+    if (pwForm.next === pwForm.current) {
+      toast.error('New password must be different from current')
       return
     }
     setSavingPw(true)
     try {
+      // Re-auth check first — fails fast with a clear error if the
+      // current password is wrong, before we touch the auth user.
+      await verifyPassword(pwForm.current)
       await updatePassword(pwForm.next)
       toast.success('Password updated')
-      setPwForm({ next: '', confirm: '' })
+      setPwForm({ current: '', next: '', confirm: '' })
     } catch (err) {
       toast.error(err?.message || 'Could not update password')
     }
@@ -111,6 +118,18 @@ export default function Settings() {
         <p className="stat-label" style={{ marginBottom: 14 }}>Change Password</p>
         <form onSubmit={handlePassword}>
           <div className="form-group" style={{ marginBottom: 14 }}>
+            <label className="form-label">Current password</label>
+            <input
+              type="password"
+              autoComplete="current-password"
+              value={pwForm.current}
+              onChange={e => setPwForm(f => ({ ...f, current: e.target.value }))}
+              className="form-input"
+              placeholder="Verify it's you"
+              required
+            />
+          </div>
+          <div className="form-group" style={{ marginBottom: 14 }}>
             <label className="form-label">New password</label>
             <input
               type="password"
@@ -131,21 +150,32 @@ export default function Settings() {
               value={pwForm.confirm}
               onChange={e => setPwForm(f => ({ ...f, confirm: e.target.value }))}
               className="form-input"
-              placeholder="Re-type the password"
+              placeholder="Re-type the new password"
               minLength={8}
               required
             />
           </div>
           <button
             type="submit"
-            disabled={savingPw || !pwForm.next || pwForm.next !== pwForm.confirm}
+            disabled={
+              savingPw ||
+              !pwForm.current ||
+              !pwForm.next ||
+              pwForm.next !== pwForm.confirm
+            }
             className="btn-primary w-full"
-            style={{ padding: '12px 24px', opacity: (savingPw || !pwForm.next || pwForm.next !== pwForm.confirm) ? 0.5 : 1 }}
+            style={{
+              padding: '12px 24px',
+              opacity:
+                savingPw || !pwForm.current || !pwForm.next || pwForm.next !== pwForm.confirm
+                  ? 0.5
+                  : 1,
+            }}
           >
-            {savingPw ? 'Saving…' : 'Update password'}
+            {savingPw ? 'Verifying & saving…' : 'Update password'}
           </button>
           <p className="text-hint" style={{ marginTop: 10 }}>
-            You'll stay signed in on this device. Other sessions will need the new password.
+            Your current password is verified first. You'll stay signed in on this device; other sessions will need the new password.
           </p>
         </form>
       </Card>

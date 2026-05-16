@@ -65,6 +65,29 @@ export function useAuth() {
     return data
   }, [])
 
+  /**
+   * Verify a given password matches the current session's user.
+   * Implemented by attempting signInWithPassword with the current
+   * email — succeeds silently (refreshing the session JWT) if correct,
+   * throws "Current password is incorrect" otherwise.
+   *
+   * Used by the Settings page to gate destructive changes like
+   * password updates.
+   */
+  const verifyPassword = useCallback(async (password) => {
+    const email = session?.user?.email
+    if (!email) throw new Error('Not signed in')
+    if (!password) throw new Error('Current password is required')
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) {
+      if (/invalid login credentials/i.test(error.message)) {
+        throw new Error('Current password is incorrect')
+      }
+      throw error
+    }
+    return true
+  }, [session])
+
   return {
     session,
     user: session?.user || null,
@@ -74,6 +97,7 @@ export function useAuth() {
     signOut,
     updateUsername,
     updatePassword,
+    verifyPassword,
     isAuthenticated: !!session,
   }
 }
