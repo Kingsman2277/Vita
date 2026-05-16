@@ -14,7 +14,7 @@ Copy `.env` and fill in your values:
 ```
 VITE_SUPABASE_URL=your_project_url
 VITE_SUPABASE_ANON_KEY=your_anon_key
-VITE_GEMINI_API_KEY=your_gemini_key
+OPENAI_API_KEY=your_openai_key   # server-side only (no VITE_ prefix), set in Vercel env vars
 ```
 
 ### 3. Create Supabase tables

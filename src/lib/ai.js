@@ -1,76 +1,85 @@
-// All Gemini calls go through /api/gemini serverless function
+// All AI calls go through /api/openai serverless function
 // so the API key never reaches the browser.
 //
 // Accuracy design notes:
-//   - responseSchema forces the model to emit valid JSON matching the
-//     shape below, so we don't parse free-form text with a regex.
+//   - response_format json_schema (strict mode) forces the model to
+//     emit valid JSON matching the shape below, so we don't parse
+//     free-form text with a regex.
 //   - Low temperature (0.2) makes nutrition estimates reproducible.
-//   - thinkingBudget lets Gemini 2.5 Flash reason step-by-step before
-//     answering, which measurably improves portion estimation.
-//   - We ask for per-item breakdown alongside totals so we can check
-//     internal consistency (calories ≈ 4P + 4C + 9F) after parsing.
+//   - We ask for a per-item breakdown alongside totals so we can
+//     check internal consistency (calories ≈ 4P + 4C + 9F) after
+//     parsing, and so the UI can show the user how the AI got there.
+//
+// Provider: OpenAI GPT-4o (multimodal).
 
-const GEMINI_PROXY = '/api/gemini'
+const AI_PROXY = '/api/openai'
+const MODEL = 'gpt-4o'
+
+// OpenAI strict-mode JSON schema rules:
+//  - every property listed under `properties` must also be in `required`
+//  - every object must set `additionalProperties: false`
+// Optional-feeling fields (confidence, items, micronutrients) are kept
+// required; the model returns sensible defaults when uncertain.
+
+const ITEM_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    name: { type: 'string' },
+    portion: { type: 'string', description: 'e.g. "1 medium", "1 cup", "3 oz"' },
+    calories: { type: 'number' },
+    protein_g: { type: 'number' },
+    carbs_g: { type: 'number' },
+    fat_g: { type: 'number' },
+  },
+  required: ['name', 'portion', 'calories', 'protein_g', 'carbs_g', 'fat_g'],
+}
+
+const MICRONUTRIENTS_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  description: 'Key micronutrient totals for the whole meal. Estimate from typical USDA values for the identified items.',
+  properties: {
+    fiber_g: { type: 'number' },
+    sugar_g: { type: 'number' },
+    sodium_mg: { type: 'number' },
+    cholesterol_mg: { type: 'number' },
+    saturated_fat_g: { type: 'number' },
+    vitamin_a_mcg: { type: 'number' },
+    vitamin_c_mg: { type: 'number' },
+    vitamin_d_mcg: { type: 'number' },
+    calcium_mg: { type: 'number' },
+    iron_mg: { type: 'number' },
+    potassium_mg: { type: 'number' },
+    magnesium_mg: { type: 'number' },
+  },
+  required: [
+    'fiber_g', 'sugar_g', 'sodium_mg', 'cholesterol_mg', 'saturated_fat_g',
+    'vitamin_a_mcg', 'vitamin_c_mg', 'vitamin_d_mcg',
+    'calcium_mg', 'iron_mg', 'potassium_mg', 'magnesium_mg',
+  ],
+}
 
 const NUTRITION_SCHEMA = {
   type: 'object',
+  additionalProperties: false,
   properties: {
-    food_name: {
-      type: 'string',
-      description: '2-4 word dish name, e.g. "Breakfast Plate" or "Chicken Salad"',
-    },
-    description: {
-      type: 'string',
-      description: 'Clean, human-readable breakdown: "2 fried eggs, 2 slices bacon, hash browns, toast with butter"',
-    },
-    items: {
-      type: 'array',
-      description: 'Per-item breakdown used for consistency checks',
-      items: {
-        type: 'object',
-        properties: {
-          name: { type: 'string' },
-          portion: { type: 'string', description: 'e.g. "1 medium", "1 cup", "3 oz"' },
-          calories: { type: 'number' },
-          protein_g: { type: 'number' },
-          carbs_g: { type: 'number' },
-          fat_g: { type: 'number' },
-        },
-        required: ['name', 'portion', 'calories'],
-      },
-    },
+    food_name: { type: 'string', description: '2-4 word dish name, e.g. "Breakfast Plate"' },
+    description: { type: 'string', description: 'Clean, human-readable breakdown: "2 fried eggs, 2 slices bacon"' },
+    items: { type: 'array', items: ITEM_SCHEMA, description: 'Per-item breakdown for consistency checks' },
     calories: { type: 'number', description: 'Total calories for the whole meal' },
     protein_g: { type: 'number' },
     carbs_g: { type: 'number' },
     fat_g: { type: 'number' },
-    micronutrients: {
-      type: 'object',
-      description: 'Key micronutrient totals for the whole meal. Estimate from typical values for the identified items.',
-      properties: {
-        fiber_g: { type: 'number', description: 'Dietary fiber in grams' },
-        sugar_g: { type: 'number', description: 'Total sugars in grams' },
-        sodium_mg: { type: 'number', description: 'Sodium in milligrams' },
-        cholesterol_mg: { type: 'number', description: 'Cholesterol in milligrams' },
-        saturated_fat_g: { type: 'number', description: 'Saturated fat in grams' },
-        vitamin_a_mcg: { type: 'number', description: 'Vitamin A in mcg RAE' },
-        vitamin_c_mg: { type: 'number', description: 'Vitamin C in milligrams' },
-        vitamin_d_mcg: { type: 'number', description: 'Vitamin D in micrograms' },
-        calcium_mg: { type: 'number', description: 'Calcium in milligrams' },
-        iron_mg: { type: 'number', description: 'Iron in milligrams' },
-        potassium_mg: { type: 'number', description: 'Potassium in milligrams' },
-        magnesium_mg: { type: 'number', description: 'Magnesium in milligrams' },
-      },
-    },
-    meal_type_guess: {
-      type: 'string',
-      enum: ['breakfast', 'lunch', 'dinner', 'snack'],
-    },
-    confidence: {
-      type: 'number',
-      description: '0.0 to 1.0 — how sure you are about the estimate',
-    },
+    micronutrients: MICRONUTRIENTS_SCHEMA,
+    meal_type_guess: { type: 'string', enum: ['breakfast', 'lunch', 'dinner', 'snack'] },
+    confidence: { type: 'number', description: '0.0 to 1.0 — how sure you are about the estimate' },
   },
-  required: ['food_name', 'description', 'calories', 'protein_g', 'carbs_g', 'fat_g', 'meal_type_guess'],
+  required: [
+    'food_name', 'description', 'items',
+    'calories', 'protein_g', 'carbs_g', 'fat_g',
+    'micronutrients', 'meal_type_guess', 'confidence',
+  ],
 }
 
 const REASONING_PREAMBLE = `You are a careful nutrition estimator for a personal health tracker. The user logs what they actually ate — usually home-cooked or casual meals, not restaurant servings. Default to realistic home portions; err low when uncertain.
@@ -115,7 +124,11 @@ Descriptor cues — interpret literally and conservatively:
 
 When ambiguous, pick the lower estimate and drop confidence accordingly. Do not pad portions "to be safe" — the user will manually bump them if off.
 
-Micronutrients: estimate fiber, sugar, sodium, cholesterol, saturated fat, vitamins A/C/D, calcium, iron, potassium, and magnesium in the micronutrients object. Use typical USDA values for each identified item and sum them. These are estimates — round to whole numbers.`
+Micronutrients: estimate fiber, sugar, sodium, cholesterol, saturated fat, vitamins A/C/D, calcium, iron, potassium, and magnesium. Use typical USDA values for each identified item and sum them. These are estimates — round to whole numbers. If you don't know a value for some item, contribute 0 from it rather than guessing wildly.
+
+The schema requires every field to be present. For optional-feeling fields:
+- If the items array would be empty (vague input), still return at least one synthesized item describing what you assumed.
+- For confidence, use 0.0–1.0 — be honest, low values are useful signal.`
 
 function userCorrectionsHint(corrections) {
   if (!corrections || corrections.length === 0) return ''
@@ -132,24 +145,34 @@ ${lines}
 Apply the same correction pattern if it matches the current meal.`
 }
 
-async function callGemini(contents) {
+async function callOpenAI(userContent) {
   let response
   try {
-    response = await fetch(GEMINI_PROXY, {
+    response = await fetch(AI_PROXY, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents,
-        generationConfig: {
-          temperature: 0.2,
-          responseMimeType: 'application/json',
-          responseSchema: NUTRITION_SCHEMA,
-          thinkingConfig: { thinkingBudget: 512 },
+        model: MODEL,
+        temperature: 0.2,
+        messages: [
+          {
+            role: 'user',
+            content: userContent,
+          },
+        ],
+        response_format: {
+          type: 'json_schema',
+          json_schema: {
+            name: 'nutrition_analysis',
+            strict: true,
+            schema: NUTRITION_SCHEMA,
+          },
         },
       }),
     })
   } catch (networkErr) {
-    console.error('Network error calling Gemini proxy:', networkErr)
+    // eslint-disable-next-line no-console
+    console.error('Network error calling AI proxy:', networkErr)
     throw new Error('Network error — check your connection')
   }
 
@@ -169,31 +192,41 @@ async function callGemini(contents) {
         detail = raw.slice(0, 200)
       }
     } catch { /* body already consumed */ }
-    console.error('[gemini] proxy error', { status: response.status, url: response.url, detail, parsed })
-    const headline = response.status === 404
-      ? 'AI service not reachable (404). Reload the page — if it persists the /api/gemini proxy may be down.'
-      : `Gemini error (${response.status})`
+    // eslint-disable-next-line no-console
+    console.error('[openai] proxy error', { status: response.status, url: response.url, detail, parsed })
+    const headline =
+      response.status === 404
+        ? 'AI service not reachable (404). Reload the page — if it persists the /api/openai proxy may be down.'
+        : response.status === 401
+        ? 'AI auth failed — check OPENAI_API_KEY in Vercel.'
+        : response.status === 429
+        ? 'AI rate-limited or out of credit. Top up your OpenAI account.'
+        : `AI error (${response.status})`
     throw new Error(detail ? `${headline} — ${detail}` : headline)
   }
 
   const data = await response.json()
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
+  const text = data.choices?.[0]?.message?.content || ''
 
   if (!text) {
-    console.error('Empty Gemini response:', JSON.stringify(data))
-    const block = data.promptFeedback?.blockReason || data.candidates?.[0]?.finishReason
-    throw new Error(block ? `AI blocked the response (${block})` : 'Empty response from AI')
+    // eslint-disable-next-line no-console
+    console.error('Empty OpenAI response:', JSON.stringify(data))
+    const refusal = data.choices?.[0]?.message?.refusal
+    const finish = data.choices?.[0]?.finish_reason
+    if (refusal) throw new Error(`AI refused: ${refusal}`)
+    if (finish === 'content_filter') throw new Error('AI blocked the response (content_filter)')
+    throw new Error('Empty response from AI')
   }
 
-  // With responseSchema, the text is guaranteed valid JSON.
+  // With response_format json_schema (strict), `text` is valid JSON.
   let result
   try {
     result = JSON.parse(text)
   } catch (err) {
-    // Extremely rare — fall back to regex extract for safety.
     const match = text.match(/\{[\s\S]*\}/)
     if (!match) {
-      console.error('[gemini] unparseable output:', text.slice(0, 500))
+      // eslint-disable-next-line no-console
+      console.error('[openai] unparseable output:', text.slice(0, 500))
       throw new Error('AI returned malformed output — try again')
     }
     result = JSON.parse(match[0])
@@ -207,9 +240,6 @@ async function callGemini(contents) {
  * calories = 4·P + 4·C + 9·F. If the model's total is off by more
  * than ~15%, trust the macros (they're usually correct item-by-item
  * even when totals drift due to rounding) and override calories.
- *
- * Also: if per-item breakdown sums don't match the total, log a
- * warning so we can spot systemic issues.
  */
 function reconcileNutrition(result) {
   const p = Number(result.protein_g) || 0
@@ -222,7 +252,7 @@ function reconcileNutrition(result) {
   const reconciled = { ...result }
   if (drift > tolerance && atwater > 0) {
     // eslint-disable-next-line no-console
-    console.info('[gemini] calorie/macro mismatch — reconciling', {
+    console.info('[openai] calorie/macro mismatch — reconciling', {
       reportedCals, atwater, drift, tolerance,
     })
     reconciled.calories = Math.round(atwater / 5) * 5
@@ -232,7 +262,7 @@ function reconcileNutrition(result) {
 }
 
 /**
- * Analyze a food photo with Gemini Vision.
+ * Analyze a food photo with GPT-4o vision.
  * @param {string} imageBase64 - base64-encoded image bytes, no data: prefix
  * @param {object} [options]
  * @param {string} [options.mimeType='image/jpeg'] - MIME of the image
@@ -248,12 +278,20 @@ Analyze this food photo and fill out the schema. Rules:
 - If multiple plates/containers are visible, sum them into one total
 - If the image is unclear, lower your confidence value`
 
-  return callGemini([{
-    parts: [
-      { text: prompt },
-      { inline_data: { mime_type: mimeType, data: imageBase64 } },
-    ],
-  }])
+  // OpenAI multimodal: content array with text parts and image_url parts.
+  // image_url accepts data URIs directly.
+  return callOpenAI([
+    { type: 'text', text: prompt },
+    {
+      type: 'image_url',
+      image_url: {
+        url: `data:${mimeType};base64,${imageBase64}`,
+        // 'high' uses the full image at higher cost; 'low' is faster and ~85% cheaper.
+        // For food portions you want detail, so 'high' is correct here.
+        detail: 'high',
+      },
+    },
+  ])
 }
 
 /**
@@ -274,7 +312,5 @@ Calculate the combined nutrition for everything listed. Rules:
 - description: clean list of what was eaten
 - Guess meal_type from the foods and the current time of day`
 
-  return callGemini([{
-    parts: [{ text: prompt }],
-  }])
+  return callOpenAI([{ type: 'text', text: prompt }])
 }

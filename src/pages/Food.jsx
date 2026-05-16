@@ -12,7 +12,7 @@ import { useMonthNavigation } from '../hooks/useMonthNavigation'
 import { useAiCorrections } from '../hooks/useAiCorrections'
 import DayPicker from '../components/DayPicker'
 import { filterByMonth, filterByDay, getDaysWithData } from '../lib/dateFilters'
-import { analyzeFood, analyzeFoodText } from '../lib/gemini'
+import { analyzeFood, analyzeFoodText } from '../lib/ai'
 import { getMealType } from '../lib/helpers'
 
 export default function Food() {
