@@ -37,6 +37,34 @@ export function useAuth() {
     if (error) throw error
   }, [])
 
+  /**
+   * Change the signed-in user's username. Converts the username to
+   * the internal fake-email format before calling Supabase.
+   * Throws on validation failure (e.g. username already taken).
+   */
+  const updateUsername = useCallback(async (newUsername) => {
+    const clean = String(newUsername || '').trim().toLowerCase()
+    if (!clean) throw new Error('Username is required')
+    if (!/^[a-z0-9_]{2,32}$/.test(clean)) {
+      throw new Error('Username must be 2-32 lowercase letters, digits, or underscores')
+    }
+    const email = usernameToEmail(clean)
+    const { data, error } = await supabase.auth.updateUser({ email })
+    if (error) throw error
+    return data
+  }, [])
+
+  /**
+   * Change the signed-in user's password.
+   */
+  const updatePassword = useCallback(async (newPassword) => {
+    const pw = String(newPassword || '')
+    if (pw.length < 8) throw new Error('Password must be at least 8 characters')
+    const { data, error } = await supabase.auth.updateUser({ password: pw })
+    if (error) throw error
+    return data
+  }, [])
+
   return {
     session,
     user: session?.user || null,
@@ -44,6 +72,8 @@ export function useAuth() {
     loading,
     signIn,
     signOut,
+    updateUsername,
+    updatePassword,
     isAuthenticated: !!session,
   }
 }

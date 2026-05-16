@@ -1,5 +1,4 @@
 import { NavLink } from 'react-router-dom'
-import toast from 'react-hot-toast'
 import { useAuth } from '../hooks/useAuth'
 
 const navItems = [
@@ -13,10 +12,7 @@ const navItems = [
 ]
 
 export default function Sidebar() {
-  const { username, signOut } = useAuth()
-  const handleSignOut = async () => {
-    try { await signOut() } catch { toast.error('Sign out failed') }
-  }
+  const { username } = useAuth()
   return (
     <aside className="hidden md:flex fixed left-0 top-0 bottom-0 w-64 bg-sidebar border-r border-sidebar-border flex-col z-50">
       <div className="px-6 pt-7 pb-2">
@@ -45,24 +41,36 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      <div className="px-5 py-4 border-t border-sidebar-border flex items-center justify-between gap-2">
-        <div style={{ minWidth: 0 }}>
-          <p className="text-[11px] text-muted-foreground/50">Vita v1.0</p>
-          {username && <p className="text-[11px] text-muted-foreground truncate">{username}</p>}
-        </div>
-        {username && (
-          <button
-            type="button"
-            onClick={handleSignOut}
-            className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
-            style={{ padding: '4px 8px', borderRadius: 6 }}
-            aria-label="Sign out"
-          >
-            Sign out
-          </button>
-        )}
+      {username && (
+        <NavLink
+          to="/settings"
+          className={({ isActive }) =>
+            `flex items-center gap-[10px] px-3 py-[9px] mx-3 mb-2 rounded-lg text-[13px] font-medium transition-all duration-200 ${
+              isActive
+                ? 'bg-sidebar-accent text-primary'
+                : 'text-muted-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent'
+            }`
+          }
+        >
+          <SettingsIcon className="w-[18px] h-[18px]" />
+          <span>Settings</span>
+        </NavLink>
+      )}
+
+      <div className="px-5 py-4 border-t border-sidebar-border">
+        <p className="text-[11px] text-muted-foreground/50">Vita v1.0</p>
+        {username && <p className="text-[11px] text-muted-foreground truncate">{username}</p>}
       </div>
     </aside>
+  )
+}
+
+function SettingsIcon({ className }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden="true">
+      <circle cx="12" cy="12" r="3" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+    </svg>
   )
 }
 
