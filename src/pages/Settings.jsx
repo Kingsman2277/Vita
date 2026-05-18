@@ -1,10 +1,14 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import Card from '../components/Card'
 import { useAuth } from '../hooks/useAuth'
+import { useIsAdmin } from '../hooks/useAdmin'
 
 export default function Settings() {
+  const navigate = useNavigate()
   const { username, user, signOut, updateUsername, updatePassword, verifyPassword } = useAuth()
+  const { isAdmin } = useIsAdmin()
   const [usernameForm, setUsernameForm] = useState(username || '')
   const [savingUsername, setSavingUsername] = useState(false)
   const [pwForm, setPwForm] = useState({ current: '', next: '', confirm: '' })
@@ -83,6 +87,33 @@ export default function Settings() {
           <Row label="Internal email" value={user?.email || '—'} small />
         </div>
       </Card>
+
+      {/* Admin entry point — only visible to the project owner */}
+      {isAdmin && (
+        <Card onClick={() => navigate('/admin')} style={{ padding: 20 }}>
+          <div className="flex items-center justify-between" style={{ gap: 12 }}>
+            <div style={{ minWidth: 0 }}>
+              <p className="stat-label" style={{ marginBottom: 4 }}>Admin</p>
+              <p className="text-foreground" style={{ fontSize: 14, fontWeight: 600 }}>
+                Manage users & activity
+              </p>
+              <p className="text-muted-foreground" style={{ fontSize: 12, marginTop: 4 }}>
+                List all accounts, search, and view their recent activity
+              </p>
+            </div>
+            <svg
+              className="card-chevron w-4 h-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={2}
+              stroke="currentColor"
+              aria-hidden="true"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+            </svg>
+          </div>
+        </Card>
+      )}
 
       {/* Change username */}
       <Card style={{ padding: 20 }}>

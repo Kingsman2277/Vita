@@ -11,6 +11,7 @@ import BodyGoals from './pages/BodyGoals'
 import Workout from './pages/Workout'
 import Summary from './pages/Summary'
 import Settings from './pages/Settings'
+import Admin from './pages/Admin'
 import Login from './pages/Login'
 import { useAuth } from './hooks/useAuth'
 
@@ -44,6 +45,7 @@ export default function App() {
           <Route path="/workout" element={<Workout />} />
           <Route path="/summary" element={<Summary />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/admin" element={<Admin />} />
         </Routes>
       </div>
       <BottomNav />

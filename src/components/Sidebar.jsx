@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import { useIsAdmin } from '../hooks/useAdmin'
 
 const navItems = [
   { to: '/dashboard', label: 'Home', icon: HomeIcon },
@@ -13,6 +14,7 @@ const navItems = [
 
 export default function Sidebar() {
   const { username } = useAuth()
+  const { isAdmin } = useIsAdmin()
   return (
     <aside className="hidden md:flex fixed left-0 top-0 bottom-0 w-64 bg-sidebar border-r border-sidebar-border flex-col z-50">
       <div className="px-6 pt-7 pb-2">
@@ -41,6 +43,22 @@ export default function Sidebar() {
         ))}
       </nav>
 
+      {username && isAdmin && (
+        <NavLink
+          to="/admin"
+          className={({ isActive }) =>
+            `flex items-center gap-[10px] px-3 py-[9px] mx-3 mb-1 rounded-lg text-[13px] font-medium transition-all duration-200 ${
+              isActive
+                ? 'bg-sidebar-accent text-primary'
+                : 'text-muted-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent'
+            }`
+          }
+        >
+          <AdminIcon className="w-[18px] h-[18px]" />
+          <span>Admin</span>
+        </NavLink>
+      )}
+
       {username && (
         <NavLink
           to="/settings"
@@ -62,6 +80,14 @@ export default function Sidebar() {
         {username && <p className="text-[11px] text-muted-foreground truncate">{username}</p>}
       </div>
     </aside>
+  )
+}
+
+function AdminIcon({ className }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
+    </svg>
   )
 }
 
