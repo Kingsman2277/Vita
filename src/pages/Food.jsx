@@ -165,6 +165,20 @@ export default function Food() {
           scaledMicros[k] = v != null ? Math.round(Number(v) * s) : null
         }
       }
+      // Persist the per-item breakdown so the user can revisit how
+      // the AI arrived at the totals. Scale each item's calories +
+      // macros by the same servings multiplier as the totals.
+      let scaledItems = null
+      if (Array.isArray(aiResult?.items) && aiResult.items.length > 0) {
+        scaledItems = aiResult.items.map(it => ({
+          name: it.name,
+          portion: it.portion,
+          calories: Math.round(Number(it.calories || 0) * s),
+          protein_g: Math.round(Number(it.protein_g || 0) * s),
+          carbs_g:   Math.round(Number(it.carbs_g   || 0) * s),
+          fat_g:     Math.round(Number(it.fat_g     || 0) * s),
+        }))
+      }
       await addFoodLog({
         food_name: s > 1 ? `${form.food_name} (x${s})` : form.food_name,
         description: form.description || null,
@@ -174,6 +188,7 @@ export default function Food() {
         fat: Math.round((Number(form.fat) || 0) * s),
         meal_type: form.meal_type,
         micronutrients: scaledMicros,
+        items: scaledItems,
       })
       // If AI pre-filled this log and the user changed it before saving,
       // record the correction so future prompts can calibrate. Compare
@@ -500,6 +515,19 @@ export default function Food() {
 
       {/* Edit Food Entry Modal */}
       <Modal open={editModalOpen} onClose={() => { setEditModalOpen(false); setEditingEntry(null) }} title="Edit Food Entry">
+        {/* AI breakdown — only renders for entries saved with the
+            items column populated (logged after the food_items
+            migration). Old entries gracefully omit this card. */}
+        {editingEntry && Array.isArray(editingEntry.items) && editingEntry.items.length > 0 && (
+          <AiBreakdown
+            result={{
+              items: editingEntry.items,
+              micronutrients: editingEntry.micronutrients,
+            }}
+            hint="The per-item breakdown the AI generated when this meal was first logged."
+            defaultOpen={false}
+          />
+        )}
         <form onSubmit={handleEditSubmit}>
           <div className="form-group">
             <label className="form-label">Meal Type</label>
@@ -658,11 +686,19 @@ function MicronutrientsCard({ logs, label }) {
 
 /**
  * Renders the AI's per-item breakdown so the user can spot hallucinated
+ * items, wrong portion sizes, or other over/under-estimation. Used in
+ * two places:
+ *   1. Add Food modal — `result` is the live AI response with items +
+ *      micronutrients + confidence + _reconciled. Help text encourages
+ *      edits that feed the corrections learning loop.
+ *   2. Edit Food modal — `result` is reconstructed from the stored
+ *      `entry.items` and `entry.micronutrients` JSON. Pass a custom
+ *      `hint` so we don't claim corrections train the AI here.
  * items, wrong portion sizes, or other over/under-estimation before
  * they save. Collapsed by default.
  */
-function AiBreakdown({ result }) {
-  const [open, setOpen] = useState(true)
+function AiBreakdown({ result, hint, defaultOpen = true }) {
+  const [open, setOpen] = useState(defaultOpen)
   const lowConfidence = typeof result.confidence === 'number' && result.confidence < 0.6
   const reconciled = !!result._reconciled
 
@@ -778,7 +814,7 @@ function AiBreakdown({ result }) {
             </div>
           )}
           <p className="text-hint" style={{ marginTop: 10 }}>
-            If anything looks wrong, edit the totals below — your corrections teach the AI over time.
+            {hint || 'If anything looks wrong, edit the totals below — your corrections teach the AI over time.'}
           </p>
         </div>
       )}
