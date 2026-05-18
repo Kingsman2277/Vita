@@ -85,38 +85,41 @@ begin
   if not public.is_admin() then
     raise exception 'unauthorized';
   end if;
+  -- Qualify every column with its table name to avoid colliding
+  -- with the function's RETURNS TABLE columns (in particular,
+  -- `amount` exists in both expenses and the return signature).
   return query
     select 'food'::text,
-           coalesce(food_name, '(unnamed)')::text,
-           (round(calories) || ' cal')::text,
-           logged_at
+           coalesce(food_logs.food_name, '(unnamed)')::text,
+           (round(food_logs.calories) || ' cal')::text,
+           food_logs.logged_at
     from public.food_logs
-    where user_id = target_user_id
-      and logged_at > now() - (days_back || ' days')::interval
+    where food_logs.user_id = target_user_id
+      and food_logs.logged_at > now() - (days_back || ' days')::interval
     union all
     select 'expense'::text,
-           coalesce(note, category, 'expense')::text,
-           ('$' || amount::text)::text,
-           created_at
+           coalesce(expenses.note, expenses.category, 'expense')::text,
+           ('$' || expenses.amount::text)::text,
+           expenses.created_at
     from public.expenses
-    where user_id = target_user_id
-      and created_at > now() - (days_back || ' days')::interval
+    where expenses.user_id = target_user_id
+      and expenses.created_at > now() - (days_back || ' days')::interval
     union all
     select 'weight'::text,
            ('weight entry')::text,
-           (weight::text || ' lbs')::text,
-           created_at
+           (weight_logs.weight::text || ' lbs')::text,
+           weight_logs.created_at
     from public.weight_logs
-    where user_id = target_user_id
-      and created_at > now() - (days_back || ' days')::interval
+    where weight_logs.user_id = target_user_id
+      and weight_logs.created_at > now() - (days_back || ' days')::interval
     union all
     select 'workout'::text,
-           exercise_name::text,
-           (case when completed then 'completed' else 'pending' end)::text,
-           created_at
+           workout_logs.exercise_name::text,
+           (case when workout_logs.completed then 'completed' else 'pending' end)::text,
+           workout_logs.created_at
     from public.workout_logs
-    where user_id = target_user_id
-      and created_at > now() - (days_back || ' days')::interval
+    where workout_logs.user_id = target_user_id
+      and workout_logs.created_at > now() - (days_back || ' days')::interval
     order by 4 desc;
 end;
 $$;
