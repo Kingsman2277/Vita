@@ -58,6 +58,28 @@ export function useAdminUsers() {
 }
 
 /**
+ * Reset a user's password to a new value. Admin-only — the
+ * admin_reset_password RPC enforces is_admin() server-side.
+ * Returns a Promise that resolves on success, rejects with a clear
+ * error message on failure.
+ */
+export async function adminResetPassword(targetUserId, newPassword) {
+  if (!targetUserId) throw new Error('Missing user id')
+  if (!newPassword || newPassword.length < 8) {
+    throw new Error('Password must be at least 8 characters')
+  }
+  const { error } = await supabase.rpc('admin_reset_password', {
+    target_user_id: targetUserId,
+    new_password: newPassword,
+  })
+  if (error) {
+    // Friendlier wording for the most common errors.
+    if (/unauthorized/i.test(error.message)) throw new Error('Only the admin can reset passwords')
+    throw new Error(error.message)
+  }
+}
+
+/**
  * Fetches a single user's recent activity (default 14 days).
  * Calls admin_user_recent(target_user_id, days_back) RPC.
  */

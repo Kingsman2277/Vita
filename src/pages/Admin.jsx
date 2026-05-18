@@ -1,9 +1,10 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
+import toast from 'react-hot-toast'
 import Card from '../components/Card'
 import Modal from '../components/Modal'
 import SkeletonLoader from '../components/SkeletonLoader'
-import { useIsAdmin, useAdminUsers, useAdminUserRecent } from '../hooks/useAdmin'
+import { useIsAdmin, useAdminUsers, useAdminUserRecent, adminResetPassword } from '../hooks/useAdmin'
 import { emailToUsername } from '../lib/supabase'
 
 export default function Admin() {
@@ -151,9 +152,19 @@ export default function Admin() {
       <Modal
         open={drillUserId !== null}
         onClose={() => setDrillUserId(null)}
-        title={drillUserId ? `${emailToUsername(users.find(u => u.id === drillUserId)?.email)}'s activity` : 'Activity'}
+        title={drillUserId ? `${emailToUsername(users.find(u => u.id === drillUserId)?.email)}` : 'User'}
       >
-        {drillUserId && <UserActivityPanel userId={drillUserId} />}
+        {drillUserId && (
+          <>
+            <UserActivityPanel userId={drillUserId} />
+            <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid var(--border)' }}>
+              <UserResetPanel
+                userId={drillUserId}
+                username={emailToUsername(users.find(u => u.id === drillUserId)?.email)}
+              />
+            </div>
+          </>
+        )}
       </Modal>
 
       <p className="text-muted-foreground" style={{ fontSize: 11, opacity: 0.6, textAlign: 'center', marginTop: 8 }}>
@@ -256,6 +267,147 @@ function UserActivityPanel({ userId }) {
             </div>
           ))}
         </div>
+      )}
+    </div>
+  )
+}
+
+function UserResetPanel({ userId, username }) {
+  const [newPw, setNewPw] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [lastIssued, setLastIssued] = useState(null)
+
+  const generateTemp = () => {
+    // Memorable enough for a one-time hand-off; user will change it.
+    const chars = 'abcdefghjkmnpqrstuvwxyz23456789'
+    let s = ''
+    for (let i = 0; i < 10; i++) {
+      s += chars[Math.floor(Math.random() * chars.length)]
+    }
+    return s + '!'
+  }
+
+  const handleReset = async (e) => {
+    e.preventDefault()
+    if (!newPw || newPw.length < 8) {
+      toast.error('Password must be at least 8 characters')
+      return
+    }
+    if (!confirm(`Reset ${username || 'this user'}'s password? They'll be signed out of all devices and need this new password to sign back in.`)) {
+      return
+    }
+    setBusy(true)
+    try {
+      await adminResetPassword(userId, newPw)
+      setLastIssued(newPw)
+      setNewPw('')
+      toast.success(`Password reset for ${username || 'user'}`)
+    } catch (err) {
+      toast.error(err.message || 'Could not reset password')
+    }
+    setBusy(false)
+  }
+
+  const copyToClipboard = async (text) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      toast.success('Copied to clipboard')
+    } catch {
+      toast.error('Copy failed — long-press to select')
+    }
+  }
+
+  return (
+    <div>
+      <p className="stat-label" style={{ marginBottom: 12 }}>Reset Password</p>
+
+      {lastIssued ? (
+        <div
+          style={{
+            padding: '14px 16px',
+            borderRadius: 12,
+            background: 'var(--success-soft)',
+            border: '1px solid var(--success)',
+            marginBottom: 12,
+          }}
+        >
+          <p className="text-foreground" style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>
+            New password for {username}:
+          </p>
+          <div className="flex items-center" style={{ gap: 8 }}>
+            <code
+              style={{
+                flex: 1, minWidth: 0,
+                fontFamily: 'monospace', fontSize: 15, fontWeight: 700,
+                padding: '8px 12px', borderRadius: 8,
+                background: 'var(--card)', color: 'var(--foreground)',
+                wordBreak: 'break-all',
+              }}
+            >
+              {lastIssued}
+            </code>
+            <button
+              type="button"
+              onClick={() => copyToClipboard(lastIssued)}
+              className="btn-secondary"
+              style={{ padding: '8px 14px', minWidth: 'auto', fontSize: 12, flexShrink: 0 }}
+            >
+              Copy
+            </button>
+          </div>
+          <p className="text-muted-foreground" style={{ fontSize: 11, marginTop: 10, lineHeight: 1.5 }}>
+            Share this with the user securely. Once they sign in, they should open Settings → Change Password to set their own.
+          </p>
+          <button
+            type="button"
+            onClick={() => setLastIssued(null)}
+            className="btn-pill"
+            style={{ marginTop: 10, padding: '6px 14px', fontSize: 11 }}
+          >
+            Done
+          </button>
+        </div>
+      ) : (
+        <form onSubmit={handleReset}>
+          <div className="form-group" style={{ marginBottom: 12 }}>
+            <label className="form-label">New temporary password</label>
+            <div className="flex" style={{ gap: 8 }}>
+              <input
+                type="text"
+                value={newPw}
+                onChange={e => setNewPw(e.target.value)}
+                className="form-input"
+                placeholder="Type or generate"
+                minLength={8}
+                autoComplete="new-password"
+                style={{ flex: 1 }}
+              />
+              <button
+                type="button"
+                onClick={() => setNewPw(generateTemp())}
+                className="btn-secondary"
+                style={{ padding: '0 14px', minWidth: 'auto', fontSize: 12, flexShrink: 0 }}
+                aria-label="Generate"
+              >
+                ✨
+              </button>
+            </div>
+            <p className="text-hint">At least 8 characters · they can change it after signing in</p>
+          </div>
+          <button
+            type="submit"
+            disabled={busy || !newPw || newPw.length < 8}
+            className="btn-primary w-full"
+            style={{
+              padding: '10px 20px',
+              opacity: (busy || !newPw || newPw.length < 8) ? 0.5 : 1,
+              background: 'var(--danger)',
+              color: '#ffffff',
+            }}
+          >
+            {busy ? 'Resetting…' : 'Reset password'}
+          </button>
+        </form>
       )}
     </div>
   )
