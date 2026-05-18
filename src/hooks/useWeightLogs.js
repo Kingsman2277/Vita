@@ -50,7 +50,10 @@ export function useWeightLogs() {
     if (!isFinite(payload.weight) || payload.weight <= 0) throw new Error('weight must be positive')
     const { error } = await supabase
       .from('weight_logs')
-      .upsert(payload, { onConflict: 'date' })
+      // Composite onConflict matches the (user_id, date) unique
+      // constraint introduced by the multi-user migration. user_id is
+      // auto-filled server-side via the column's default auth.uid().
+      .upsert(payload, { onConflict: 'user_id,date' })
     if (error) throw error
     await fetchLogs()
   }

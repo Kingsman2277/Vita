@@ -38,7 +38,10 @@ export function useBodyMetrics() {
     }
     const { error } = await supabase
       .from('body_metrics')
-      .upsert(payload, { onConflict: 'date' })
+      // Composite onConflict matches the (user_id, date) unique
+      // constraint from the multi-user migration; user_id is server-
+      // filled via the column's default auth.uid().
+      .upsert(payload, { onConflict: 'user_id,date' })
     if (error) throw error
     await fetchMetrics()
   }

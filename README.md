@@ -140,6 +140,23 @@ Then in the Supabase dashboard:
    - Tick **Auto Confirm User**
 4. Sign in at your deployed URL with just the **username part** (e.g. `matteo`) and your password. The app will convert it to the internal email automatically.
 
+### 3e. Multi-user mode (run AFTER you've signed in at least once)
+
+Run [supabase-multi-user-migration.sql](./supabase-multi-user-migration.sql)
+in the SQL Editor. It adds a `user_id` column to every per-user table,
+backfills all your existing rows to your account, and replaces the
+permissive RLS policies with strict ownership checks. After running:
+
+- All your data still belongs to you, the app behaves identically
+- New accounts you create (via Supabase dashboard → Authentication →
+  Users → Add user) see zero data — their own clean slate
+- RLS at the database level guarantees users can never see or modify
+  each other's rows
+
+**Order matters:** create your own auth user first (step 3c), then
+run this migration. The migration assigns existing rows to the oldest
+auth user — which needs to be you.
+
 ### 4. Run dev server
 ```bash
 npm run dev
