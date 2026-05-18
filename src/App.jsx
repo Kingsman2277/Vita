@@ -13,6 +13,7 @@ import Summary from './pages/Summary'
 import Settings from './pages/Settings'
 import Admin from './pages/Admin'
 import Login from './pages/Login'
+import RequireFeature from './components/RequireFeature'
 import { useAuth } from './hooks/useAuth'
 
 export default function App() {
@@ -36,16 +37,18 @@ export default function App() {
       <div className="safe-bottom">
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          {/* Always available */}
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/food" element={<Food />} />
-          <Route path="/finance" element={<Finance />} />
-          <Route path="/budget" element={<Budget />} />
-          <Route path="/goals" element={<Goals />} />
-          <Route path="/body-goals" element={<BodyGoals />} />
-          <Route path="/workout" element={<Workout />} />
-          <Route path="/summary" element={<Summary />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/admin" element={<Admin />} />
+          {/* Feature-gated */}
+          <Route path="/food"       element={<RequireFeature feature="food"><Food /></RequireFeature>} />
+          <Route path="/finance"    element={<RequireFeature feature="finance"><Finance /></RequireFeature>} />
+          <Route path="/budget"     element={<RequireFeature feature="budget"><Budget /></RequireFeature>} />
+          <Route path="/goals"      element={<RequireFeature feature="goals"><Goals /></RequireFeature>} />
+          <Route path="/body-goals" element={<RequireFeature feature="goals"><BodyGoals /></RequireFeature>} />
+          <Route path="/workout"    element={<RequireFeature feature="workout"><Workout /></RequireFeature>} />
+          <Route path="/summary"    element={<RequireFeature feature="summary"><Summary /></RequireFeature>} />
         </Routes>
       </div>
       <BottomNav />

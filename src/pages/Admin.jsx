@@ -1,11 +1,15 @@
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import Card from '../components/Card'
 import Modal from '../components/Modal'
 import SkeletonLoader from '../components/SkeletonLoader'
-import { useIsAdmin, useAdminUsers, useAdminUserRecent, adminResetPassword } from '../hooks/useAdmin'
+import {
+  useIsAdmin, useAdminUsers, useAdminUserRecent,
+  adminResetPassword, fetchUserFeatures, adminSetUserFeatures,
+} from '../hooks/useAdmin'
 import { emailToUsername } from '../lib/supabase'
+import { FEATURE_CATALOG } from '../lib/features'
 
 export default function Admin() {
   const navigate = useNavigate()
@@ -158,6 +162,12 @@ export default function Admin() {
           <>
             <UserActivityPanel userId={drillUserId} />
             <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid var(--border)' }}>
+              <FeatureTogglePanel
+                userId={drillUserId}
+                isOwner={drillUserId === users[0]?.id}
+              />
+            </div>
+            <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid var(--border)' }}>
               <UserResetPanel
                 userId={drillUserId}
                 username={emailToUsername(users.find(u => u.id === drillUserId)?.email)}
@@ -267,6 +277,151 @@ function UserActivityPanel({ userId }) {
             </div>
           ))}
         </div>
+      )}
+    </div>
+  )
+}
+
+function FeatureTogglePanel({ userId, isOwner }) {
+  const [features, setFeatures] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [dirty, setDirty] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    setLoading(true)
+    fetchUserFeatures(userId)
+      .then(list => {
+        if (cancelled) return
+        setFeatures(list)
+        setDirty(false)
+        setLoading(false)
+      })
+      .catch(err => {
+        if (cancelled) return
+        // eslint-disable-next-line no-console
+        console.warn('[fetchUserFeatures]', err.message)
+        setFeatures([])
+        setLoading(false)
+      })
+    return () => { cancelled = true }
+  }, [userId])
+
+  const toggle = (key) => {
+    if (isOwner) return // owner toggles are no-ops
+    setFeatures(prev => {
+      const has = prev.includes(key)
+      const next = has ? prev.filter(k => k !== key) : [...prev, key]
+      setDirty(true)
+      return next
+    })
+  }
+
+  const save = async () => {
+    if (!dirty || isOwner) return
+    setSaving(true)
+    try {
+      await adminSetUserFeatures(userId, features)
+      toast.success('Features updated')
+      setDirty(false)
+    } catch (err) {
+      toast.error(err.message || 'Could not save features')
+    }
+    setSaving(false)
+  }
+
+  return (
+    <div>
+      <p className="stat-label" style={{ marginBottom: 12 }}>Features</p>
+
+      {isOwner ? (
+        <p className="text-muted-foreground" style={{ fontSize: 12, lineHeight: 1.5 }}>
+          The owner always has every feature — toggles are disabled here so you can't lock yourself out.
+        </p>
+      ) : loading ? (
+        <SkeletonLoader count={3} height="h-10" />
+      ) : (
+        <>
+          <div className="flex flex-col" style={{ gap: 8 }}>
+            {FEATURE_CATALOG.map(feature => {
+              const enabled = features.includes(feature.key)
+              return (
+                <button
+                  key={feature.key}
+                  type="button"
+                  onClick={() => toggle(feature.key)}
+                  aria-pressed={enabled}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    justifyContent: 'space-between',
+                    gap: 12,
+                    padding: '12px 14px',
+                    borderRadius: 12,
+                    border: `1px solid ${enabled ? 'var(--primary)' : 'var(--border)'}`,
+                    background: enabled ? 'rgba(43, 181, 196, 0.06)' : 'var(--card)',
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                    color: 'inherit',
+                    textAlign: 'left',
+                    width: '100%',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <p className="text-foreground" style={{ fontSize: 13, fontWeight: 600 }}>
+                      <span aria-hidden="true" style={{ marginRight: 6 }}>{feature.emoji}</span>
+                      {feature.label}
+                    </p>
+                    <p className="text-muted-foreground" style={{ fontSize: 11, marginTop: 3, lineHeight: 1.4 }}>
+                      {feature.description}
+                    </p>
+                  </div>
+                  {/* Toggle pill */}
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      width: 36, height: 22, borderRadius: 999,
+                      background: enabled ? 'var(--primary)' : 'var(--muted)',
+                      position: 'relative', flexShrink: 0,
+                      transition: 'background 0.15s ease',
+                    }}
+                  >
+                    <span
+                      style={{
+                        position: 'absolute',
+                        top: 2, left: enabled ? 16 : 2,
+                        width: 18, height: 18, borderRadius: '50%',
+                        background: '#fff',
+                        transition: 'left 0.15s ease',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
+                      }}
+                    />
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+
+          <div className="flex items-center justify-between" style={{ marginTop: 14, gap: 10 }}>
+            <p className="text-muted-foreground" style={{ fontSize: 11, lineHeight: 1.5 }}>
+              {dirty ? 'Unsaved changes' : 'Up to date'}
+            </p>
+            <button
+              type="button"
+              onClick={save}
+              disabled={!dirty || saving}
+              className="btn-primary"
+              style={{
+                padding: '8px 18px', minWidth: 'auto', fontSize: 13,
+                opacity: (!dirty || saving) ? 0.5 : 1,
+              }}
+            >
+              {saving ? 'Saving…' : 'Save'}
+            </button>
+          </div>
+        </>
       )}
     </div>
   )

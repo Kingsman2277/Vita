@@ -1,20 +1,27 @@
 import { NavLink } from 'react-router-dom'
+import { useFeatures } from '../hooks/useFeatures'
 
+// `feature` is the gate; null means always-on (Dashboard).
 const navItems = [
-  { to: '/dashboard', label: 'Home', icon: HomeIcon },
-  { to: '/food', label: 'Food', icon: FoodIcon },
-  { to: '/workout', label: 'Workout', icon: WorkoutIcon },
-  { to: '/finance', label: 'Finance', icon: FinanceIcon },
-  { to: '/budget', label: 'Budget', icon: BudgetIcon },
-  { to: '/goals', label: 'Goals', icon: GoalsIcon },
-  { to: '/summary', label: 'Summary', icon: SummaryIcon },
+  { to: '/dashboard', label: 'Home',    icon: HomeIcon,    feature: null },
+  { to: '/food',      label: 'Food',    icon: FoodIcon,    feature: 'food' },
+  { to: '/workout',   label: 'Workout', icon: WorkoutIcon, feature: 'workout' },
+  { to: '/finance',   label: 'Finance', icon: FinanceIcon, feature: 'finance' },
+  { to: '/budget',    label: 'Budget',  icon: BudgetIcon,  feature: 'budget' },
+  { to: '/goals',     label: 'Goals',   icon: GoalsIcon,   feature: 'goals' },
+  { to: '/summary',   label: 'Summary', icon: SummaryIcon, feature: 'summary' },
 ]
 
 export default function BottomNav() {
+  const { hasFeature, loading } = useFeatures()
+  const visible = navItems.filter(item => !item.feature || hasFeature(item.feature))
+  // While features load, render only the always-on items (Home) to
+  // avoid flashing locked entries in and back out.
+  const items = loading ? navItems.filter(i => !i.feature) : visible
   return (
     <nav className="bottom-nav md:hidden" aria-label="Main navigation">
       <div className="bottom-nav-inner">
-        {navItems.map(({ to, label, icon: Icon }) => (
+        {items.map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}

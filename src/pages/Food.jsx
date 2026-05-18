@@ -10,6 +10,7 @@ import JumpToTodayButton from '../components/JumpToTodayButton'
 import { useFoodLogs, MICRO_KEYS, sumMicronutrients } from '../hooks/useFoodLogs'
 import { useMonthNavigation } from '../hooks/useMonthNavigation'
 import { useAiCorrections } from '../hooks/useAiCorrections'
+import { useFeatures } from '../hooks/useFeatures'
 import DayPicker from '../components/DayPicker'
 import { filterByMonth, filterByDay, getDaysWithData } from '../lib/dateFilters'
 import { analyzeFood, analyzeFoodText } from '../lib/ai'
@@ -19,6 +20,8 @@ export default function Food() {
   const { logs, todayCalories, todayProtein, todayCarbs, todayFat, loading, addFoodLog, updateFoodLog, deleteFoodLog } = useFoodLogs()
   const { selectedMonth, goToPrev, goToNext, goToCurrentMonth, isCurrentMonth, label } = useMonthNavigation()
   const { findSimilar, saveCorrection } = useAiCorrections()
+  const { hasFeature } = useFeatures()
+  const aiEnabled = hasFeature('ai_food_analysis')
   const [modalOpen, setModalOpen] = useState(false)
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [editingEntry, setEditingEntry] = useState(null)
@@ -270,32 +273,34 @@ export default function Food() {
       <header>
         <h1 className="page-title">Food Log</h1>
         <div className="flex" style={{ gap: 10, marginTop: 16 }}>
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setPhotoMenuOpen(p => !p)}
-              className="btn-secondary"
-              aria-haspopup="menu"
-              aria-expanded={photoMenuOpen}
-              style={{ padding: '11px 20px', borderRadius: 24, minWidth: 'auto', fontSize: 13 }}
-            >
-              📷 Photo
-            </button>
-            {photoMenuOpen && (
-              <>
-                <div className="fixed inset-0 z-40" onClick={() => setPhotoMenuOpen(false)} aria-hidden="true" />
-                <div role="menu" className="absolute left-0 top-full mt-2 z-50 bg-card border border-border rounded-lg shadow-lg overflow-hidden min-w-[200px]" style={{ padding: '4px 0' }}>
-                  <button type="button" role="menuitem" onClick={() => { setPhotoMenuOpen(false); setCameraOpen(true) }} className="w-full text-left text-sm text-foreground hover:bg-muted transition-colors flex items-center gap-3" style={{ padding: '12px 16px' }}>
-                    <span aria-hidden="true">📸</span> Take Photo
-                  </button>
-                  <div className="border-t border-border" aria-hidden="true" />
-                  <button type="button" role="menuitem" onClick={() => { setPhotoMenuOpen(false); galleryRef.current.value = ''; galleryRef.current?.click() }} className="w-full text-left text-sm text-foreground hover:bg-muted transition-colors flex items-center gap-3" style={{ padding: '12px 16px' }}>
-                    <span aria-hidden="true">🖼️</span> Upload from Gallery
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
+          {aiEnabled && (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setPhotoMenuOpen(p => !p)}
+                className="btn-secondary"
+                aria-haspopup="menu"
+                aria-expanded={photoMenuOpen}
+                style={{ padding: '11px 20px', borderRadius: 24, minWidth: 'auto', fontSize: 13 }}
+              >
+                📷 Photo
+              </button>
+              {photoMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setPhotoMenuOpen(false)} aria-hidden="true" />
+                  <div role="menu" className="absolute left-0 top-full mt-2 z-50 bg-card border border-border rounded-lg shadow-lg overflow-hidden min-w-[200px]" style={{ padding: '4px 0' }}>
+                    <button type="button" role="menuitem" onClick={() => { setPhotoMenuOpen(false); setCameraOpen(true) }} className="w-full text-left text-sm text-foreground hover:bg-muted transition-colors flex items-center gap-3" style={{ padding: '12px 16px' }}>
+                      <span aria-hidden="true">📸</span> Take Photo
+                    </button>
+                    <div className="border-t border-border" aria-hidden="true" />
+                    <button type="button" role="menuitem" onClick={() => { setPhotoMenuOpen(false); galleryRef.current.value = ''; galleryRef.current?.click() }} className="w-full text-left text-sm text-foreground hover:bg-muted transition-colors flex items-center gap-3" style={{ padding: '12px 16px' }}>
+                      <span aria-hidden="true">🖼️</span> Upload from Gallery
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
           <button onClick={openAddModal} className="btn-primary" style={{ padding: '11px 20px', borderRadius: 24, minWidth: 'auto', fontSize: 13 }}>
             + Log Food
           </button>
@@ -394,41 +399,45 @@ export default function Food() {
           </div>
         ) : (
           <>
-            {/* Smart AI input */}
-            <div style={{ marginBottom: 28 }}>
-              <label className="form-label">Describe what you ate</label>
-              <textarea
-                value={smartText}
-                onChange={e => setSmartText(e.target.value)}
-                placeholder="e.g. two eggs, two parathas, an apple, orange juice and a coffee"
-                className="form-input"
-                rows={3}
-                style={{ resize: 'none', marginBottom: 12 }}
-                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSmartAnalyze() } }}
-              />
-              <button
-                type="button"
-                onClick={handleSmartAnalyze}
-                disabled={!smartText.trim()}
-                className="btn-primary w-full"
-                style={{ padding: '12px 24px', opacity: smartText.trim() ? 1 : 0.4 }}
-              >
-                ✨ Analyze with AI
-              </button>
-              <p className="text-hint">AI calculates calories & macros for you. Press Enter or click Analyze.</p>
-            </div>
+            {/* Smart AI input — hidden for users without ai_food_analysis */}
+            {aiEnabled && (
+              <>
+                <div style={{ marginBottom: 28 }}>
+                  <label className="form-label">Describe what you ate</label>
+                  <textarea
+                    value={smartText}
+                    onChange={e => setSmartText(e.target.value)}
+                    placeholder="e.g. two eggs, two parathas, an apple, orange juice and a coffee"
+                    className="form-input"
+                    rows={3}
+                    style={{ resize: 'none', marginBottom: 12 }}
+                    onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSmartAnalyze() } }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleSmartAnalyze}
+                    disabled={!smartText.trim()}
+                    className="btn-primary w-full"
+                    style={{ padding: '12px 24px', opacity: smartText.trim() ? 1 : 0.4 }}
+                  >
+                    ✨ Analyze with AI
+                  </button>
+                  <p className="text-hint">AI calculates calories & macros for you. Press Enter or click Analyze.</p>
+                </div>
 
-            {/* AI breakdown — shows the per-item math after a smart analyze */}
-            {aiResult && Array.isArray(aiResult.items) && aiResult.items.length > 0 && (
-              <AiBreakdown result={aiResult} />
+                {/* AI breakdown — only meaningful when AI is enabled */}
+                {aiResult && Array.isArray(aiResult.items) && aiResult.items.length > 0 && (
+                  <AiBreakdown result={aiResult} />
+                )}
+
+                {/* Divider between AI and manual entry */}
+                <div className="flex items-center gap-4" style={{ marginBottom: 24 }}>
+                  <div className="flex-1 border-t border-border" />
+                  <span className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">or enter manually</span>
+                  <div className="flex-1 border-t border-border" />
+                </div>
+              </>
             )}
-
-            {/* Divider */}
-            <div className="flex items-center gap-4" style={{ marginBottom: 24 }}>
-              <div className="flex-1 border-t border-border" />
-              <span className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">or enter manually</span>
-              <div className="flex-1 border-t border-border" />
-            </div>
 
             {/* Manual form */}
             <form onSubmit={handleSubmit}>

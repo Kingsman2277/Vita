@@ -1,20 +1,26 @@
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useIsAdmin } from '../hooks/useAdmin'
+import { useFeatures } from '../hooks/useFeatures'
 
+// `feature` is the gate; null means always-on.
 const navItems = [
-  { to: '/dashboard', label: 'Home', icon: HomeIcon },
-  { to: '/food', label: 'Food', icon: FoodIcon },
-  { to: '/workout', label: 'Workout', icon: WorkoutIcon },
-  { to: '/finance', label: 'Finance', icon: FinanceIcon },
-  { to: '/budget', label: 'Budget', icon: BudgetIcon },
-  { to: '/goals', label: 'Goals', icon: GoalsIcon },
-  { to: '/summary', label: 'Summary', icon: SummaryIcon },
+  { to: '/dashboard', label: 'Home',    icon: HomeIcon,    feature: null },
+  { to: '/food',      label: 'Food',    icon: FoodIcon,    feature: 'food' },
+  { to: '/workout',   label: 'Workout', icon: WorkoutIcon, feature: 'workout' },
+  { to: '/finance',   label: 'Finance', icon: FinanceIcon, feature: 'finance' },
+  { to: '/budget',    label: 'Budget',  icon: BudgetIcon,  feature: 'budget' },
+  { to: '/goals',     label: 'Goals',   icon: GoalsIcon,   feature: 'goals' },
+  { to: '/summary',   label: 'Summary', icon: SummaryIcon, feature: 'summary' },
 ]
 
 export default function Sidebar() {
   const { username } = useAuth()
   const { isAdmin } = useIsAdmin()
+  const { hasFeature, loading: featuresLoading } = useFeatures()
+  const visible = featuresLoading
+    ? navItems.filter(i => !i.feature)
+    : navItems.filter(i => !i.feature || hasFeature(i.feature))
   return (
     <aside className="hidden md:flex fixed left-0 top-0 bottom-0 w-64 bg-sidebar border-r border-sidebar-border flex-col z-50">
       <div className="px-6 pt-7 pb-2">
@@ -25,7 +31,7 @@ export default function Sidebar() {
       </div>
 
       <nav className="flex-1 px-3 py-5 space-y-1">
-        {navItems.map(({ to, label, icon: Icon }) => (
+        {visible.map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}

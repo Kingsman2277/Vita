@@ -58,6 +58,38 @@ export function useAdminUsers() {
 }
 
 /**
+ * Fetch a single user's enabled features. Admin-only via the RLS
+ * policy on user_profiles (admin can read all rows).
+ */
+export async function fetchUserFeatures(targetUserId) {
+  if (!targetUserId) return []
+  const { data, error } = await supabase
+    .from('user_profiles')
+    .select('enabled_features')
+    .eq('user_id', targetUserId)
+    .maybeSingle()
+  if (error) throw new Error(error.message)
+  return Array.isArray(data?.enabled_features) ? data.enabled_features : []
+}
+
+/**
+ * Replace a user's enabled features array. Admin-only — the
+ * admin_set_user_features RPC enforces is_admin() server-side.
+ */
+export async function adminSetUserFeatures(targetUserId, newFeatures) {
+  if (!targetUserId) throw new Error('Missing user id')
+  if (!Array.isArray(newFeatures)) throw new Error('Features must be an array')
+  const { error } = await supabase.rpc('admin_set_user_features', {
+    target_user_id: targetUserId,
+    new_features: newFeatures,
+  })
+  if (error) {
+    if (/unauthorized/i.test(error.message)) throw new Error('Only the admin can change features')
+    throw new Error(error.message)
+  }
+}
+
+/**
  * Reset a user's password to a new value. Admin-only — the
  * admin_reset_password RPC enforces is_admin() server-side.
  * Returns a Promise that resolves on success, rejects with a clear
