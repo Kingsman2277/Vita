@@ -225,55 +225,21 @@ export function useWorkoutLogs(selectedDate) {
    * state, since this runs right after a mutation and the local
    * state might not be up-to-date yet.
    */
+  /**
+   * Internal: after a template change for `dayOfWeek`, wipe every
+   * pending (not-yet-completed) workout_log row for that weekday so
+   * the auto-populate effect can refill the user's current view from
+   * the fresh template list on the next render. Completed logs
+   * (history) are preserved. RLS scopes the delete to the current
+   * user.
+   */
   const syncLogsToTemplateChange = useCallback(async (dayOfWeek) => {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const todayStr = toLocalISODate(today)
-    const todayDow = isoDayOfWeek(today)
-
-    // Wipe pending (not-yet-completed) logs for future occurrences
-    // of the affected weekday. Past dates remain as historical record.
     await supabase
       .from('workout_logs')
       .delete()
       .eq('day_of_week', dayOfWeek)
-      .gt('date', todayStr)
       .eq('completed', false)
-
-    // If today IS the affected weekday, wipe today's pending logs by
-    // DATE (not day_of_week) and then re-seed. Going by date is the
-    // safety net: older rows may have a stale or null day_of_week
-    // value from before per-user templates, and would otherwise slip
-    // through a day_of_week-scoped filter and re-appear on screen.
-    if (todayDow === dayOfWeek) {
-      await supabase
-        .from('workout_logs')
-        .delete()
-        .eq('date', todayStr)
-        .eq('completed', false)
-
-      let freshTemplatesQuery = supabase
-        .from('workout_templates')
-        .select('*')
-        .eq('day_of_week', dayOfWeek)
-        .order('exercise_order', { ascending: true })
-      if (userId) freshTemplatesQuery = freshTemplatesQuery.eq('user_id', userId)
-      const { data: freshTemplates } = await freshTemplatesQuery
-      if (Array.isArray(freshTemplates) && freshTemplates.length > 0) {
-        const rows = freshTemplates.map(t => ({
-          date: todayStr,
-          day_of_week: t.day_of_week,
-          exercise_order: t.exercise_order,
-          exercise_name: t.exercise_name,
-          sets_reps: t.sets_reps,
-          completed: false,
-        }))
-        await supabase
-          .from('workout_logs')
-          .upsert(rows, { onConflict: 'user_id,date,exercise_order', ignoreDuplicates: true })
-      }
-    }
-  }, [userId])
+  }, [])
 
   /** Add one exercise to a specific day's program. Assigns the next free
    *  exercise_order automatically. */
