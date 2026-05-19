@@ -22,7 +22,7 @@ const DOW_LABELS = { 1: 'Mon', 2: 'Tue', 3: 'Wed', 4: 'Thu', 5: 'Fri' }
 export default function ProgramEditor({
   open, onClose,
   templates,
-  actions, // { addProgramExercise, updateProgramExercise, deleteProgramExercise, resetProgramToDefaults, clearProgram }
+  actions, // { addProgramExercise, updateProgramExercise, deleteProgramExercise, resetProgramToDefaults, clearProgram, clearProgramForDay }
 }) {
   const [activeDay, setActiveDay] = useState(1)
   const [editingId, setEditingId] = useState(null) // template id being edited (or 'new')
@@ -56,6 +56,20 @@ export default function ProgramEditor({
       setEditingId(null)
     } catch (err) {
       toast.error(err.message || 'Could not reset')
+    }
+    setBusy(false)
+  }
+
+  const handleClearDay = async () => {
+    if (dayExercises.length === 0) return
+    if (!confirm(`Delete ALL ${dayExercises.length} exercises from ${DOW_LABELS[activeDay]}? You can add new ones after, or reset to defaults.`)) return
+    setBusy(true)
+    try {
+      await actions.clearProgramForDay(activeDay)
+      toast.success(`${DOW_LABELS[activeDay]} cleared`)
+      setEditingId(null)
+    } catch (err) {
+      toast.error(err.message || 'Could not clear day')
     }
     setBusy(false)
   }
@@ -220,14 +234,32 @@ export default function ProgramEditor({
       </div>
 
       {editingId !== 'new' && (
-        <button
-          type="button"
-          onClick={() => setEditingId('new')}
-          className="btn-secondary w-full"
-          style={{ padding: '10px 16px', marginBottom: 18 }}
-        >
-          + Add exercise to {DOW_LABELS[activeDay]}
-        </button>
+        <div className="flex flex-col" style={{ gap: 8, marginBottom: 18 }}>
+          <button
+            type="button"
+            onClick={() => setEditingId('new')}
+            className="btn-secondary w-full"
+            style={{ padding: '10px 16px' }}
+          >
+            + Add exercise to {DOW_LABELS[activeDay]}
+          </button>
+          {dayExercises.length > 0 && (
+            <button
+              type="button"
+              onClick={handleClearDay}
+              disabled={busy}
+              style={{
+                width: '100%', padding: '10px 16px', fontSize: 12, fontWeight: 600,
+                borderRadius: 8, border: '1px solid var(--danger)',
+                background: 'transparent', color: 'var(--danger)',
+                cursor: busy ? 'not-allowed' : 'pointer', fontFamily: 'inherit',
+                opacity: busy ? 0.5 : 1,
+              }}
+            >
+              Delete all from {DOW_LABELS[activeDay]}
+            </button>
+          )}
+        </div>
       )}
 
       {/* Footer actions */}

@@ -79,6 +79,7 @@ export default function Workout() {
     deleteProgramExercise,
     resetProgramToDefaults,
     clearProgram,
+    clearProgramForDay,
     resetDay,
   } = useWorkoutLogs(dateObj)
   const [programEditorOpen, setProgramEditorOpen] = useState(false)
@@ -308,6 +309,7 @@ export default function Workout() {
           deleteProgramExercise,
           resetProgramToDefaults,
           clearProgram,
+          clearProgramForDay,
         }}
       />
     </div>

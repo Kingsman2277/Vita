@@ -207,6 +207,57 @@ export function useWorkoutLogs(selectedDate) {
   // future dates pick up the new exercises next time the user opens that
   // day. Past dates are untouched.
 
+  /**
+   * Internal: after a template change for `dayOfWeek`, sync the
+   * pending workout_logs so the new program takes effect immediately
+   * on today and any future occurrences of that weekday. Already-
+   * completed logs are preserved (history) — only pending rows get
+   * wiped and re-seeded from the fresh template.
+   *
+   * Reads templates fresh from the DB rather than the hook's local
+   * state, since this runs right after a mutation and the local
+   * state might not be up-to-date yet.
+   */
+  const syncLogsToTemplateChange = useCallback(async (dayOfWeek) => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const todayStr = toLocalISODate(today)
+    const todayDow = isoDayOfWeek(today)
+
+    // Wipe pending (not-yet-completed) logs for the affected weekday
+    // from today onwards. Past dates remain as historical record.
+    await supabase
+      .from('workout_logs')
+      .delete()
+      .eq('day_of_week', dayOfWeek)
+      .gte('date', todayStr)
+      .eq('completed', false)
+
+    // If today IS the affected weekday, re-seed from the fresh
+    // templates immediately so the page shows the new exercises
+    // without waiting for the auto-populate effect to fire.
+    if (todayDow === dayOfWeek) {
+      const { data: freshTemplates } = await supabase
+        .from('workout_templates')
+        .select('*')
+        .eq('day_of_week', dayOfWeek)
+        .order('exercise_order', { ascending: true })
+      if (Array.isArray(freshTemplates) && freshTemplates.length > 0) {
+        const rows = freshTemplates.map(t => ({
+          date: todayStr,
+          day_of_week: t.day_of_week,
+          exercise_order: t.exercise_order,
+          exercise_name: t.exercise_name,
+          sets_reps: t.sets_reps,
+          completed: false,
+        }))
+        await supabase
+          .from('workout_logs')
+          .upsert(rows, { onConflict: 'user_id,date,exercise_order', ignoreDuplicates: true })
+      }
+    }
+  }, [])
+
   /** Add one exercise to a specific day's program. Assigns the next free
    *  exercise_order automatically. */
   const addProgramExercise = useCallback(async (dayOfWeek, fields) => {
@@ -227,10 +278,13 @@ export function useWorkoutLogs(selectedDate) {
     const { error } = await supabase.from('workout_templates').insert(payload)
     if (error) throw error
     await fetchTemplates()
-  }, [templates, fetchTemplates])
+    await syncLogsToTemplateChange(dayOfWeek)
+    await fetchLogs()
+  }, [templates, fetchTemplates, fetchLogs, syncLogsToTemplateChange])
 
   /** Update an existing template row. */
   const updateProgramExercise = useCallback(async (templateId, fields) => {
+    const target = templates.find(t => t.id === templateId)
     const patch = {}
     if (fields.exercise_name != null) patch.exercise_name = fields.exercise_name.trim() || 'Untitled'
     if (fields.sets_reps != null)     patch.sets_reps     = fields.sets_reps.trim()     || '3 x 10'
@@ -239,7 +293,11 @@ export function useWorkoutLogs(selectedDate) {
     const { error } = await supabase.from('workout_templates').update(patch).eq('id', templateId)
     if (error) throw error
     await fetchTemplates()
-  }, [fetchTemplates])
+    if (target?.day_of_week) {
+      await syncLogsToTemplateChange(target.day_of_week)
+      await fetchLogs()
+    }
+  }, [templates, fetchTemplates, fetchLogs, syncLogsToTemplateChange])
 
   /** Delete a template row. Compacts the day's exercise_order so the
    *  numbering stays consecutive. */
@@ -264,12 +322,37 @@ export function useWorkoutLogs(selectedDate) {
       }
     }
     await fetchTemplates()
-  }, [templates, fetchTemplates])
+    await syncLogsToTemplateChange(target.day_of_week)
+    await fetchLogs()
+  }, [templates, fetchTemplates, fetchLogs, syncLogsToTemplateChange])
 
-  /** Wipe the user's program and re-seed the default 5-day program. */
+  /** Wipe every exercise from a single day. Useful when restructuring
+   *  a day's program from scratch. */
+  const clearProgramForDay = useCallback(async (dayOfWeek) => {
+    const { error } = await supabase
+      .from('workout_templates')
+      .delete()
+      .eq('day_of_week', dayOfWeek)
+    if (error) throw error
+    await fetchTemplates()
+    await syncLogsToTemplateChange(dayOfWeek)
+    await fetchLogs()
+  }, [fetchTemplates, fetchLogs, syncLogsToTemplateChange])
+
+  /** Wipe the user's program and re-seed the default 5-day program.
+   *  Also clears pending logs across all 5 weekdays so the new (default)
+   *  template is what shows up immediately. */
   const resetProgramToDefaults = useCallback(async () => {
     const { error } = await supabase.rpc('reset_my_workout_program')
     if (error) throw error
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const todayStr = toLocalISODate(today)
+    await supabase
+      .from('workout_logs')
+      .delete()
+      .gte('date', todayStr)
+      .eq('completed', false)
     await Promise.all([fetchTemplates(), fetchLogs()])
   }, [fetchTemplates, fetchLogs])
 
@@ -469,6 +552,7 @@ export function useWorkoutLogs(selectedDate) {
     deleteProgramExercise,
     resetProgramToDefaults,
     clearProgram,
+    clearProgramForDay,
     resetDay,
 
     // Stats
