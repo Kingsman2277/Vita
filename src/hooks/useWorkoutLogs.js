@@ -224,19 +224,27 @@ export function useWorkoutLogs(selectedDate) {
     const todayStr = toLocalISODate(today)
     const todayDow = isoDayOfWeek(today)
 
-    // Wipe pending (not-yet-completed) logs for the affected weekday
-    // from today onwards. Past dates remain as historical record.
+    // Wipe pending (not-yet-completed) logs for future occurrences
+    // of the affected weekday. Past dates remain as historical record.
     await supabase
       .from('workout_logs')
       .delete()
       .eq('day_of_week', dayOfWeek)
-      .gte('date', todayStr)
+      .gt('date', todayStr)
       .eq('completed', false)
 
-    // If today IS the affected weekday, re-seed from the fresh
-    // templates immediately so the page shows the new exercises
-    // without waiting for the auto-populate effect to fire.
+    // If today IS the affected weekday, wipe today's pending logs by
+    // DATE (not day_of_week) and then re-seed. Going by date is the
+    // safety net: older rows may have a stale or null day_of_week
+    // value from before per-user templates, and would otherwise slip
+    // through a day_of_week-scoped filter and re-appear on screen.
     if (todayDow === dayOfWeek) {
+      await supabase
+        .from('workout_logs')
+        .delete()
+        .eq('date', todayStr)
+        .eq('completed', false)
+
       const { data: freshTemplates } = await supabase
         .from('workout_templates')
         .select('*')
@@ -361,6 +369,14 @@ export function useWorkoutLogs(selectedDate) {
   const clearProgram = useCallback(async () => {
     const { error } = await supabase.rpc('clear_my_workout_program')
     if (error) throw error
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const todayStr = toLocalISODate(today)
+    await supabase
+      .from('workout_logs')
+      .delete()
+      .gte('date', todayStr)
+      .eq('completed', false)
     await Promise.all([fetchTemplates(), fetchLogs()])
   }, [fetchTemplates, fetchLogs])
 
