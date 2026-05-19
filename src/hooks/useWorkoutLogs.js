@@ -124,9 +124,13 @@ export function useWorkoutLogs(selectedDate) {
       sets_reps: t.sets_reps,
       completed: false,
     }))
+    // Use upsert + ignoreDuplicates so concurrent populate attempts
+    // (e.g. Summary and Workout pages both mounting useWorkoutLogs)
+    // can't create double rows. The composite unique
+    // (user_id, date, exercise_order) is the dedupe target.
     supabase
       .from('workout_logs')
-      .insert(rows)
+      .upsert(rows, { onConflict: 'user_id,date,exercise_order', ignoreDuplicates: true })
       .then(({ error }) => {
         if (error) {
           // eslint-disable-next-line no-console
@@ -197,6 +201,85 @@ export function useWorkoutLogs(selectedDate) {
     (exerciseOrder, weight) => updateRow(exerciseOrder, { weight_used: weight || null }),
     [updateRow]
   )
+
+  // ─── Program (template) mutations ────────────────────────────────────────
+  // These edit the per-user workout_templates rows. Auto-populated logs for
+  // future dates pick up the new exercises next time the user opens that
+  // day. Past dates are untouched.
+
+  /** Add one exercise to a specific day's program. Assigns the next free
+   *  exercise_order automatically. */
+  const addProgramExercise = useCallback(async (dayOfWeek, fields) => {
+    const dayRows = templates.filter(t => t.day_of_week === dayOfWeek)
+    const nextOrder = dayRows.length === 0
+      ? 1
+      : Math.max(...dayRows.map(r => r.exercise_order)) + 1
+    const dayLabel = dayRows[0]?.day_label || ['Full Body A','Full Body B','Full Body C','Full Body D','Full Body E'][dayOfWeek - 1]
+    const payload = {
+      day_of_week: dayOfWeek,
+      day_label: dayLabel,
+      exercise_order: nextOrder,
+      exercise_name: fields.exercise_name?.trim() || 'New Exercise',
+      sets_reps: fields.sets_reps?.trim() || '3 x 10',
+      cue: fields.cue?.trim() || null,
+      muscle_group: fields.muscle_group || 'arms',
+    }
+    const { error } = await supabase.from('workout_templates').insert(payload)
+    if (error) throw error
+    await fetchTemplates()
+  }, [templates, fetchTemplates])
+
+  /** Update an existing template row. */
+  const updateProgramExercise = useCallback(async (templateId, fields) => {
+    const patch = {}
+    if (fields.exercise_name != null) patch.exercise_name = fields.exercise_name.trim() || 'Untitled'
+    if (fields.sets_reps != null)     patch.sets_reps     = fields.sets_reps.trim()     || '3 x 10'
+    if (fields.cue != null)           patch.cue           = fields.cue.trim() || null
+    if (fields.muscle_group != null)  patch.muscle_group  = fields.muscle_group
+    const { error } = await supabase.from('workout_templates').update(patch).eq('id', templateId)
+    if (error) throw error
+    await fetchTemplates()
+  }, [fetchTemplates])
+
+  /** Delete a template row. Compacts the day's exercise_order so the
+   *  numbering stays consecutive. */
+  const deleteProgramExercise = useCallback(async (templateId) => {
+    const target = templates.find(t => t.id === templateId)
+    if (!target) return
+    const { error: delErr } = await supabase
+      .from('workout_templates').delete().eq('id', templateId)
+    if (delErr) throw delErr
+    // Re-pack exercise_order for that day so we don't end up with gaps
+    // like 1,2,4,5 (which would confuse "next free order" later).
+    const remaining = templates
+      .filter(t => t.day_of_week === target.day_of_week && t.id !== templateId)
+      .sort((a, b) => a.exercise_order - b.exercise_order)
+    for (let i = 0; i < remaining.length; i++) {
+      const want = i + 1
+      if (remaining[i].exercise_order !== want) {
+        await supabase
+          .from('workout_templates')
+          .update({ exercise_order: want })
+          .eq('id', remaining[i].id)
+      }
+    }
+    await fetchTemplates()
+  }, [templates, fetchTemplates])
+
+  /** Wipe the user's program and re-seed the default 5-day program. */
+  const resetProgramToDefaults = useCallback(async () => {
+    const { error } = await supabase.rpc('reset_my_workout_program')
+    if (error) throw error
+    await Promise.all([fetchTemplates(), fetchLogs()])
+  }, [fetchTemplates, fetchLogs])
+
+  /** Wipe the user's program entirely (no re-seed). Also clears upcoming
+   *  workout_logs so empty days don't auto-populate from a stale cache. */
+  const clearProgram = useCallback(async () => {
+    const { error } = await supabase.rpc('clear_my_workout_program')
+    if (error) throw error
+    await Promise.all([fetchTemplates(), fetchLogs()])
+  }, [fetchTemplates, fetchLogs])
 
   // ─── Derived stats ────────────────────────────────────────────────────────
 
@@ -363,6 +446,14 @@ export function useWorkoutLogs(selectedDate) {
     toggleComplete,
     updateNote,
     updateWeight,
+
+    // Program / template management
+    templates,
+    addProgramExercise,
+    updateProgramExercise,
+    deleteProgramExercise,
+    resetProgramToDefaults,
+    clearProgram,
 
     // Stats
     streak,

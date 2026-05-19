@@ -5,6 +5,7 @@ import SkeletonLoader from '../components/SkeletonLoader'
 import JumpToTodayButton from '../components/JumpToTodayButton'
 import MonthPicker from '../components/MonthPicker'
 import DayPicker from '../components/DayPicker'
+import ProgramEditor from '../components/ProgramEditor'
 import { useWorkoutLogs } from '../hooks/useWorkoutLogs'
 import { useMonthNavigation } from '../hooks/useMonthNavigation'
 import { getToday } from '../lib/helpers'
@@ -72,7 +73,14 @@ export default function Workout() {
     daysWithData,
     loading,
     hasTemplates,
+    templates,
+    addProgramExercise,
+    updateProgramExercise,
+    deleteProgramExercise,
+    resetProgramToDefaults,
+    clearProgram,
   } = useWorkoutLogs(dateObj)
+  const [programEditorOpen, setProgramEditorOpen] = useState(false)
 
   const [expandedOrder, setExpandedOrder] = useState(null)
   const [showCelebration, setShowCelebration] = useState(false)
@@ -100,11 +108,21 @@ export default function Workout() {
   return (
     <div className="page-container">
       {/* ─── Header ─── */}
-      <header>
-        <h1 className="page-title">Workout</h1>
-        <p className="text-muted-foreground" style={{ fontSize: 13, marginTop: 4 }}>
-          {isToday ? "Today's session" : formatLongDate(selectedDate)}
-        </p>
+      <header className="flex items-start justify-between" style={{ gap: 12 }}>
+        <div style={{ minWidth: 0 }}>
+          <h1 className="page-title">Workout</h1>
+          <p className="text-muted-foreground" style={{ fontSize: 13, marginTop: 4 }}>
+            {isToday ? "Today's session" : formatLongDate(selectedDate)}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setProgramEditorOpen(true)}
+          className="btn-secondary"
+          style={{ padding: '8px 14px', minWidth: 'auto', fontSize: 12, flexShrink: 0 }}
+        >
+          ✎ Edit Program
+        </button>
       </header>
 
       <MonthPicker
@@ -174,20 +192,43 @@ export default function Workout() {
 
       {/* ─── Body ─── */}
       {!hasTemplates ? (
-        <Card style={{ padding: 24, textAlign: 'center' }}>
-          <p style={{ fontSize: 28, marginBottom: 10 }} aria-hidden="true">🏋️</p>
+        <Card style={{ padding: 28, textAlign: 'center' }}>
+          <p style={{ fontSize: 32, marginBottom: 12 }} aria-hidden="true">🏋️</p>
           <p className="text-foreground" style={{ fontSize: 15, fontWeight: 600, marginBottom: 6 }}>
-            No workout program loaded
+            Your program is empty
           </p>
-          <p className="text-muted-foreground" style={{ fontSize: 13 }}>
-            Run <code style={{ fontFamily: 'monospace' }}>supabase-workout-migration.sql</code> in your Supabase SQL Editor to seed the 5-day program.
+          <p className="text-muted-foreground" style={{ fontSize: 13, lineHeight: 1.5, maxWidth: 320, margin: '0 auto 18px' }}>
+            Build your own routine by adding exercises for each weekday, or load the default 5-day full-body program to get started.
           </p>
+          <div className="flex" style={{ gap: 8, justifyContent: 'center' }}>
+            <button
+              type="button"
+              onClick={() => setProgramEditorOpen(true)}
+              className="btn-primary"
+              style={{ padding: '10px 18px', minWidth: 'auto', fontSize: 13 }}
+            >
+              ✎ Edit Program
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                try { await resetProgramToDefaults(); toast.success('Default program loaded') }
+                catch (err) { toast.error(err.message || 'Could not load defaults') }
+              }}
+              className="btn-secondary"
+              style={{ padding: '10px 18px', minWidth: 'auto', fontSize: 13 }}
+            >
+              Load defaults
+            </button>
+          </div>
         </Card>
       ) : isWeekend ? (
         <RestDayCard date={selectedDate} />
       ) : exercises.length === 0 ? (
         <Card style={{ padding: 24, textAlign: 'center' }}>
-          <p className="text-muted-foreground" style={{ fontSize: 13 }}>Loading today's exercises…</p>
+          <p className="text-muted-foreground" style={{ fontSize: 13 }}>
+            No exercises scheduled for {DOW_LABEL_LONG[dayTemplate?.day_of_week] || 'this day'}. Tap <strong className="text-foreground">Edit Program</strong> to add some.
+          </p>
         </Card>
       ) : (
         <>
@@ -227,6 +268,19 @@ export default function Workout() {
       {showCelebration && (
         <CelebrationToast onClose={() => setShowCelebration(false)} count={totalCount} />
       )}
+
+      <ProgramEditor
+        open={programEditorOpen}
+        onClose={() => setProgramEditorOpen(false)}
+        templates={templates}
+        actions={{
+          addProgramExercise,
+          updateProgramExercise,
+          deleteProgramExercise,
+          resetProgramToDefaults,
+          clearProgram,
+        }}
+      />
     </div>
   )
 }
