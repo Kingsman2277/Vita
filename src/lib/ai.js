@@ -12,6 +12,8 @@
 //
 // Provider: OpenAI GPT-4o (multimodal).
 
+import { supabase } from './supabase'
+
 const AI_PROXY = '/api/openai'
 const MODEL = 'gpt-4o'
 
@@ -146,11 +148,23 @@ Apply the same correction pattern if it matches the current meal.`
 }
 
 async function callOpenAI(userContent) {
+  // Forward the user's Supabase access token so the proxy can
+  // verify the caller's identity and check their feature gate.
+  // Refreshes silently if the cached token is near expiry.
+  const { data: sessionData } = await supabase.auth.getSession()
+  const token = sessionData?.session?.access_token
+  if (!token) {
+    throw new Error('Not signed in — log out and back in, then try again')
+  }
+
   let response
   try {
     response = await fetch(AI_PROXY, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
       body: JSON.stringify({
         model: MODEL,
         temperature: 0.2,
@@ -198,9 +212,11 @@ async function callOpenAI(userContent) {
       response.status === 404
         ? 'AI service not reachable (404). Reload the page — if it persists the /api/openai proxy may be down.'
         : response.status === 401
-        ? 'AI auth failed — check OPENAI_API_KEY in Vercel.'
+        ? 'Sign-in expired. Reload the page and try again.'
+        : response.status === 403
+        ? 'AI food analysis isn’t enabled on your account. Ask the admin to turn it on.'
         : response.status === 429
-        ? 'AI rate-limited or out of credit. Top up your OpenAI account.'
+        ? 'Slow down — too many AI requests this minute. Try again shortly.'
         : `AI error (${response.status})`
     throw new Error(detail ? `${headline} — ${detail}` : headline)
   }
