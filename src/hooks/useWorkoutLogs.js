@@ -413,12 +413,18 @@ export function useWorkoutLogs(selectedDate) {
    * missing) exercise.
    */
   const streak = useMemo(() => {
+    const scheduledDows = new Set(templates.map(t => t.day_of_week))
+    // No scheduled days → no streak to count. Returning early also
+    // sidesteps an infinite loop: with zero templates every cursor
+    // step is a rest-day skip, count never increases, and the
+    // safety cap below would never fire.
+    if (scheduledDows.size === 0) return 0
+
     const byDate = new Map()
     for (const l of allLogs) {
       if (!byDate.has(l.date)) byDate.set(l.date, [])
       byDate.get(l.date).push(l)
     }
-    const scheduledDows = new Set(templates.map(t => t.day_of_week))
     const isFullyDone = (rows) =>
       rows && rows.length > 0 && rows.every(r => r.completed === true)
     const isRestDay = (d) => !scheduledDows.has(isoDayOfWeek(d))
@@ -430,16 +436,19 @@ export function useWorkoutLogs(selectedDate) {
     const todayKey = toLocalISODate(cursor)
     if (!isRestDay(cursor) && isFullyDone(byDate.get(todayKey))) count += 1
     cursor.setDate(cursor.getDate() - 1)
-    while (true) {
-      if (count > 365) break
+    // Cap by calendar distance too, so a long rest-day run doesn't spin.
+    let stepsBack = 1
+    while (stepsBack <= 365) {
       if (isRestDay(cursor)) {
         cursor.setDate(cursor.getDate() - 1)
+        stepsBack += 1
         continue
       }
       const key = toLocalISODate(cursor)
       if (!isFullyDone(byDate.get(key))) break
       count += 1
       cursor.setDate(cursor.getDate() - 1)
+      stepsBack += 1
     }
     return count
   }, [allLogs, templates])
