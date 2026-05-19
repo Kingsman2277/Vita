@@ -281,6 +281,21 @@ export function useWorkoutLogs(selectedDate) {
     await Promise.all([fetchTemplates(), fetchLogs()])
   }, [fetchTemplates, fetchLogs])
 
+  /** Delete the user's workout_logs for a specific date. The next time
+   *  they view that date, auto-populate refills cleanly from templates.
+   *  Useful for "start the day over" and recovering from duplicate-row
+   *  edge cases caused by stale client code. RLS scopes the delete to
+   *  the current user's rows automatically. */
+  const resetDay = useCallback(async (date) => {
+    if (!date) return
+    const { error } = await supabase
+      .from('workout_logs')
+      .delete()
+      .eq('date', date)
+    if (error) throw error
+    await fetchLogs()
+  }, [fetchLogs])
+
   // ─── Derived stats ────────────────────────────────────────────────────────
 
   /**
@@ -454,6 +469,7 @@ export function useWorkoutLogs(selectedDate) {
     deleteProgramExercise,
     resetProgramToDefaults,
     clearProgram,
+    resetDay,
 
     // Stats
     streak,

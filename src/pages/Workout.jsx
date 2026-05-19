@@ -79,8 +79,22 @@ export default function Workout() {
     deleteProgramExercise,
     resetProgramToDefaults,
     clearProgram,
+    resetDay,
   } = useWorkoutLogs(dateObj)
   const [programEditorOpen, setProgramEditorOpen] = useState(false)
+  const [resettingDay, setResettingDay] = useState(false)
+
+  const handleResetDay = async () => {
+    if (!confirm("Reset today's checklist? This deletes today's tracked exercises (including completion status, weights, and notes) so the day auto-populates fresh from your program. Past days are untouched.")) return
+    setResettingDay(true)
+    try {
+      await resetDay(selectedDate)
+      toast.success('Day reset')
+    } catch (err) {
+      toast.error(err.message || 'Could not reset day')
+    }
+    setResettingDay(false)
+  }
 
   const [expandedOrder, setExpandedOrder] = useState(null)
   const [showCelebration, setShowCelebration] = useState(false)
@@ -115,14 +129,29 @@ export default function Workout() {
             {isToday ? "Today's session" : formatLongDate(selectedDate)}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setProgramEditorOpen(true)}
-          className="btn-secondary"
-          style={{ padding: '8px 14px', minWidth: 'auto', fontSize: 12, flexShrink: 0 }}
-        >
-          ✎ Edit Program
-        </button>
+        <div className="flex" style={{ gap: 6, flexShrink: 0 }}>
+          <button
+            type="button"
+            onClick={handleResetDay}
+            disabled={resettingDay || isWeekend || exercises.length === 0}
+            className="btn-secondary"
+            title="Reset today's checklist"
+            style={{
+              padding: '8px 12px', minWidth: 'auto', fontSize: 12,
+              opacity: (resettingDay || isWeekend || exercises.length === 0) ? 0.5 : 1,
+            }}
+          >
+            ↻
+          </button>
+          <button
+            type="button"
+            onClick={() => setProgramEditorOpen(true)}
+            className="btn-secondary"
+            style={{ padding: '8px 14px', minWidth: 'auto', fontSize: 12 }}
+          >
+            ✎ Edit Program
+          </button>
+        </div>
       </header>
 
       <MonthPicker
