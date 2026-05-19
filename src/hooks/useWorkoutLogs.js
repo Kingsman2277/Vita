@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
+import { useAuth } from './useAuth'
 
 /**
  * Workout tracker hook — exposes today's checklist (or any selected
@@ -48,16 +49,24 @@ export function useWorkoutLogs(selectedDate) {
   const dateObj = useMemo(() => parseDateLocal(dateStr), [dateStr])
   const dayOfWeek = useMemo(() => isoDayOfWeek(dateObj), [dateObj])
 
+  const { user } = useAuth()
+  const userId = user?.id || null
+
   const [templates, setTemplates] = useState([])
   const [allLogs, setAllLogs] = useState([])
   const [loading, setLoading] = useState(true)
   const [populating, setPopulating] = useState(false)
 
-  // Fetch all templates once — small table (40 rows max).
+  // Fetch the current user's templates. We filter by user_id
+  // explicitly because the admin role has a read-through RLS policy
+  // that would otherwise return every user's templates to the admin
+  // and leak them into this personal workout view.
   const fetchTemplates = useCallback(async () => {
+    if (!userId) { setTemplates([]); return }
     const { data, error } = await supabase
       .from('workout_templates')
       .select('*')
+      .eq('user_id', userId)
       .order('day_of_week', { ascending: true })
       .order('exercise_order', { ascending: true })
     if (error) {
@@ -67,13 +76,16 @@ export function useWorkoutLogs(selectedDate) {
     } else {
       setTemplates(data || [])
     }
-  }, [])
+  }, [userId])
 
-  // Fetch all workout_logs (used for streak calc + selected day display).
+  // Fetch the current user's workout_logs (same admin-leak concern as
+  // templates — scope explicitly).
   const fetchLogs = useCallback(async () => {
+    if (!userId) { setAllLogs([]); return }
     const { data, error } = await supabase
       .from('workout_logs')
       .select('*')
+      .eq('user_id', userId)
       .order('date', { ascending: false })
       .order('exercise_order', { ascending: true })
     if (error) {
@@ -83,7 +95,7 @@ export function useWorkoutLogs(selectedDate) {
     } else {
       setAllLogs(data || [])
     }
-  }, [])
+  }, [userId])
 
   // Initial load — fetch both, then mark not loading.
   useEffect(() => {
@@ -240,11 +252,13 @@ export function useWorkoutLogs(selectedDate) {
         .eq('date', todayStr)
         .eq('completed', false)
 
-      const { data: freshTemplates } = await supabase
+      let freshTemplatesQuery = supabase
         .from('workout_templates')
         .select('*')
         .eq('day_of_week', dayOfWeek)
         .order('exercise_order', { ascending: true })
+      if (userId) freshTemplatesQuery = freshTemplatesQuery.eq('user_id', userId)
+      const { data: freshTemplates } = await freshTemplatesQuery
       if (Array.isArray(freshTemplates) && freshTemplates.length > 0) {
         const rows = freshTemplates.map(t => ({
           date: todayStr,
@@ -259,7 +273,7 @@ export function useWorkoutLogs(selectedDate) {
           .upsert(rows, { onConflict: 'user_id,date,exercise_order', ignoreDuplicates: true })
       }
     }
-  }, [])
+  }, [userId])
 
   /** Add one exercise to a specific day's program. Assigns the next free
    *  exercise_order automatically. */
