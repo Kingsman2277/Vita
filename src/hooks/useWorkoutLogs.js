@@ -6,13 +6,14 @@ import { supabase } from '../lib/supabase'
  * date), CRUD for completion / weight / note, and computed streak +
  * weekly stats.
  *
- * Auto-populate behavior: when the page asks for a weekday that has
- * no workout_logs rows yet, we copy that weekday's workout_templates
- * rows in. This means the user always sees a fresh checklist without
- * any setup step. We only auto-populate weekdays (Mon-Fri).
+ * Auto-populate: when the user opens a date with no workout_logs rows
+ * AND there are templates for that weekday, we copy the templates in
+ * so the checklist is ready without a setup step. Days with no
+ * templates are left alone — the user has defined them as rest days
+ * by simply not adding exercises.
  *
  * Date math is local — `YYYY-MM-DD` strings throughout. Day-of-week
- * uses 1 = Monday … 5 = Friday (matches the schema's check constraint).
+ * uses 1 = Monday … 7 = Sunday (matches the schema's check constraint).
  */
 
 const MS_DAY = 24 * 60 * 60 * 1000
@@ -37,12 +38,6 @@ function parseDateLocal(s) {
 function isoDayOfWeek(date) {
   const dow = date.getDay() // 0=Sun .. 6=Sat
   return dow === 0 ? 7 : dow
-}
-
-/** Is the given Date a weekday (Mon-Fri)? */
-function isWeekday(date) {
-  const dow = isoDayOfWeek(date)
-  return dow >= 1 && dow <= 5
 }
 
 export function useWorkoutLogs(selectedDate) {
@@ -109,10 +104,10 @@ export function useWorkoutLogs(selectedDate) {
 
   useEffect(() => {
     if (loading || populating) return
-    if (!isWeekday(dateObj)) return
     if (templates.length === 0) return
     if (exercisesForDate.length > 0) return
-    // No logs for this date yet — seed them.
+    // No logs for this date yet — seed them if templates exist for
+    // this weekday. Days without templates are user-defined rest days.
     const dayTemplates = templates.filter(t => t.day_of_week === dayOfWeek)
     if (dayTemplates.length === 0) return
     setPopulating(true)
@@ -273,7 +268,11 @@ export function useWorkoutLogs(selectedDate) {
     const nextOrder = dayRows.length === 0
       ? 1
       : Math.max(...dayRows.map(r => r.exercise_order)) + 1
-    const dayLabel = dayRows[0]?.day_label || ['Full Body A','Full Body B','Full Body C','Full Body D','Full Body E'][dayOfWeek - 1]
+    const DEFAULT_DAY_LABEL = {
+      1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday',
+      5: 'Friday', 6: 'Saturday', 7: 'Sunday',
+    }
+    const dayLabel = dayRows[0]?.day_label || DEFAULT_DAY_LABEL[dayOfWeek] || 'Workout'
     const payload = {
       day_of_week: dayOfWeek,
       day_label: dayLabel,
@@ -380,6 +379,14 @@ export function useWorkoutLogs(selectedDate) {
     await Promise.all([fetchTemplates(), fetchLogs()])
   }, [fetchTemplates, fetchLogs])
 
+  /** Nuke EVERYTHING — templates plus all workout_logs (past and future).
+   *  True clean slate. Used when restarting a program from scratch. */
+  const wipeAllWorkoutData = useCallback(async () => {
+    const { error } = await supabase.rpc('wipe_my_workout_data')
+    if (error) throw error
+    await Promise.all([fetchTemplates(), fetchLogs()])
+  }, [fetchTemplates, fetchLogs])
+
   /** Delete the user's workout_logs for a specific date. The next time
    *  they view that date, auto-populate refills cleanly from templates.
    *  Useful for "start the day over" and recovering from duplicate-row
@@ -398,11 +405,12 @@ export function useWorkoutLogs(selectedDate) {
   // ─── Derived stats ────────────────────────────────────────────────────────
 
   /**
-   * Streak: consecutive *weekdays* (looking backwards from today) where
-   * every exercise for that date has completed=true. Weekends are
-   * skipped — they neither count as completed nor break the streak.
-   * The cursor stops as soon as a weekday has any incomplete (or no)
-   * exercise.
+   * Streak: consecutive scheduled days (looking backwards from today)
+   * where every exercise for that date has completed=true. Days the
+   * user hasn't programmed (no templates for that weekday) are
+   * treated as rest days — skipped without breaking the streak. The
+   * cursor stops as soon as a scheduled day has any incomplete (or
+   * missing) exercise.
    */
   const streak = useMemo(() => {
     const byDate = new Map()
@@ -410,37 +418,39 @@ export function useWorkoutLogs(selectedDate) {
       if (!byDate.has(l.date)) byDate.set(l.date, [])
       byDate.get(l.date).push(l)
     }
+    const scheduledDows = new Set(templates.map(t => t.day_of_week))
     const isFullyDone = (rows) =>
       rows && rows.length > 0 && rows.every(r => r.completed === true)
+    const isRestDay = (d) => !scheduledDows.has(isoDayOfWeek(d))
 
     let count = 0
     const cursor = new Date()
     cursor.setHours(0, 0, 0, 0)
-    // If today isn't done yet, don't break the streak — start from yesterday.
+    // If today is rest or isn't done yet, don't break — start from yesterday.
     const todayKey = toLocalISODate(cursor)
-    const todayDone = isFullyDone(byDate.get(todayKey))
-    if (todayDone) count += 1
+    if (!isRestDay(cursor) && isFullyDone(byDate.get(todayKey))) count += 1
     cursor.setDate(cursor.getDate() - 1)
     while (true) {
-      // Skip weekends without breaking the streak.
-      while (!isWeekday(cursor)) {
+      if (count > 365) break
+      if (isRestDay(cursor)) {
         cursor.setDate(cursor.getDate() - 1)
-        // Hard safety cap.
-        if (count > 365) break
+        continue
       }
       const key = toLocalISODate(cursor)
       if (!isFullyDone(byDate.get(key))) break
       count += 1
       cursor.setDate(cursor.getDate() - 1)
-      if (count > 365) break
     }
     return count
-  }, [allLogs])
+  }, [allLogs, templates])
 
   /**
-   * Week stats: for the current Mon–Fri window, how many of the 5 days
-   * are fully complete + which days. Returns:
-   *   { completedCount, days: [{ date, dayOfWeek, status: 'done'|'partial'|'empty'|'today' }] }
+   * Week stats: for the current Mon–Sun window, how many of the 7 days
+   * are fully complete + which days. Days the user hasn't programmed
+   * (no templates for that weekday) get status `rest` so the dot
+   * shows as quietly faded rather than a "missed" workout. Returns:
+   *   { completedCount, days: [{ date, dayOfWeek, status }] }
+   * where status ∈ 'done'|'partial'|'today'|'missed'|'rest'|'empty'.
    */
   const weekStats = useMemo(() => {
     const today = new Date()
@@ -455,30 +465,33 @@ export function useWorkoutLogs(selectedDate) {
       if (!byDate.has(l.date)) byDate.set(l.date, [])
       byDate.get(l.date).push(l)
     }
+    const scheduledDows = new Set(templates.map(t => t.day_of_week))
 
     const days = []
     let completedCount = 0
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 7; i++) {
       const d = new Date(monday)
       d.setDate(d.getDate() + i)
       const key = toLocalISODate(d)
+      const dow = i + 1
       const rows = byDate.get(key) || []
       const isPast = d < today
       const isToday = key === toLocalISODate(today)
       const fullyDone = rows.length > 0 && rows.every(r => r.completed === true)
       const anyDone = rows.some(r => r.completed === true)
+      const isScheduled = scheduledDows.has(dow)
       let status = 'empty'
       if (fullyDone) { status = 'done'; completedCount += 1 }
       else if (anyDone) status = 'partial'
+      else if (!isScheduled) status = 'rest'
       else if (isToday) status = 'today'
       else if (isPast) status = 'missed'
-      days.push({ date: key, dayOfWeek: i + 1, status, isToday })
+      days.push({ date: key, dayOfWeek: dow, status, isToday })
     }
     return { completedCount, days, weekStart: toLocalISODate(monday) }
-  }, [allLogs])
+  }, [allLogs, templates])
 
   // Selected-date convenience flags
-  const isWeekend = !isWeekday(dateObj)
   const allDoneForDate = exercises.length > 0 && exercises.every(e => e.completed === true)
   const completedCountForDate = exercises.filter(e => e.completed === true).length
 
@@ -551,7 +564,6 @@ export function useWorkoutLogs(selectedDate) {
     dayOfWeek,
     dayTemplate,
     exercises,
-    isWeekend,
     allDone: allDoneForDate,
     completedCount: completedCountForDate,
     totalCount: exercises.length,
@@ -569,6 +581,7 @@ export function useWorkoutLogs(selectedDate) {
     resetProgramToDefaults,
     clearProgram,
     clearProgramForDay,
+    wipeAllWorkoutData,
     resetDay,
 
     // Stats

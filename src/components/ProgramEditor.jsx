@@ -11,7 +11,8 @@ const MUSCLE_OPTIONS = [
   { key: 'arms',   label: 'Arms',    color: '#F472B6' },
 ]
 
-const DOW_LABELS = { 1: 'Mon', 2: 'Tue', 3: 'Wed', 4: 'Thu', 5: 'Fri' }
+const DOW_LABELS = { 1: 'Mon', 2: 'Tue', 3: 'Wed', 4: 'Thu', 5: 'Fri', 6: 'Sat', 7: 'Sun' }
+const ALL_DAYS = [1, 2, 3, 4, 5, 6, 7]
 
 /**
  * Modal for editing the user's per-day workout program. Day tabs
@@ -22,7 +23,7 @@ const DOW_LABELS = { 1: 'Mon', 2: 'Tue', 3: 'Wed', 4: 'Thu', 5: 'Fri' }
 export default function ProgramEditor({
   open, onClose,
   templates,
-  actions, // { addProgramExercise, updateProgramExercise, deleteProgramExercise, resetProgramToDefaults, clearProgram, clearProgramForDay }
+  actions, // { addProgramExercise, updateProgramExercise, deleteProgramExercise, resetProgramToDefaults, clearProgram, clearProgramForDay, wipeAllWorkoutData }
 }) {
   const [activeDay, setActiveDay] = useState(1)
   const [editingId, setEditingId] = useState(null) // template id being edited (or 'new')
@@ -87,6 +88,25 @@ export default function ProgramEditor({
     setBusy(false)
   }
 
+  const handleWipe = async () => {
+    if (!confirm(
+      "Wipe EVERYTHING? This deletes your program AND every workout log " +
+      "you've ever tracked (past completions, weights, notes — all of it). " +
+      "There's no undo. You'll be left with a totally blank slate to set " +
+      "up Monday through Sunday from scratch."
+    )) return
+    if (!actions.wipeAllWorkoutData) return
+    setBusy(true)
+    try {
+      await actions.wipeAllWorkoutData()
+      toast.success('All workout data wiped')
+      setEditingId(null)
+    } catch (err) {
+      toast.error(err.message || 'Could not wipe')
+    }
+    setBusy(false)
+  }
+
   return (
     <Modal open={open} onClose={onClose} title="Edit Workout Program">
       {/* Day tabs */}
@@ -98,7 +118,7 @@ export default function ProgramEditor({
         }}
         role="tablist"
       >
-        {[1, 2, 3, 4, 5].map(d => {
+        {ALL_DAYS.map(d => {
           const isActive = activeDay === d
           return (
             <button
@@ -112,8 +132,8 @@ export default function ProgramEditor({
                 borderRadius: 8, border: 'none',
                 background: isActive ? 'var(--primary)' : 'transparent',
                 color: isActive ? 'var(--primary-foreground)' : 'var(--muted-foreground)',
-                fontFamily: 'inherit', fontSize: 12, fontWeight: 700,
-                cursor: 'pointer',
+                fontFamily: 'inherit', fontSize: 11, fontWeight: 700,
+                cursor: 'pointer', minWidth: 0,
               }}
             >
               {DOW_LABELS[d]}
@@ -291,8 +311,30 @@ export default function ProgramEditor({
           </button>
         </div>
         <p className="text-hint" style={{ marginTop: 8 }}>
-          Reset replaces your program with the standard 5-day routine. Clear wipes every day blank.
+          Reset replaces your program with the standard 5-day routine. Clear wipes every day blank (keeps past logs).
         </p>
+
+        {actions.wipeAllWorkoutData && (
+          <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px dashed var(--border)' }}>
+            <button
+              type="button"
+              onClick={handleWipe}
+              disabled={busy}
+              style={{
+                width: '100%', padding: '10px 14px', fontSize: 12, fontWeight: 700,
+                borderRadius: 8, border: '1px solid var(--danger)',
+                background: 'var(--danger)', color: '#fff',
+                cursor: busy ? 'not-allowed' : 'pointer', fontFamily: 'inherit',
+                opacity: busy ? 0.5 : 1,
+              }}
+            >
+              Wipe EVERYTHING (program + all history)
+            </button>
+            <p className="text-hint" style={{ marginTop: 6 }}>
+              Total reset — destroys every template and every log. No undo.
+            </p>
+          </div>
+        )}
       </div>
     </Modal>
   )
