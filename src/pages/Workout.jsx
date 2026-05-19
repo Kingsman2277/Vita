@@ -85,10 +85,8 @@ export default function Workout() {
     addProgramExercise,
     updateProgramExercise,
     deleteProgramExercise,
-    resetProgramToDefaults,
     clearProgram,
     clearProgramForDay,
-    wipeAllWorkoutData,
     resetDay,
   } = useWorkoutLogs(dateObj)
   const [programEditorOpen, setProgramEditorOpen] = useState(false)
@@ -235,29 +233,16 @@ export default function Workout() {
             Your program is empty
           </p>
           <p className="text-muted-foreground" style={{ fontSize: 13, lineHeight: 1.5, maxWidth: 320, margin: '0 auto 18px' }}>
-            Build your own routine by adding exercises for each weekday, or load the default 5-day full-body program to get started.
+            Build your routine from scratch — add exercises for each day you want to train, leave the rest blank as rest days.
           </p>
-          <div className="flex" style={{ gap: 8, justifyContent: 'center' }}>
-            <button
-              type="button"
-              onClick={() => setProgramEditorOpen(true)}
-              className="btn-primary"
-              style={{ padding: '10px 18px', minWidth: 'auto', fontSize: 13 }}
-            >
-              ✎ Edit Program
-            </button>
-            <button
-              type="button"
-              onClick={async () => {
-                try { await resetProgramToDefaults(); toast.success('Default program loaded') }
-                catch (err) { toast.error(err.message || 'Could not load defaults') }
-              }}
-              className="btn-secondary"
-              style={{ padding: '10px 18px', minWidth: 'auto', fontSize: 13 }}
-            >
-              Load defaults
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => setProgramEditorOpen(true)}
+            className="btn-primary"
+            style={{ padding: '10px 18px', minWidth: 'auto', fontSize: 13 }}
+          >
+            ✎ Edit Program
+          </button>
         </Card>
       ) : exercises.length === 0 ? (
         <Card style={{ padding: 24, textAlign: 'center' }}>
@@ -312,10 +297,8 @@ export default function Workout() {
           addProgramExercise,
           updateProgramExercise,
           deleteProgramExercise,
-          resetProgramToDefaults,
           clearProgram,
           clearProgramForDay,
-          wipeAllWorkoutData,
         }}
       />
     </div>

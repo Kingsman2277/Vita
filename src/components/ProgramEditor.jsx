@@ -23,7 +23,7 @@ const ALL_DAYS = [1, 2, 3, 4, 5, 6, 7]
 export default function ProgramEditor({
   open, onClose,
   templates,
-  actions, // { addProgramExercise, updateProgramExercise, deleteProgramExercise, resetProgramToDefaults, clearProgram, clearProgramForDay, wipeAllWorkoutData }
+  actions, // { addProgramExercise, updateProgramExercise, deleteProgramExercise, clearProgram, clearProgramForDay }
 }) {
   const [activeDay, setActiveDay] = useState(1)
   const [editingId, setEditingId] = useState(null) // template id being edited (or 'new')
@@ -44,19 +44,6 @@ export default function ProgramEditor({
       toast.success('Exercise removed')
     } catch (err) {
       toast.error(err.message || 'Could not delete')
-    }
-    setBusy(false)
-  }
-
-  const handleReset = async () => {
-    if (!confirm('Reset your program to the default 5-day full-body routine? Your current custom exercises will be replaced.')) return
-    setBusy(true)
-    try {
-      await actions.resetProgramToDefaults()
-      toast.success('Program reset to defaults')
-      setEditingId(null)
-    } catch (err) {
-      toast.error(err.message || 'Could not reset')
     }
     setBusy(false)
   }
@@ -84,25 +71,6 @@ export default function ProgramEditor({
       setEditingId(null)
     } catch (err) {
       toast.error(err.message || 'Could not clear')
-    }
-    setBusy(false)
-  }
-
-  const handleWipe = async () => {
-    if (!confirm(
-      "Wipe EVERYTHING? This deletes your program AND every workout log " +
-      "you've ever tracked (past completions, weights, notes — all of it). " +
-      "There's no undo. You'll be left with a totally blank slate to set " +
-      "up Monday through Sunday from scratch."
-    )) return
-    if (!actions.wipeAllWorkoutData) return
-    setBusy(true)
-    try {
-      await actions.wipeAllWorkoutData()
-      toast.success('All workout data wiped')
-      setEditingId(null)
-    } catch (err) {
-      toast.error(err.message || 'Could not wipe')
     }
     setBusy(false)
   }
@@ -284,57 +252,23 @@ export default function ProgramEditor({
 
       {/* Footer actions */}
       <div style={{ marginTop: 8, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
-        <p className="stat-label" style={{ marginBottom: 10 }}>Reset</p>
-        <div className="flex" style={{ gap: 8 }}>
-          <button
-            type="button"
-            onClick={handleReset}
-            disabled={busy}
-            className="btn-secondary"
-            style={{ padding: '8px 14px', fontSize: 12, minWidth: 'auto', flex: 1, opacity: busy ? 0.5 : 1 }}
-          >
-            Reset to defaults
-          </button>
-          <button
-            type="button"
-            onClick={handleClear}
-            disabled={busy}
-            style={{
-              padding: '8px 14px', fontSize: 12,
-              borderRadius: 8, border: '1px solid var(--danger)',
-              background: 'transparent', color: 'var(--danger)', fontWeight: 600,
-              cursor: busy ? 'not-allowed' : 'pointer', fontFamily: 'inherit',
-              flex: 1, opacity: busy ? 0.5 : 1,
-            }}
-          >
-            Clear all
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={handleClear}
+          disabled={busy}
+          style={{
+            width: '100%', padding: '8px 14px', fontSize: 12,
+            borderRadius: 8, border: '1px solid var(--danger)',
+            background: 'transparent', color: 'var(--danger)', fontWeight: 600,
+            cursor: busy ? 'not-allowed' : 'pointer', fontFamily: 'inherit',
+            opacity: busy ? 0.5 : 1,
+          }}
+        >
+          Clear all days
+        </button>
         <p className="text-hint" style={{ marginTop: 8 }}>
-          Reset replaces your program with the standard 5-day routine. Clear wipes every day blank (keeps past logs).
+          Wipes every day blank. Past workout history (completed exercises) stays put.
         </p>
-
-        {actions.wipeAllWorkoutData && (
-          <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px dashed var(--border)' }}>
-            <button
-              type="button"
-              onClick={handleWipe}
-              disabled={busy}
-              style={{
-                width: '100%', padding: '10px 14px', fontSize: 12, fontWeight: 700,
-                borderRadius: 8, border: '1px solid var(--danger)',
-                background: 'var(--danger)', color: '#fff',
-                cursor: busy ? 'not-allowed' : 'pointer', fontFamily: 'inherit',
-                opacity: busy ? 0.5 : 1,
-              }}
-            >
-              Wipe EVERYTHING (program + all history)
-            </button>
-            <p className="text-hint" style={{ marginTop: 6 }}>
-              Total reset — destroys every template and every log. No undo.
-            </p>
-          </div>
-        )}
       </div>
     </Modal>
   )

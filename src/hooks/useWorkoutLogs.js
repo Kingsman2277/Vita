@@ -346,28 +346,15 @@ export function useWorkoutLogs(selectedDate) {
     await fetchLogs()
   }, [fetchTemplates, fetchLogs, syncLogsToTemplateChange])
 
-  /** Wipe the user's program and re-seed the default 5-day program.
-   *  Also clears pending logs across all 5 weekdays so the new (default)
-   *  template is what shows up immediately. */
-  const resetProgramToDefaults = useCallback(async () => {
-    const { error } = await supabase.rpc('reset_my_workout_program')
-    if (error) throw error
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const todayStr = toLocalISODate(today)
-    await supabase
-      .from('workout_logs')
-      .delete()
-      .gte('date', todayStr)
-      .eq('completed', false)
-    await Promise.all([fetchTemplates(), fetchLogs()])
-  }, [fetchTemplates, fetchLogs])
-
-  /** Wipe the user's program entirely (no re-seed). Also clears upcoming
-   *  workout_logs so empty days don't auto-populate from a stale cache. */
+  /** Wipe every exercise across all 7 days. Also clears upcoming
+   *  workout_logs so empty days don't auto-populate from a stale cache.
+   *  Direct delete (no RPC) — RLS scopes templates appropriately. */
   const clearProgram = useCallback(async () => {
-    const { error } = await supabase.rpc('clear_my_workout_program')
-    if (error) throw error
+    const { error: tErr } = await supabase
+      .from('workout_templates')
+      .delete()
+      .gte('day_of_week', 1)
+    if (tErr) throw tErr
     const today = new Date()
     today.setHours(0, 0, 0, 0)
     const todayStr = toLocalISODate(today)
@@ -376,14 +363,6 @@ export function useWorkoutLogs(selectedDate) {
       .delete()
       .gte('date', todayStr)
       .eq('completed', false)
-    await Promise.all([fetchTemplates(), fetchLogs()])
-  }, [fetchTemplates, fetchLogs])
-
-  /** Nuke EVERYTHING — templates plus all workout_logs (past and future).
-   *  True clean slate. Used when restarting a program from scratch. */
-  const wipeAllWorkoutData = useCallback(async () => {
-    const { error } = await supabase.rpc('wipe_my_workout_data')
-    if (error) throw error
     await Promise.all([fetchTemplates(), fetchLogs()])
   }, [fetchTemplates, fetchLogs])
 
@@ -587,10 +566,8 @@ export function useWorkoutLogs(selectedDate) {
     addProgramExercise,
     updateProgramExercise,
     deleteProgramExercise,
-    resetProgramToDefaults,
     clearProgram,
     clearProgramForDay,
-    wipeAllWorkoutData,
     resetDay,
 
     // Stats
