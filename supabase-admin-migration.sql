@@ -128,10 +128,17 @@ grant execute on function public.admin_user_recent(uuid, int) to authenticated;
 
 -- ─── Admin read-only RLS policy on every per-user table ────────────────
 --
--- Postgres OR's multiple permissive policies together. The existing
--- "user owns <table>" policy still controls writes; this new policy
--- adds SELECT access for the admin on top of it.
-
+-- IMPORTANT: do NOT add a permissive "admin reads <table>" RLS policy
+-- here. Postgres OR's permissive policies together, so a blanket
+-- admin-read policy would leak every user's data into the regular
+-- Food / Finance / Workout pages when the admin (you) is signed in.
+--
+-- The admin dashboard reads cross-user data via SECURITY DEFINER RPCs
+-- (admin_list_users, admin_user_recent) which bypass RLS by design.
+-- That's the only way admins should see other users' rows.
+--
+-- This block exists only to DROP any legacy admin-read policies from
+-- earlier versions of this migration. Idempotent and safe to re-run.
 do $$
 declare
   t text;
@@ -143,9 +150,5 @@ declare
 begin
   foreach t in array tables loop
     execute format('drop policy if exists "admin reads %s" on %I', t, t);
-    execute format(
-      'create policy "admin reads %s" on %I for select to authenticated using (public.is_admin())',
-      t, t
-    );
   end loop;
 end $$;
