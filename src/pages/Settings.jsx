@@ -36,7 +36,10 @@ export default function Settings() {
 
   const handlePassword = async (e) => {
     e.preventDefault()
-    if (!pwForm.current || !pwForm.next || !pwForm.confirm) return
+    if (!pwForm.current || !pwForm.next || !pwForm.confirm) {
+      toast.error('Fill in all password fields')
+      return
+    }
     if (pwForm.next !== pwForm.confirm) {
       toast.error("New passwords don't match")
       return
@@ -62,7 +65,11 @@ export default function Settings() {
   const handleSignOut = async () => {
     setSigningOut(true)
     try { await signOut() }
-    catch { toast.error('Sign out failed'); setSigningOut(false) }
+    catch (err) {
+      console.error('signOut error:', err)
+      toast.error(err?.message || 'Sign out failed')
+      setSigningOut(false)
+    }
   }
 
   const createdAt = user?.created_at

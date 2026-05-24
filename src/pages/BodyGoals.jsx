@@ -95,7 +95,10 @@ export default function BodyGoals() {
       toast.success('Entry deleted')
       setLogModalOpen(false)
       setEditingLog(null)
-    } catch { toast.error('Failed to delete') }
+    } catch (err) {
+      console.error('deleteEntry error:', err)
+      toast.error(err?.message || 'Failed to delete')
+    }
   }
 
   const openNewMetric = () => {
@@ -131,23 +134,34 @@ export default function BodyGoals() {
       toast.success('Measurement deleted')
       setMetricModalOpen(false)
       setEditingMetric(null)
-    } catch { toast.error('Failed to delete') }
+    } catch (err) {
+      console.error('deleteMetric error:', err)
+      toast.error(err?.message || 'Failed to delete')
+    }
   }
 
   const handleSaveGoal = async (e) => {
     e.preventDefault()
+    const tgt = Number(goalForm.target_weight)
+    if (!goalForm.target_weight || Number.isNaN(tgt) || tgt <= 0) {
+      toast.error('Enter a target weight')
+      return
+    }
     try {
       await saveGoal({
         type: 'body',
         data: {
           ...(bodyGoal?.data || {}),
-          target_weight: Number(goalForm.target_weight),
+          target_weight: tgt,
         },
         target_date: goalForm.target_date || null,
       })
       toast.success('Goal updated!')
       setGoalModalOpen(false)
-    } catch { toast.error('Failed to save') }
+    } catch (err) {
+      console.error('saveGoal error:', err)
+      toast.error(err?.message || 'Failed to save')
+    }
   }
 
   if (loading) return <div className="page-container"><SkeletonLoader count={4} height="h-40" /></div>

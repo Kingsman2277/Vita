@@ -261,15 +261,15 @@ export default function Workout() {
                 onExpand={() => setExpandedOrder(expandedOrder === ex.exercise_order ? null : ex.exercise_order)}
                 onToggle={async () => {
                   try { await toggleComplete(ex.exercise_order) }
-                  catch { toast.error('Could not save — try again') }
+                  catch (err) { console.error('toggleComplete error:', err); toast.error(err?.message || 'Could not save — try again') }
                 }}
                 onWeightChange={async v => {
                   try { await updateWeight(ex.exercise_order, v) }
-                  catch { toast.error('Could not save weight') }
+                  catch (err) { console.error('updateWeight error:', err); toast.error(err?.message || 'Could not save weight') }
                 }}
                 onNoteChange={async v => {
                   try { await updateNote(ex.exercise_order, v) }
-                  catch { toast.error('Could not save note') }
+                  catch (err) { console.error('updateNote error:', err); toast.error(err?.message || 'Could not save note') }
                 }}
               />
             ))}

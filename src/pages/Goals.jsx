@@ -38,28 +38,42 @@ export default function Goals() {
 
   const handleBodySave = async (e) => {
     e.preventDefault()
+    const cur = Number(bodyForm.current_weight)
+    const tgt = Number(bodyForm.target_weight)
+    if (!bodyForm.current_weight || Number.isNaN(cur) || cur <= 0) { toast.error('Enter current weight'); return }
+    if (!bodyForm.target_weight || Number.isNaN(tgt) || tgt <= 0) { toast.error('Enter target weight'); return }
     try {
       await saveGoal({
         type: 'body',
-        data: { height_ft: Number(bodyForm.height_ft) || 0, height_in: Number(bodyForm.height_in) || 0, current_weight: Number(bodyForm.current_weight) || 0, target_weight: Number(bodyForm.target_weight) || 0 },
+        data: { height_ft: Number(bodyForm.height_ft) || 0, height_in: Number(bodyForm.height_in) || 0, current_weight: cur, target_weight: tgt },
         target_date: bodyForm.target_date || null,
       })
       toast.success('Body goal saved!')
-    } catch { toast.error('Failed to save') }
+    } catch (err) {
+      console.error('saveGoal body error:', err)
+      toast.error(err?.message || 'Failed to save')
+    }
   }
 
   const handleFinSave = async (e) => {
     e.preventDefault()
+    const tgt = Number(finForm.savings_target)
+    const months = Number(finForm.timeline_months)
+    if (!finForm.savings_target || Number.isNaN(tgt) || tgt <= 0) { toast.error('Enter a savings target'); return }
+    if (!finForm.timeline_months || !Number.isInteger(months) || months <= 0) { toast.error('Enter a timeline in months'); return }
     try {
       const targetDate = new Date()
-      targetDate.setMonth(targetDate.getMonth() + Number(finForm.timeline_months || 12))
+      targetDate.setMonth(targetDate.getMonth() + months)
       await saveGoal({
         type: 'financial',
-        data: { savings_target: Number(finForm.savings_target), timeline_months: Number(finForm.timeline_months), saved_so_far: Number(finForm.saved_so_far) || 0 },
+        data: { savings_target: tgt, timeline_months: months, saved_so_far: Number(finForm.saved_so_far) || 0 },
         target_date: targetDate.toISOString().split('T')[0],
       })
       toast.success('Financial goal saved!')
-    } catch { toast.error('Failed to save') }
+    } catch (err) {
+      console.error('saveGoal financial error:', err)
+      toast.error(err?.message || 'Failed to save')
+    }
   }
 
   const openSavedModal = () => {
@@ -91,7 +105,10 @@ export default function Goals() {
       setFinForm(f => ({ ...f, saved_so_far: String(next) }))
       toast.success('Saved amount updated!')
       setSavedModalOpen(false)
-    } catch { toast.error('Failed to save') }
+    } catch (err) {
+      console.error('saveGoal quick-save error:', err)
+      toast.error(err?.message || 'Failed to save')
+    }
   }
 
   if (loading) return <div className="page-container"><SkeletonLoader count={4} height="h-36" /></div>

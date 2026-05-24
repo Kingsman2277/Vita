@@ -57,13 +57,20 @@ export default function Finance() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!form.amount) return
+    const amt = Number(form.amount)
+    if (!form.amount || Number.isNaN(amt) || amt <= 0) {
+      toast.error('Enter an amount')
+      return
+    }
     try {
-      await addExpense({ amount: Number(form.amount), category: form.category, note: form.note || null, date: form.date, is_recurring: form.is_recurring })
+      await addExpense({ amount: amt, category: form.category, note: form.note || null, date: form.date, is_recurring: form.is_recurring })
       toast.success('Expense added!')
       setModalOpen(false)
       setForm({ amount: '', category: 'groceries', note: '', date: getToday(), is_recurring: false })
-    } catch { toast.error('Failed to save') }
+    } catch (err) {
+      console.error('addExpense error:', err)
+      toast.error(err?.message || 'Failed to save')
+    }
   }
 
   const openEditExpense = (exp) => {
@@ -81,9 +88,14 @@ export default function Finance() {
   const handleEditExpense = async (e) => {
     e.preventDefault()
     if (!editingExpense) return
+    const amt = Number(editForm.amount)
+    if (!editForm.amount || Number.isNaN(amt) || amt <= 0) {
+      toast.error('Enter an amount')
+      return
+    }
     try {
       await updateExpense(editingExpense.id, {
-        amount: Number(editForm.amount),
+        amount: amt,
         category: editForm.category,
         note: editForm.note || null,
         date: editForm.date,
@@ -92,7 +104,10 @@ export default function Finance() {
       toast.success('Updated!')
       setEditModalOpen(false)
       setEditingExpense(null)
-    } catch { toast.error('Failed to save') }
+    } catch (err) {
+      console.error('updateExpense error:', err)
+      toast.error(err?.message || 'Failed to save')
+    }
   }
 
   const handleDeleteFromEdit = async () => {
@@ -102,7 +117,10 @@ export default function Finance() {
       toast.success('Deleted!')
       setEditModalOpen(false)
       setEditingExpense(null)
-    } catch { toast.error('Failed to delete') }
+    } catch (err) {
+      console.error('deleteExpense error:', err)
+      toast.error(err?.message || 'Failed to delete')
+    }
   }
 
   return (

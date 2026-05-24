@@ -48,25 +48,55 @@ export default function Budget() {
 
   const handleSaveBudget = async (e) => {
     e.preventDefault()
-    try { await saveBudget({ monthly_income: Number(incomeForm), savings_target: Number(savingsForm) }); toast.success('Budget updated!'); setEditBudget(false) }
-    catch { toast.error('Failed to save') }
+    const inc = Number(incomeForm)
+    const sav = Number(savingsForm)
+    if (Number.isNaN(inc) || inc < 0) { toast.error('Enter monthly income'); return }
+    if (Number.isNaN(sav) || sav < 0) { toast.error('Enter savings target'); return }
+    try {
+      await saveBudget({ monthly_income: inc, savings_target: sav })
+      toast.success('Budget updated!')
+      setEditBudget(false)
+    } catch (err) {
+      console.error('saveBudget error:', err)
+      toast.error(err?.message || 'Failed to save')
+    }
   }
 
   const handleAddRecurring = async (e) => {
     e.preventDefault()
-    try { await addRecurring({ name: recForm.name, amount: Number(recForm.amount), day_of_month: Number(recForm.day_of_month), category: recForm.category || null }); toast.success('Added!'); setAddRecModal(false); setRecForm({ name: '', amount: '', day_of_month: '1', category: '' }) }
-    catch { toast.error('Failed to save') }
+    const amt = Number(recForm.amount)
+    const dom = Number(recForm.day_of_month)
+    if (!recForm.name?.trim()) { toast.error('Enter a name'); return }
+    if (!recForm.amount || Number.isNaN(amt) || amt <= 0) { toast.error('Enter an amount'); return }
+    if (!Number.isInteger(dom) || dom < 1 || dom > 31) { toast.error('Day of month must be 1-31'); return }
+    try {
+      await addRecurring({ name: recForm.name.trim(), amount: amt, day_of_month: dom, category: recForm.category || null })
+      toast.success('Added!')
+      setAddRecModal(false)
+      setRecForm({ name: '', amount: '', day_of_month: '1', category: '' })
+    } catch (err) {
+      console.error('addRecurring error:', err)
+      toast.error(err?.message || 'Failed to save')
+    }
   }
 
   const handleEditRecurring = async (e) => {
     e.preventDefault()
     if (!editingItem) return
+    const amt = Number(recForm.amount)
+    const dom = Number(recForm.day_of_month)
+    if (!recForm.name?.trim()) { toast.error('Enter a name'); return }
+    if (!recForm.amount || Number.isNaN(amt) || amt <= 0) { toast.error('Enter an amount'); return }
+    if (!Number.isInteger(dom) || dom < 1 || dom > 31) { toast.error('Day of month must be 1-31'); return }
     try {
-      await updateRecurring(editingItem.id, { name: recForm.name, amount: Number(recForm.amount), day_of_month: Number(recForm.day_of_month), category: recForm.category || null })
+      await updateRecurring(editingItem.id, { name: recForm.name.trim(), amount: amt, day_of_month: dom, category: recForm.category || null })
       toast.success('Updated!')
       setEditRecModal(false)
       setEditingItem(null)
-    } catch { toast.error('Failed to save') }
+    } catch (err) {
+      console.error('updateRecurring error:', err)
+      toast.error(err?.message || 'Failed to save')
+    }
   }
 
   const handleDeleteFromEdit = async () => {
@@ -76,7 +106,10 @@ export default function Budget() {
       toast.success('Deleted!')
       setEditRecModal(false)
       setEditingItem(null)
-    } catch { toast.error('Failed to delete') }
+    } catch (err) {
+      console.error('deleteRecurring error:', err)
+      toast.error(err?.message || 'Failed to delete')
+    }
   }
 
   // Group recurring by category (memoized — must run before any early return)

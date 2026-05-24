@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vita-v24'
+const CACHE_NAME = 'vita-v25'
 const STATIC_ASSETS = [
   '/',
   '/index.html',
