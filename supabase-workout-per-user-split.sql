@@ -42,8 +42,11 @@ end $$;
 create index if not exists workout_templates_user_id_idx
   on public.workout_templates(user_id);
 
--- 5. Replace the shared "auth all" RLS with user-scoped policies +
---    admin read-through.
+-- 5. Replace the shared "auth all" RLS with a single user-scoped
+--    policy. Intentionally NO "admin reads" policy — that pattern
+--    leaks every user's templates into the admin's personal Workout
+--    page (Postgres OR's the policies). Cross-user admin reads should
+--    go through SECURITY DEFINER RPCs instead.
 alter table public.workout_templates enable row level security;
 drop policy if exists "auth all workout_templates" on public.workout_templates;
 drop policy if exists "user owns workout_templates" on public.workout_templates;
@@ -52,6 +55,3 @@ create policy "user owns workout_templates" on public.workout_templates
   for all to authenticated
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
-create policy "admin reads workout_templates" on public.workout_templates
-  for select to authenticated
-  using (public.is_admin());
