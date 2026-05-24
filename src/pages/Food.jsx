@@ -153,7 +153,11 @@ export default function Food() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!form.food_name || !form.calories) return
+    // Visible feedback instead of a silent bail — iOS Safari sometimes
+    // bypasses the form's `required` validation, and a silent return
+    // looked identical to "save button doesn't work" from the user side.
+    if (!form.food_name?.trim()) { toast.error('Add a name'); return }
+    if (!form.calories || Number(form.calories) <= 0) { toast.error('Add calories'); return }
     const s = servings || 1
     try {
       // Scale micronutrients by serving count alongside macros.
