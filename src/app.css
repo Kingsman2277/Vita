@@ -139,7 +139,16 @@
 }
 
 /* ─── RESET ─── */
-* { margin: 0; padding: 0; box-sizing: border-box; }
+/* MUST stay inside @layer base. Unlayered CSS outranks *every* layered
+   rule in the cascade regardless of specificity, and Tailwind emits its
+   utilities into @layer utilities — so an unlayered `*` reset here
+   silently cancels every padding and margin utility in the app (they
+   compute to 0px, with no warning anywhere). Tailwind's preflight already
+   applies this exact reset; this block is kept only as documentation of
+   the intent. */
+@layer base {
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+}
 
 body {
   font-family: var(--font-sans);
@@ -254,6 +263,82 @@ header {
 }
 section { display: block; }
 
+/* ─── SIDEBAR NAVIGATION (desktop) ─── */
+.nav-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  /* 44px row: comfortable pointer target, and tall enough that the
+     4px gaps between rows never demand precision. */
+  height: 44px;
+  padding: 0 12px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  color: var(--muted-foreground);
+  /* Specific properties, not `all` — and 110ms so hover reads as
+     instant feedback rather than a slow fade. */
+  transition: background-color 0.11s ease, color 0.11s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.nav-item:hover {
+  background: var(--sidebar-accent);
+  color: var(--sidebar-foreground);
+}
+.nav-item.active {
+  /* Tinted with the brand color rather than the near-invisible
+     --sidebar-accent, so the current page is obvious at a glance. */
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+  color: var(--primary);
+}
+/* Left accent bar — the third active cue, so the state survives both
+   low-contrast displays and color-vision differences. */
+.nav-item-bar {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 3px;
+  height: 0;
+  border-radius: 0 3px 3px 0;
+  background: var(--primary);
+  transform: translateY(-50%);
+  transition: height 0.15s ease;
+}
+.nav-item.active .nav-item-bar { height: 20px; }
+.nav-item-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+.nav-item-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* --sidebar-ring was defined but never used; keyboard focus was
+   invisible. :focus-visible keeps it off mouse clicks. */
+.nav-item:focus-visible {
+  outline: 2px solid var(--sidebar-ring);
+  outline-offset: -2px;
+  color: var(--sidebar-foreground);
+}
+/* Same footprint as a real row, so the rail doesn't reflow when the
+   feature list resolves. */
+.nav-item-skeleton {
+  height: 44px;
+  border-radius: var(--radius-sm);
+  background: var(--sidebar-accent);
+  opacity: 0.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-item,
+  .nav-item-bar { transition: none; }
+}
+
 /* ─── BOTTOM NAVIGATION (mobile) ─── */
 .bottom-nav {
   position: fixed;
@@ -261,9 +346,14 @@ section { display: block; }
   right: 0;
   bottom: 0;
   z-index: 50;
-  background: rgba(12, 15, 20, 0.85);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  backdrop-filter: blur(20px) saturate(180%);
+  /* Was hardcoded to the dark palette, which broke the light theme.
+     color-mix keeps the translucency while following the token. */
+  background: color-mix(in srgb, var(--background) 88%, transparent);
+  /* blur(20px)+saturate(180%) forced a large, repeatedly-recomposited
+     backdrop layer on every scroll frame — a common source of jank on
+     phones. 12px reads the same at this size for less work. */
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
   border-top: 1px solid var(--border);
   padding-bottom: env(safe-area-inset-bottom, 0px);
   padding-left: env(safe-area-inset-left, 0px);
@@ -279,38 +369,69 @@ section { display: block; }
   padding: 0 4px;
 }
 .bottom-nav-item {
+  position: relative;
   flex: 1 1 0;
   min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 4px;
   padding: 0 2px;
   text-decoration: none;
   color: var(--muted-foreground);
   transition: color 0.12s ease;
   -webkit-tap-highlight-color: transparent;
 }
-.bottom-nav-label {
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
+/* Hover only where a real pointer exists — on touch the state sticks
+   after a tap and leaves the wrong item looking selected. */
+@media (hover: hover) {
+  .bottom-nav-item:hover { color: var(--foreground); }
 }
-.bottom-nav-item:hover { color: var(--foreground); }
 .bottom-nav-item.active { color: var(--primary); }
+/* Matches the sidebar's accent bar, so the active cue is the same
+   idea on both breakpoints. */
+.bottom-nav-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  border-radius: 0 0 2px 2px;
+  background: var(--primary);
+  transform: translateX(-50%);
+  transition: width 0.15s ease;
+}
+.bottom-nav-item.active::before { width: 20px; }
+.bottom-nav-item:active .bottom-nav-icon { transform: scale(0.9); }
 .bottom-nav-icon {
   width: 22px;
   height: 22px;
   flex-shrink: 0;
+  transition: transform 0.1s ease;
 }
 .bottom-nav-label {
-  font-size: 10px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 11px;
   font-weight: 500;
   letter-spacing: 0.01em;
   line-height: 1;
   text-align: center;
   white-space: nowrap;
+}
+.bottom-nav-item:focus-visible {
+  outline: 2px solid var(--sidebar-ring);
+  outline-offset: -3px;
+  border-radius: var(--radius-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bottom-nav-item,
+  .bottom-nav-item::before,
+  .bottom-nav-icon { transition: none; }
 }
 @media (min-width: 1280px) {
   .page-container { max-width: 64rem; }
