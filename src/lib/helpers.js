@@ -44,12 +44,12 @@ export const EXPENSE_CATEGORIES = [
 
 // Budget allocation percentages for discretionary spending
 export const BUDGET_ALLOCATIONS = [
-  { category: 'groceries', label: 'Groceries', emoji: '🛒', percent: 30 },
-  { category: 'eating_out', label: 'Eating Out', emoji: '🍽️', percent: 20 },
-  { category: 'transport', label: 'Transport & Parking', emoji: '🚗', percent: 13 },
-  { category: 'shopping', label: 'Shopping & Ent', emoji: '🛍️', percent: 20 },
-  { category: 'pet', label: 'Pet', emoji: '🐾', percent: 7 },
-  { category: 'other', label: 'Other', emoji: '📦', percent: 10 },
+  { category: 'groceries', label: 'Groceries', emoji: '🛒', percent: 22 },
+  { category: 'eating_out', label: 'Eating Out', emoji: '🍽️', percent: 22 },
+  { category: 'transport', label: 'Transport & Parking', emoji: '🚗', percent: 10 },
+  { category: 'shopping', label: 'Shopping & Ent', emoji: '🛍️', percent: 18 },
+  { category: 'pet', label: 'Pet', emoji: '🐾', percent: 4 },
+  { category: 'other', label: 'Other', emoji: '📦', percent: 24 },
 ]
 
 export function getCategoryEmoji(category) {
