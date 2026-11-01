@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
-import { getCategoryEmoji } from '../lib/helpers'
+import { getCategoryEmoji, formatCurrency } from '../lib/helpers'
 
 const COLORS = {
   // New categories (in budget allocation order)
@@ -65,7 +65,7 @@ export default function SpendingChart({ expenses }) {
                 color: 'var(--foreground)',
                 fontSize: '0.75rem',
               }}
-              formatter={(value, name) => [`$${value.toFixed(2)}`, `${getCategoryEmoji(name)} ${name}`]}
+              formatter={(value, name) => [formatCurrency(value), `${getCategoryEmoji(name)} ${name}`]}
             />
           </PieChart>
         </ResponsiveContainer>
@@ -89,7 +89,7 @@ export default function SpendingChart({ expenses }) {
               }}
             />
             <span style={{ whiteSpace: 'nowrap' }}>
-              {getCategoryEmoji(name)} ${value.toFixed(0)}
+              {getCategoryEmoji(name)} {formatCurrency(value)}
             </span>
           </div>
         ))}

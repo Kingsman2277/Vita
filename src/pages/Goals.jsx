@@ -125,12 +125,12 @@ export default function Goals() {
               accent="var(--goal-financial)"
               accentSoft="var(--goal-financial-soft)"
               percent={finPct}
-              metric={`$${savedSoFar.toLocaleString()}`}
-              metricLabel={`saved of $${savingsTarget.toLocaleString()}`}
-              startLabel="$0"
-              endLabel={`$${savingsTarget.toLocaleString()}`}
+              metric={formatCurrency(savedSoFar)}
+              metricLabel={`saved of ${formatCurrency(savingsTarget)}`}
+              startLabel={formatCurrency(0)}
+              endLabel={formatCurrency(savingsTarget)}
               chips={[
-                perMonth && `$${perMonth}/mo needed`,
+                perMonth && `${formatCurrency(Number(perMonth))}/mo needed`,
                 monthsLeft > 0 && `${monthsLeft} months left`,
               ].filter(Boolean)}
               onClick={openSavedModal}

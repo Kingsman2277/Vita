@@ -7,21 +7,48 @@ export function getMealType() {
   return 'snack'
 }
 
+// Everything in Vita is logged in Canadian dollars. Amounts are stored as
+// plain CAD numbers — this formatter is display-only and converts nothing.
+// Always two decimals: `minimumFractionDigits: 0` used to render $220.90 as
+// "$220.9", which reads like a typo next to the other amounts.
+const CAD = new Intl.NumberFormat('en-CA', {
+  style: 'currency',
+  currency: 'CAD',
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+})
+
 export function formatCurrency(amount) {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(amount || 0)
+  return CAD.format(Number.isFinite(amount) ? amount : 0)
 }
 
+// Parses a 'YYYY-MM-DD' string as a LOCAL date. Passing it straight to
+// new Date() parses as UTC and lands on the previous day west of Greenwich.
+function parseLocalDate(dateStr) {
+  if (dateStr instanceof Date) return new Date(dateStr.getFullYear(), dateStr.getMonth(), dateStr.getDate())
+  if (typeof dateStr !== 'string') return null
+  const [y, m, d] = dateStr.slice(0, 10).split('-').map(Number)
+  if (!y || !m || !d) return null
+  return new Date(y, m - 1, d)
+}
+
+// The single date formatter for the app: "Today", "Yesterday", "Tomorrow",
+// "Fri, Oct 30" inside the current year, "Feb 23, 2027" outside it.
 export function formatDate(dateStr) {
-  return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  })
+  const date = parseLocalDate(dateStr)
+  if (!date) return ''
+
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const days = Math.round((date - today) / 86400000)
+
+  if (days === 0) return 'Today'
+  if (days === -1) return 'Yesterday'
+  if (days === 1) return 'Tomorrow'
+
+  return date.getFullYear() === today.getFullYear()
+    ? date.toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' })
+    : date.toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
 export function getToday() {
