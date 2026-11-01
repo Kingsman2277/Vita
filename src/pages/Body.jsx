@@ -1,8 +1,9 @@
+import { lazy } from 'react'
 import SegmentShell from '../components/SegmentShell'
 import { BODY_SEGMENTS } from '../lib/nav'
-import Workout from './Workout'
-import Food from './Food'
-import BodyGoals from './BodyGoals'
+const Workout = lazy(() => import('./Workout'))
+const Food = lazy(() => import('./Food'))
+const BodyGoals = lazy(() => import('./BodyGoals'))
 
 // Progress is the merged body view (docs/redesign §5): pace, weight
 // trend, logging streak, body metrics and the body-goal editor. The old

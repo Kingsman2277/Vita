@@ -172,7 +172,7 @@ export default function Admin() {
         )}
       </Modal>
 
-      <p className="text-muted-foreground" style={{ fontSize: 11, opacity: 0.6, textAlign: 'center', marginTop: 8 }}>
+      <p className="text-muted-foreground" style={{ fontSize: 11, textAlign: 'center', marginTop: 8 }}>
         For destructive actions (reset password, delete user, edit raw rows) use the{' '}
         <a
           href="https://supabase.com/dashboard/project/cqouqsxjmbwujgdfkbol/auth/users"

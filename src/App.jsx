@@ -1,18 +1,30 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import BottomNav from './components/ui/BottomNav'
 import QuickAddSheet from './components/QuickAddSheet'
 import Sidebar from './components/Sidebar'
 import SkeletonLoader from './components/SkeletonLoader'
-import Dashboard from './pages/Dashboard'
-import Money from './pages/Money'
-import Body from './pages/Body'
-import Me from './pages/Me'
-import Admin from './pages/Admin'
 import Login from './pages/Login'
-import DevUI from './pages/DevUI'
+
+// Routes are split so the first load does not carry every screen, its
+// charts and the camera. Login stays eager: it is the first paint for a
+// signed-out visitor, and a spinner in front of it would be worse.
+const Dashboard = lazy(() => import('./pages/Dashboard'))
+const Money = lazy(() => import('./pages/Money'))
+const Body = lazy(() => import('./pages/Body'))
+const Me = lazy(() => import('./pages/Me'))
+const Admin = lazy(() => import('./pages/Admin'))
+const DevUI = lazy(() => import('./pages/DevUI'))
 import { LEGACY_REDIRECTS } from './lib/nav'
 import { useAuth } from './hooks/useAuth'
+
+function RouteFallback() {
+  return (
+    <div className="page-container">
+      <SkeletonLoader count={4} height="h-28" />
+    </div>
+  )
+}
 
 export default function App() {
   const { isAuthenticated, loading } = useAuth()
@@ -34,6 +46,7 @@ export default function App() {
     <div className="min-h-dvh bg-background text-foreground">
       <Sidebar onQuickAdd={() => setQuickAddOpen(true)} />
       <div className="safe-bottom">
+        <Suspense fallback={<RouteFallback />}>
         <Routes>
           <Route path="/" element={<Navigate to="/home" replace />} />
 
@@ -59,6 +72,7 @@ export default function App() {
 
           <Route path="*" element={<Navigate to="/home" replace />} />
         </Routes>
+        </Suspense>
       </div>
       <BottomNav onQuickAdd={() => setQuickAddOpen(true)} />
       <QuickAddSheet open={quickAddOpen} onClose={() => setQuickAddOpen(false)} />

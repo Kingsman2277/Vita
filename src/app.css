@@ -33,7 +33,7 @@
   --sidebar-border: rgba(255, 255, 255, 0.06);
   --card-foreground: #F0F2F5;
   --sidebar-primary: #2BB5C4;
-  --muted-foreground: rgba(240, 242, 245, 0.55);
+  --muted-foreground: #8E8E93;
   --accent-foreground: #F0F2F5;
   --popover-foreground: #F0F2F5;
   --primary-foreground: #0C0F14;
@@ -211,10 +211,9 @@
 
 .text-hint {
   font-size: 11px;
-  color: #555;
+  color: var(--color-muted);
   margin-top: 6px;
 }
-.dark .text-hint { color: rgba(240, 242, 245, 0.3); }
 
 /* ─── SAFE AREAS ─── */
 .safe-bottom {

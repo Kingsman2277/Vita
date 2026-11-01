@@ -136,8 +136,8 @@ export default function Budget() {
           </div>
           {!cashFlowOpen && (
             <div className="flex justify-between" style={{ marginTop: 8, gap: 12 }}>
-              <span className="label" style={{ fontSize: 11, opacity: 0.55 }}>of {formatCurrency(discretionary)} discretionary</span>
-              <span className="label" style={{ fontSize: 11, opacity: 0.55 }}>{formatCurrency(spentSoFar)} spent</span>
+              <span className="label" style={{ fontSize: 11 }}>of {formatCurrency(discretionary)} discretionary</span>
+              <span className="label" style={{ fontSize: 11 }}>{formatCurrency(spentSoFar)} spent</span>
             </div>
           )}
         </button>

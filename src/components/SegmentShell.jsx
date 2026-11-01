@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import SkeletonLoader from './SkeletonLoader'
 import { Card, EmptyState, SegmentedControl } from './ui'
@@ -68,7 +69,9 @@ export default function SegmentShell({ base, segments, views }) {
           />
         </div>
       )}
-      <View />
+      <Suspense fallback={<div className="page-container"><SkeletonLoader count={3} height="h-28" /></div>}>
+        <View />
+      </Suspense>
     </>
   )
 }

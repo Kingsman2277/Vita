@@ -77,7 +77,7 @@ export default function Sidebar({ onQuickAdd }) {
           </div>
           <div className="min-w-0">
             <p className="text-[12px] font-medium text-sidebar-foreground truncate leading-tight">{username}</p>
-            <p className="text-[10px] text-muted-foreground/60 leading-tight mt-[1px]">Vita v1.0</p>
+            <p className="text-[10px] text-muted-foreground leading-tight mt-[1px]">Vita v1.0</p>
           </div>
         </div>
       )}
