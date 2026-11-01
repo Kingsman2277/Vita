@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import Card from '../components/Card'
+import { AppHeader, BottomSheet, Button, Card } from '../components/ui'
 import { useAuth } from '../hooks/useAuth'
 import { useIsAdmin } from '../hooks/useAdmin'
 
@@ -14,6 +14,8 @@ export default function Settings() {
   const [pwForm, setPwForm] = useState({ current: '', next: '', confirm: '' })
   const [savingPw, setSavingPw] = useState(false)
   const [signingOut, setSigningOut] = useState(false)
+  const [usernameSheet, setUsernameSheet] = useState(false)
+  const [passwordSheet, setPasswordSheet] = useState(false)
 
   const handleUsername = async (e) => {
     e.preventDefault()
@@ -69,86 +71,74 @@ export default function Settings() {
     ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
     : null
 
-  return (
-    <div className="page-container">
-      <header>
-        <h1 className="page-title">Settings</h1>
-        <p className="text-muted-foreground" style={{ fontSize: 13, marginTop: 4 }}>
-          Manage your account
-        </p>
-      </header>
+  const pwInvalid = savingPw || !pwForm.current || !pwForm.next || pwForm.next !== pwForm.confirm
 
-      {/* Account info */}
-      <Card style={{ padding: 20 }}>
-        <p className="stat-label" style={{ marginBottom: 14 }}>Account</p>
-        <div className="flex flex-col" style={{ gap: 12 }}>
+  return (
+    <div
+      className="mx-auto w-full max-w-[640px] px-4 pb-6 flex flex-col gap-4"
+      style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}
+    >
+      <AppHeader title="Me" avatarInitial={username?.charAt(0) || '?'} caption="Your account" />
+
+      {/* Account */}
+      <Card>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted mb-3.5">Account</p>
+        <div className="flex flex-col gap-3">
           <Row label="Signed in as" value={username || '—'} />
           {createdAt && <Row label="Account created" value={createdAt} />}
           <Row label="Internal email" value={user?.email || '—'} small />
         </div>
       </Card>
 
-      {/* Admin entry point — only visible to the project owner */}
-      {isAdmin && (
-        <Card onClick={() => navigate('/admin')} style={{ padding: 20 }}>
-          <div className="flex items-center justify-between" style={{ gap: 12 }}>
-            <div style={{ minWidth: 0 }}>
-              <p className="stat-label" style={{ marginBottom: 4 }}>Admin</p>
-              <p className="text-foreground" style={{ fontSize: 14, fontWeight: 600 }}>
-                Manage users & activity
-              </p>
-              <p className="text-muted-foreground" style={{ fontSize: 12, marginTop: 4 }}>
-                List all accounts, search, and view their recent activity
-              </p>
-            </div>
-            <svg
-              className="card-chevron w-4 h-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={2}
-              stroke="currentColor"
-              aria-hidden="true"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-            </svg>
-          </div>
-        </Card>
-      )}
+      {/* Actions — one grouped list rather than four stacked cards. */}
+      <Card padding="sm">
+        <ActionRow title="Change username" desc="2-32 characters · lowercase, digits, underscores" onClick={() => { setUsernameForm(username || ''); setUsernameSheet(true) }} />
+        <ActionRow title="Change password" desc="Verified with your current password" onClick={() => setPasswordSheet(true) } />
+        <ActionRow title="Monthly summary & export" desc="Totals for the month, and CSV export" onClick={() => navigate('/money/insights')} />
+        {isAdmin && (
+          <ActionRow title="Admin" desc="Manage users, features and activity" onClick={() => navigate('/admin')} />
+        )}
+      </Card>
 
-      {/* Change username */}
-      <Card style={{ padding: 20 }}>
-        <p className="stat-label" style={{ marginBottom: 14 }}>Change Username</p>
-        <form onSubmit={handleUsername}>
-          <div className="form-group" style={{ marginBottom: 14 }}>
+      {/* Sign out reads as destructive text, not a filled button. */}
+      <button
+        type="button"
+        onClick={handleSignOut}
+        disabled={signingOut}
+        className="w-full min-h-[44px] text-[15px] font-semibold text-danger disabled:opacity-50"
+      >
+        {signingOut ? 'Signing out…' : 'Sign out'}
+      </button>
+
+      <p className="text-center text-[11px] text-muted">
+        {username ? `${username} · ` : ''}Vita v1.0
+      </p>
+
+      {/* ─── Sheets ─── */}
+      <BottomSheet open={usernameSheet} onClose={() => setUsernameSheet(false)} title="Change username">
+        <form onSubmit={async e => { await handleUsername(e); setUsernameSheet(false) }}>
+          <div className="form-group">
             <label className="form-label">New username</label>
             <input
-              type="text"
-              autoCapitalize="none"
-              autoCorrect="off"
               value={usernameForm}
               onChange={e => setUsernameForm(e.target.value)}
               className="form-input"
               placeholder="e.g. matteo"
+              autoComplete="username"
+              minLength={2}
+              maxLength={32}
               required
             />
-            <p className="text-hint">2-32 characters · lowercase letters, digits, or underscores</p>
           </div>
-          <button
-            type="submit"
-            disabled={savingUsername || !usernameForm.trim() || usernameForm.trim().toLowerCase() === username}
-            className="btn-primary w-full"
-            style={{ padding: '12px 24px', opacity: (savingUsername || usernameForm.trim().toLowerCase() === username) ? 0.5 : 1 }}
-          >
+          <Button full type="submit" disabled={savingUsername}>
             {savingUsername ? 'Saving…' : 'Update username'}
-          </button>
+          </Button>
         </form>
-      </Card>
+      </BottomSheet>
 
-      {/* Change password */}
-      <Card style={{ padding: 20 }}>
-        <p className="stat-label" style={{ marginBottom: 14 }}>Change Password</p>
-        <form onSubmit={handlePassword}>
-          <div className="form-group" style={{ marginBottom: 14 }}>
+      <BottomSheet open={passwordSheet} onClose={() => setPasswordSheet(false)} title="Change password">
+        <form onSubmit={async e => { await handlePassword(e); setPasswordSheet(false) }}>
+          <div className="form-group">
             <label className="form-label">Current password</label>
             <input
               type="password"
@@ -160,7 +150,7 @@ export default function Settings() {
               required
             />
           </div>
-          <div className="form-group" style={{ marginBottom: 14 }}>
+          <div className="form-group">
             <label className="form-label">New password</label>
             <input
               type="password"
@@ -173,7 +163,7 @@ export default function Settings() {
               required
             />
           </div>
-          <div className="form-group" style={{ marginBottom: 14 }}>
+          <div className="form-group">
             <label className="form-label">Confirm new password</label>
             <input
               type="password"
@@ -186,58 +176,42 @@ export default function Settings() {
               required
             />
           </div>
-          <button
-            type="submit"
-            disabled={
-              savingPw ||
-              !pwForm.current ||
-              !pwForm.next ||
-              pwForm.next !== pwForm.confirm
-            }
-            className="btn-primary w-full"
-            style={{
-              padding: '12px 24px',
-              opacity:
-                savingPw || !pwForm.current || !pwForm.next || pwForm.next !== pwForm.confirm
-                  ? 0.5
-                  : 1,
-            }}
-          >
+          <Button full type="submit" disabled={pwInvalid}>
             {savingPw ? 'Verifying & saving…' : 'Update password'}
-          </button>
-          <p className="text-hint" style={{ marginTop: 10 }}>
+          </Button>
+          <p className="text-xs text-muted mt-3">
             Your current password is verified first. You'll stay signed in on this device; other sessions will need the new password.
           </p>
         </form>
-      </Card>
-
-      {/* Sign out */}
-      <Card style={{ padding: 20 }}>
-        <p className="stat-label" style={{ marginBottom: 14 }}>Session</p>
-        <button
-          type="button"
-          onClick={handleSignOut}
-          disabled={signingOut}
-          className="btn-secondary w-full"
-          style={{ padding: '12px 24px', color: 'var(--danger)', borderColor: 'var(--danger)', opacity: signingOut ? 0.5 : 1 }}
-        >
-          {signingOut ? 'Signing out…' : 'Sign out'}
-        </button>
-      </Card>
-
-      <p className="text-muted-foreground text-center" style={{ fontSize: 11, opacity: 0.5, marginTop: 4 }}>
-        Vita · v1.0
-      </p>
+      </BottomSheet>
     </div>
+  )
+}
+
+function ActionRow({ title, desc, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="w-full flex items-center gap-3 py-3 text-left border-b border-divider last:border-b-0"
+    >
+      <span className="min-w-0 flex-1">
+        <span className="block text-[15px] font-semibold text-fg">{title}</span>
+        {desc && <span className="block text-xs text-muted mt-0.5">{desc}</span>}
+      </span>
+      <svg className="w-4 h-4 shrink-0 text-muted" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" aria-hidden="true">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+      </svg>
+    </button>
   )
 }
 
 function Row({ label, value, small }) {
   return (
     <div className="flex items-center justify-between" style={{ gap: 12 }}>
-      <span className="text-muted-foreground" style={{ fontSize: 13 }}>{label}</span>
+      <span className="text-[13px] text-muted">{label}</span>
       <span
-        className="text-foreground"
+        className="text-fg"
         style={{
           fontSize: small ? 12 : 14,
           fontWeight: small ? 400 : 600,

@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import Card from '../components/Card'
-import Modal from '../components/Modal'
+import { AppHeader, BottomSheet as Modal, Button } from '../components/ui'
 import SkeletonLoader from '../components/SkeletonLoader'
 import {
   useIsAdmin, useAdminUsers, useAdminUserRecent,
@@ -57,24 +57,19 @@ export default function Admin() {
   }
 
   return (
-    <div className="page-container">
-      <header className="flex items-center justify-between" style={{ gap: 12 }}>
-        <div style={{ minWidth: 0 }}>
-          <h1 className="page-title">Admin</h1>
-          <p className="text-muted-foreground" style={{ fontSize: 13, marginTop: 4 }}>
-            {users.length} {users.length === 1 ? 'account' : 'accounts'}
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={refetch}
-          className="btn-secondary"
-          style={{ padding: '8px 16px', minWidth: 'auto', fontSize: 12 }}
-          aria-label="Refresh"
-        >
-          ↻ Refresh
-        </button>
-      </header>
+    <div
+      className="mx-auto w-full max-w-[640px] px-4 pb-6 flex flex-col gap-4"
+      style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}
+    >
+      <AppHeader
+        title="Admin"
+        caption={`${users.length} ${users.length === 1 ? 'ACCOUNT' : 'ACCOUNTS'}`}
+        right={
+          <Button variant="secondary" size="md" onClick={refetch} aria-label="Refresh">
+            ↻ Refresh
+          </Button>
+        }
+      />
 
       {usersError && (
         <Card style={{ padding: 16, borderColor: 'var(--danger)' }}>

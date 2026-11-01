@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import toast from 'react-hot-toast'
+import { Button } from '../components/ui'
 import { useAuth } from '../hooks/useAuth'
 
 export default function Login() {
@@ -27,23 +28,19 @@ export default function Login() {
   }
 
   return (
-    <div
-      className="min-h-dvh flex items-center justify-center"
-      style={{ padding: 24, background: 'var(--background)' }}
-    >
-      <form
-        onSubmit={handleSubmit}
-        className="hero-card"
-        style={{ width: '100%', maxWidth: 380, padding: 32 }}
-      >
-        <div style={{ textAlign: 'center', marginBottom: 28 }}>
-          <p style={{ fontSize: 36, lineHeight: 1 }} aria-hidden="true">🔒</p>
-          <h1 style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.025em', marginTop: 12 }}>
-            Vita
-          </h1>
-          <p className="text-muted-foreground" style={{ fontSize: 13, marginTop: 6 }}>
-            Sign in to your tracker
-          </p>
+    <div className="min-h-dvh grid place-items-center bg-bg px-6 py-10">
+      <form onSubmit={handleSubmit} className="w-full max-w-[380px] bg-card rounded-card p-8">
+        <div className="text-center mb-7">
+          {/* The app mark, not a padlock: this is a personal tracker, not
+              a security product. Phase 7 ships the same V as the PWA icon. */}
+          <span
+            className="inline-grid place-items-center w-14 h-14 rounded-[18px] bg-accent text-white text-[26px] font-bold"
+            aria-hidden="true"
+          >
+            V
+          </span>
+          <h1 className="text-2xl font-bold tracking-[-0.02em] text-fg mt-3.5">Vita</h1>
+          <p className="text-[13px] text-muted mt-1.5">Sign in to your tracker</p>
         </div>
 
         <div className="form-group">
@@ -73,16 +70,11 @@ export default function Login() {
           />
         </div>
 
-        <button
-          type="submit"
-          disabled={submitting}
-          className="btn-primary w-full"
-          style={{ padding: '12px 24px', marginTop: 8, opacity: submitting ? 0.7 : 1 }}
-        >
+        <Button full type="submit" disabled={submitting} className="mt-2">
           {submitting ? 'Signing in…' : 'Sign in'}
-        </button>
+        </Button>
 
-        <p className="text-muted-foreground text-center" style={{ fontSize: 11, marginTop: 18 }}>
+        <p className="text-center text-[11px] text-muted mt-5">
           Private tracker · accounts by invitation only
         </p>
       </form>

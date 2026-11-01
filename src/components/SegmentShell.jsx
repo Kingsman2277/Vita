@@ -1,7 +1,6 @@
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
-import SegmentedControl from './ui/SegmentedControl'
 import SkeletonLoader from './SkeletonLoader'
-import Card from './Card'
+import { Card, EmptyState, SegmentedControl } from './ui'
 import { useFeatures } from '../hooks/useFeatures'
 import { visibleSegments } from '../lib/nav'
 
@@ -34,15 +33,13 @@ export default function SegmentShell({ base, segments, views }) {
 
   if (available.length === 0) {
     return (
-      <div className="page-container">
-        <Card style={{ padding: 28, textAlign: 'center' }}>
-          <p style={{ fontSize: 36, marginBottom: 12 }} aria-hidden="true">🔒</p>
-          <p className="text-foreground" style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>
-            Nothing enabled here yet
-          </p>
-          <p className="text-muted-foreground" style={{ fontSize: 13, lineHeight: 1.5 }}>
-            Ask the admin to enable a feature for this tab.
-          </p>
+      <div className="mx-auto w-full max-w-[640px] px-4 pt-6">
+        <Card>
+          <EmptyState
+            icon="🔒"
+            title="Nothing enabled here yet"
+            desc="Ask the admin to enable a feature for this tab."
+          />
         </Card>
       </div>
     )

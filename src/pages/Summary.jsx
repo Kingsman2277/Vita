@@ -1,8 +1,7 @@
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Card from '../components/Card'
-import MonthPicker from '../components/MonthPicker'
-import SpendingChart from '../components/SpendingChart'
+import { AppHeader, Button, MonthPill, ProgressBar, StatTile } from '../components/ui'
 import SkeletonLoader from '../components/SkeletonLoader'
 import BodyGoalProgressCard from '../components/BodyGoalProgressCard'
 import { useExpenses } from '../hooks/useExpenses'
@@ -14,7 +13,7 @@ import { useWorkoutLogs } from '../hooks/useWorkoutLogs'
 import { useMonthNavigation } from '../hooks/useMonthNavigation'
 import { filterByMonth } from '../lib/dateFilters'
 import { exportExpensesCSV, exportFoodLogsCSV } from '../lib/csvExport'
-import { formatCurrency } from '../lib/helpers'
+import { formatCurrency, getCategoryEmoji, EXPENSE_CATEGORIES } from '../lib/helpers'
 
 export default function Summary() {
   const navigate = useNavigate()
@@ -60,31 +59,34 @@ export default function Summary() {
   if (loading) return <div className="page-container"><SkeletonLoader count={5} height="h-36" /></div>
 
   return (
-    <div className="page-container">
-      <header>
-        <h1 className="page-title">Monthly Summary</h1>
-      </header>
+    <div
+      className="mx-auto w-full max-w-[640px] px-4 pb-6 flex flex-col gap-4"
+      style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}
+    >
+      <AppHeader
+        title="Insights"
+        right={
+          <MonthPill
+            label={label}
+            isCurrentMonth={isCurrentMonth}
+            onPrev={goToPrev}
+            onNext={goToNext}
+            onToday={goToCurrentMonth}
+          />
+        }
+      />
 
-      <MonthPicker label={label} onPrev={goToPrev} onNext={goToNext} onToday={goToCurrentMonth} isCurrentMonth={isCurrentMonth} />
-
-      {/* Spending — hero card */}
-      <section className="hero-card">
-        <p className="label stat-label">Spending Breakdown</p>
-        <p
-          style={{
-            fontSize: 'clamp(34px, 9vw, 44px)',
-            fontWeight: 700,
-            letterSpacing: '-0.025em',
-            lineHeight: 1,
-            marginTop: 12,
-          }}
-        >
+      {/* Spending — bars rather than the old multi-colour donut, so the
+          breakdown reads in one orange ramp (§4.1, §6.5). */}
+      <Card>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted">Spending breakdown</p>
+        <p className="text-[34px] font-bold tracking-[-0.02em] text-fg tabular-nums leading-none mt-2">
           {formatCurrency(monthTotal)}
         </p>
-        <div style={{ marginTop: 24 }}>
-          <SpendingChart expenses={monthExpenses} />
-        </div>
-      </section>
+        {/* Same predicate as monthTotal above — including reimbursable
+            rows here made the percentages add up to 158%. */}
+        <CategoryBreakdown expenses={monthExpenses.filter(e => !e.is_recurring)} total={monthTotal} />
+      </Card>
 
       {/* At-a-glance stats */}
       <section className="summary-stat-grid">
@@ -163,22 +165,14 @@ export default function Summary() {
             </p>
             <div className="flex flex-wrap" style={{ gap: 10 }}>
               {monthExpenses.length > 0 && (
-                <button
-                  onClick={() => exportExpensesCSV(monthExpenses, label)}
-                  className="btn-secondary"
-                  style={{ minWidth: 'auto', padding: '10px 18px', fontSize: 13 }}
-                >
-                  📊 Export Expenses ({monthExpenses.length})
-                </button>
+                <Button variant="secondary" size="md" onClick={() => exportExpensesCSV(monthExpenses, label)}>
+                  📊 Export expenses ({monthExpenses.length})
+                </Button>
               )}
               {monthLogs.length > 0 && (
-                <button
-                  onClick={() => exportFoodLogsCSV(monthLogs, label)}
-                  className="btn-secondary"
-                  style={{ minWidth: 'auto', padding: '10px 18px', fontSize: 13 }}
-                >
-                  🥗 Export Food Log ({monthLogs.length})
-                </button>
+                <Button variant="secondary" size="md" onClick={() => exportFoodLogsCSV(monthLogs, label)}>
+                  🥗 Export food log ({monthLogs.length})
+                </Button>
               )}
             </div>
           </Card>
@@ -304,3 +298,47 @@ function WorkoutSummaryCard({ streak, monthStats, onOpen }) {
   )
 }
 
+/**
+ * Per-category spend as horizontal bars in one orange ramp. Replaces the
+ * old six-colour donut: the palette keeps module colours out of charts
+ * (§4.1), and bars carry the figures without a legend.
+ */
+function CategoryBreakdown({ expenses, total }) {
+  const rows = useMemo(() => {
+    const byCategory = new Map()
+    for (const e of expenses) {
+      const key = e.category || 'other'
+      byCategory.set(key, (byCategory.get(key) || 0) + Number(e.amount || 0))
+    }
+    return [...byCategory.entries()]
+      .map(([category, amount]) => ({
+        category,
+        amount,
+        label: EXPENSE_CATEGORIES.find(c => c.value === category)?.label || category,
+      }))
+      .sort((a, b) => b.amount - a.amount)
+  }, [expenses])
+
+  if (rows.length === 0) {
+    return <p className="text-[13px] text-muted mt-3">No expenses this month.</p>
+  }
+
+  return (
+    <div className="flex flex-col gap-3 mt-4">
+      {rows.map(row => (
+        <div key={row.category}>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-[14px] text-fg truncate">
+              <span aria-hidden="true">{getCategoryEmoji(row.category)}</span> {row.label}
+            </p>
+            <p className="text-[14px] font-semibold text-fg tabular-nums shrink-0">
+              {formatCurrency(row.amount)}
+              <span className="text-muted font-normal"> · {total > 0 ? Math.round((row.amount / total) * 100) : 0}%</span>
+            </p>
+          </div>
+          <ProgressBar value={row.amount} max={total || 1} className="mt-1.5" />
+        </div>
+      ))}
+    </div>
+  )
+}

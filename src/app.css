@@ -651,8 +651,10 @@
 }
 .form-input {
   width: 100%;
-  background: var(--muted);
-  border: 1px solid var(--border);
+  /* Form fields were still on the teal-era surface, which read blue next
+     to the charcoal cards. One change moves every field in the app. */
+  background: var(--color-card-2);
+  border: 1px solid transparent;
   border-radius: var(--radius-sm);
   padding: 13px 16px;
   /* Keep at 16px to prevent iOS focus-zoom — see input rule above. */

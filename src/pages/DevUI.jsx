@@ -5,6 +5,7 @@ import {
   SegmentedControl, Skeleton, StatTile, TagPill, WeekRow,
 } from '../components/ui'
 import WorkoutComplete from '../components/WorkoutComplete'
+import Login from './Login'
 import { formatCurrency, formatDate } from '../lib/helpers'
 
 // Dev-only gallery for the design "D" component set (docs/redesign §4.4).
@@ -151,6 +152,14 @@ export default function DevUI() {
               <Skeleton width="40%" height={14} />
             </div>
           </Card>
+        </Section>
+
+        <Section title="Login (rendered in place)">
+          {/* Mounted here so the sign-in screen can be eyeballed without
+              signing out of a live session. */}
+          <div className="rounded-card overflow-hidden border border-line">
+            <Login />
+          </div>
         </Section>
 
         <Section title="Workout completion">
