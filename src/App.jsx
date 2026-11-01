@@ -13,6 +13,7 @@ import Summary from './pages/Summary'
 import Settings from './pages/Settings'
 import Admin from './pages/Admin'
 import Login from './pages/Login'
+import DevUI from './pages/DevUI'
 import RequireFeature from './components/RequireFeature'
 import { useAuth } from './hooks/useAuth'
 
@@ -49,6 +50,8 @@ export default function App() {
           <Route path="/body-goals" element={<RequireFeature feature="goals"><BodyGoals /></RequireFeature>} />
           <Route path="/workout"    element={<RequireFeature feature="workout"><Workout /></RequireFeature>} />
           <Route path="/summary"    element={<RequireFeature feature="summary"><Summary /></RequireFeature>} />
+          {/* Component gallery for the redesign — dev builds only, never shipped. */}
+          {import.meta.env.DEV && <Route path="/dev/ui" element={<DevUI />} />}
         </Routes>
       </div>
       <BottomNav />
