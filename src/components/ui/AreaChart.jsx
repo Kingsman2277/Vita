@@ -25,6 +25,10 @@ export default function AreaChart({
   refLine,
   height = 160,
   showAxis = true,
+  // The Money chart wants dated ticks but no value axis, so each axis can
+  // be switched independently; both default to `showAxis`.
+  showXAxis = showAxis,
+  showYAxis = showAxis,
   className = '',
 }) {
   // ResponsiveContainer measures its parent, so the parent needs a resolved
@@ -49,14 +53,14 @@ export default function AreaChart({
 
           <XAxis
             dataKey={xKey}
-            hide={!showAxis}
+            hide={!showXAxis}
             tickLine={false}
             axisLine={false}
             tick={{ fill: 'var(--color-muted-2)', fontSize: 11 }}
             minTickGap={24}
           />
           <YAxis
-            hide={!showAxis}
+            hide={!showYAxis}
             tickLine={false}
             axisLine={false}
             width={34}
@@ -76,7 +80,7 @@ export default function AreaChart({
               ifOverflow="extendDomain"
               label={
                 refLine.label
-                  ? { value: refLine.label, position: 'insideTopRight', dy: -6, fill: '#8E8E93', fontSize: 11 }
+                  ? { value: refLine.label, position: 'insideTopLeft', dy: -10, fill: '#8E8E93', fontSize: 11 }
                   : undefined
               }
             />

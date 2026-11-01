@@ -1,19 +1,49 @@
 import { useState, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import Card from '../components/Card'
-import Modal from '../components/Modal'
-import MonthPicker from '../components/MonthPicker'
 import DayPicker from '../components/DayPicker'
 import SkeletonLoader from '../components/SkeletonLoader'
 import JumpToTodayButton from '../components/JumpToTodayButton'
+import {
+  AppHeader, AreaChart, BottomSheet as Modal, Button, EmptyState, ListRow,
+  MonthPill, ProgressBar, SectionHeader, Skeleton, TagPill,
+} from '../components/ui'
 import { useExpenses } from '../hooks/useExpenses'
+import { useBudget } from '../hooks/useBudget'
 import { useMonthNavigation } from '../hooks/useMonthNavigation'
 import { filterByMonth, filterByDay, getDaysWithData } from '../lib/dateFilters'
-import { formatCurrency, formatDate, getToday, EXPENSE_CATEGORIES, getCategoryEmoji } from '../lib/helpers'
+import { isDiscretionary, reconcileTotals } from '../lib/financeReconciliation'
+import {
+  formatCurrency, formatDate, getToday,
+  BUDGET_ALLOCATIONS, EXPENSE_CATEGORIES, getCategoryEmoji,
+} from '../lib/helpers'
+
+function categoryLabel(value) {
+  return EXPENSE_CATEGORIES.find(c => c.value === value)?.label || value
+}
+
+function CategoryPill({ active, onClick, children }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`shrink-0 whitespace-nowrap h-11 px-4 rounded-[14px] text-sm font-semibold transition-colors ${
+        active ? 'bg-white-btn text-bg' : 'bg-card text-fg-2'
+      }`}
+    >
+      {children}
+    </button>
+  )
+}
 
 export default function Finance() {
+  const navigate = useNavigate()
   const { expenses, loading, addExpense, updateExpense, deleteExpense } = useExpenses()
+  const { discretionary } = useBudget()
   const { selectedMonth, goToPrev, goToNext, goToCurrentMonth, isCurrentMonth, label } = useMonthNavigation()
+  const [showAll, setShowAll] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [summaryOpen, setSummaryOpen] = useState(false)
@@ -49,6 +79,64 @@ export default function Finance() {
     () => getDaysWithData(monthExpenses, 'date'),
     [monthExpenses]
   )
+
+  // Cumulative discretionary spend, one point per elapsed day. Reuses the
+  // same isDiscretionary predicate as the Budget tiles so the curve and
+  // the tiles can never tell different stories.
+  // Discretionary-only month total. `monthTotal` above counts every row
+  // (including work-reimbursable ones) and still drives the list header;
+  // the budget maths has always been discretionary-only, and Home and the
+  // Budget screen both report this figure.
+  const monthDiscretionary = useMemo(
+    () => monthExpenses.filter(isDiscretionary).reduce((sum, e) => sum + Number(e.amount || 0), 0),
+    [monthExpenses]
+  )
+
+  const spendSeries = useMemo(() => {
+    const dayCount = new Date(selectedMonth.year, selectedMonth.month + 1, 0).getDate()
+    const perDay = new Array(dayCount + 1).fill(0)
+    for (const e of monthExpenses) {
+      if (!isDiscretionary(e)) continue
+      const day = Number(String(e.date).slice(8, 10))
+      if (day >= 1 && day <= dayCount) perDay[day] += Number(e.amount || 0)
+    }
+    const monthShort = new Date(selectedMonth.year, selectedMonth.month, 1)
+      .toLocaleDateString('en-CA', { month: 'short' })
+    // Stop at today in the current month — a flat line to month end would
+    // read as "spent nothing for a week".
+    const lastDay = isCurrentMonth ? new Date().getDate() : dayCount
+    const out = []
+    let running = 0
+    for (let day = 1; day <= lastDay; day++) {
+      running += perDay[day]
+      out.push({ d: `${monthShort} ${day}`, total: Math.round(running * 100) / 100 })
+    }
+    return out
+  }, [monthExpenses, selectedMonth.year, selectedMonth.month, isCurrentMonth])
+
+  // Per-category spend for the Budgets card, from the same reconciliation
+  // helper the Budget screen uses — integer-cent math, legacy category
+  // names folded in.
+  const topBudgets = useMemo(() => {
+    const byCategory = reconcileTotals(monthExpenses.filter(isDiscretionary), { source: 'Finance.Budgets' }).byCategory
+    return BUDGET_ALLOCATIONS
+      .map(({ category, label: name, percent }) => {
+        const allocated = discretionary * (percent / 100)
+        const spent = byCategory[category] || 0
+        return { category, name, allocated, spent, used: allocated > 0 ? spent / allocated : 0 }
+      })
+      .sort((a, b) => b.used - a.used)
+      .slice(0, 3)
+  }, [monthExpenses, discretionary])
+
+  // The default list is the month's latest few; "View all" reveals the
+  // day picker and the full filtered list.
+  const recent = useMemo(() => {
+    const scoped = filter === 'all' ? monthExpenses : monthExpenses.filter(e => e.category === filter)
+    return [...scoped].sort((a, b) => String(b.date).localeCompare(String(a.date))).slice(0, 5)
+  }, [monthExpenses, filter])
+
+  const visible = showAll ? filtered : recent
 
   // Reset day when month changes
   const monthKey = `${selectedMonth.year}-${selectedMonth.month}`
@@ -105,79 +193,161 @@ export default function Finance() {
     } catch { toast.error('Failed to delete') }
   }
 
+  const openAdd = () => {
+    setForm({ amount: '', category: 'groceries', note: '', date: getToday(), is_recurring: false })
+    setModalOpen(true)
+  }
+
   return (
-    <div className="page-container">
-      <div className="flex items-center justify-between" style={{ gap: 12 }}>
-        <div style={{ minWidth: 0 }}>
-          <h1 className="page-title">Finance</h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            {selectedDay !== null
-              ? <>{label}, Day {selectedDay}: <span className="text-foreground font-semibold">{formatCurrency(dayTotal)}</span></>
-              : <>{label}: <span className="text-foreground font-semibold">{formatCurrency(monthTotal)}</span></>
-            }
-          </p>
-        </div>
-        <div className="flex gap-2" style={{ flexShrink: 0 }}>
-          <button onClick={() => setSummaryOpen(true)} className="btn-secondary" style={{ padding: '10px 20px', borderRadius: 20, minWidth: 'auto' }}>📊 Summary</button>
-          <button onClick={() => { setForm({ amount: '', category: 'groceries', note: '', date: getToday(), is_recurring: false }); setModalOpen(true) }} className="btn-primary" style={{ padding: '10px 20px', borderRadius: 20, minWidth: 'auto' }}>+ Expense</button>
-        </div>
-      </div>
-
-      <MonthPicker label={label} onPrev={() => { goToPrev(); setSelectedDay(null) }} onNext={() => { goToNext(); setSelectedDay(null) }} onToday={() => { goToCurrentMonth(); setSelectedDay(new Date().getDate()) }} isCurrentMonth={isCurrentMonth} />
-
-      <DayPicker year={selectedMonth.year} month={selectedMonth.month} selectedDay={selectedDay} onSelectDay={setSelectedDay} daysWithData={expDaysWithData} />
-
-      <JumpToTodayButton
-        isCurrentMonth={isCurrentMonth}
-        selectedDay={selectedDay}
-        onJump={() => { goToCurrentMonth(); setSelectedDay(new Date().getDate()) }}
+    <div
+      className="mx-auto w-full max-w-[640px] px-4 pb-6 flex flex-col gap-4"
+      style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}
+    >
+      <AppHeader
+        title="Money"
+        right={
+          <MonthPill
+            label={label}
+            isCurrentMonth={isCurrentMonth}
+            onPrev={() => { goToPrev(); setSelectedDay(null) }}
+            onNext={() => { goToNext(); setSelectedDay(null) }}
+            onToday={() => { goToCurrentMonth(); setSelectedDay(new Date().getDate()) }}
+          />
+        }
       />
 
-      <div className="flex overflow-x-auto pb-1 scrollbar-none" style={{ gap: 8 }}>
-        <button onClick={() => setFilter('all')} className={`btn-pill${filter === 'all' ? ' active' : ''}`}>All</button>
+      {/* Spend card */}
+      <Card>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[13px] text-muted">Spent this month</p>
+            <p className="text-[30px] font-bold tracking-[-0.02em] text-fg tabular-nums leading-tight">
+              {formatCurrency(monthDiscretionary)}
+            </p>
+          </div>
+          {discretionary > 0 && (
+            <div className="text-right shrink-0">
+              <p className="text-[13px] text-muted">Discretionary left</p>
+              <p className="text-[17px] font-bold text-fg tabular-nums">
+                {formatCurrency(discretionary - monthDiscretionary)}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {spendSeries.length > 0 && (
+          <AreaChart
+            data={spendSeries}
+            xKey="d"
+            yKey="total"
+            showYAxis={false}
+            height={150}
+            refLine={discretionary > 0 ? { y: discretionary, label: `Budget ${formatCurrency(discretionary)}` } : undefined}
+            className="mt-3"
+          />
+        )}
+      </Card>
+
+      {/* Category filter — scrolls horizontally and bleeds off the right
+          edge on purpose; pills must never wrap or shrink. */}
+      <div className="flex overflow-x-auto scrollbar-none -mx-4 px-4" style={{ gap: 8 }}>
+        <CategoryPill active={filter === 'all'} onClick={() => setFilter('all')}>All</CategoryPill>
         {EXPENSE_CATEGORIES.map(c => (
-          <button key={c.value} onClick={() => setFilter(c.value)} className={`btn-pill${filter === c.value ? ' active' : ''}`}>
+          <CategoryPill key={c.value} active={filter === c.value} onClick={() => setFilter(c.value)}>
             {c.emoji} {c.label}
-          </button>
+          </CategoryPill>
         ))}
       </div>
 
-      {loading ? (
-        <SkeletonLoader count={5} />
-      ) : filtered.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-state-icon">💰</div>
-          <p className="empty-state-title">{isCurrentMonth ? 'No expenses yet' : `No expenses in ${label}`}</p>
-          <p className="empty-state-desc">{isCurrentMonth ? 'Start tracking your spending to see where your money goes' : 'Try navigating to a different month'}</p>
-          {isCurrentMonth && (
-            <button onClick={() => { setForm({ amount: '', category: 'groceries', note: '', date: getToday(), is_recurring: false }); setModalOpen(true) }} className="btn-primary" style={{ padding: '10px 20px', borderRadius: 20, minWidth: 'auto' }}>
-              Add your first expense
-            </button>
-          )}
-        </div>
-      ) : (
-        <div className="flex flex-col gap-2">
-          {filtered.map(exp => (
-            <Card key={exp.id} onClick={() => openEditExpense(exp)} className="flex items-center justify-between cursor-pointer" style={{ padding: '14px 16px' }}>
-              <div className="flex items-center gap-3 min-w-0 flex-1">
-                <span className="text-xl flex items-center justify-center rounded-lg bg-card-2 flex-shrink-0" style={{ width: 36, height: 36 }}>{getCategoryEmoji(exp.category)}</span>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <p className="font-medium text-sm truncate text-foreground">{exp.note || exp.category}</p>
-                    {exp.is_recurring && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-secondary text-secondary-foreground font-semibold uppercase tracking-wider flex-shrink-0">Reimbursable</span>}
+      {/* Budgets */}
+      {discretionary > 0 && (
+        <Card>
+          <SectionHeader title="Budgets" action={{ label: 'View all', onClick: () => navigate('/money/budget') }} />
+          <div className="flex flex-col gap-3.5 mt-3">
+            {topBudgets.map(b => {
+              const over = b.spent > b.allocated
+              return (
+                <div key={b.category}>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <p className="text-[15px] font-semibold text-fg truncate">{b.name}</p>
+                      {over && <TagPill>Over {formatCurrency(b.spent - b.allocated)}</TagPill>}
+                    </div>
+                    <p className="text-[15px] shrink-0 tabular-nums">
+                      <span className="font-bold text-fg">{formatCurrency(b.spent)}</span>
+                      <span className="text-muted"> / {formatCurrency(b.allocated)}</span>
+                    </p>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-0.5">{formatDate(exp.date)}</p>
+                  <ProgressBar
+                    value={b.spent}
+                    max={b.allocated || 1}
+                    tone={over ? 'danger' : 'accent'}
+                    className="mt-2"
+                  />
                 </div>
-              </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <p className="font-semibold text-foreground">{formatCurrency(exp.amount)}</p>
-                <svg className="card-chevron w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                </svg>
-              </div>
-            </Card>
-          ))}
+              )
+            })}
+          </div>
+        </Card>
+      )}
+
+      {/* Recent */}
+      <SectionHeader
+        title="Recent"
+        action={{ label: showAll ? 'Show less' : 'View all', onClick: () => setShowAll(v => !v) }}
+      />
+
+      {showAll && (
+        <>
+          <DayPicker
+            year={selectedMonth.year}
+            month={selectedMonth.month}
+            selectedDay={selectedDay}
+            onSelectDay={setSelectedDay}
+            daysWithData={expDaysWithData}
+          />
+          <JumpToTodayButton
+            isCurrentMonth={isCurrentMonth}
+            selectedDay={selectedDay}
+            onJump={() => { goToCurrentMonth(); setSelectedDay(new Date().getDate()) }}
+          />
+        </>
+      )}
+
+      {loading ? (
+        <div className="flex flex-col gap-2">
+          {[0, 1, 2, 3].map(i => <Skeleton key={i} height={56} radius={14} />)}
         </div>
+      ) : visible.length === 0 ? (
+        <EmptyState
+          icon="💰"
+          title={isCurrentMonth ? 'No expenses yet' : `No expenses in ${label}`}
+          desc={isCurrentMonth
+            ? 'Start tracking your spending to see where your money goes.'
+            : 'Try navigating to a different month.'}
+          action={isCurrentMonth ? <Button size="md" onClick={openAdd}>Add your first expense</Button> : null}
+        />
+      ) : (
+        <Card padding="sm">
+          {visible.map(exp => (
+            <ListRow
+              key={exp.id}
+              icon={getCategoryEmoji(exp.category)}
+              title={exp.note || categoryLabel(exp.category)}
+              meta={
+                <>
+                  <TagPill>{categoryLabel(exp.category)}</TagPill>
+                  {/* `is_recurring` is the column name; it means work
+                      reimbursable, not a repeating expense. */}
+                  {exp.is_recurring && <TagPill tone="neutral">Reimbursable</TagPill>}
+                  <span>{formatDate(exp.date)}</span>
+                </>
+              }
+              amount={`\u2212${formatCurrency(exp.amount)}`}
+              onClick={() => openEditExpense(exp)}
+            />
+          ))}
+        </Card>
       )}
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Add Expense">

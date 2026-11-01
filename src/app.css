@@ -844,15 +844,15 @@
   flex-shrink: 0;
 }
 .day-picker-item:hover {
-  background: var(--muted);
-  color: var(--foreground);
+  background: var(--color-card-2);
+  color: var(--color-fg);
 }
 .day-picker-item.active {
-  background: var(--primary);
-  color: var(--primary-foreground);
+  background: var(--color-white-btn);
+  color: var(--color-bg);
 }
 .day-picker-item.today {
-  border: 1px solid var(--primary);
+  border: 1px solid var(--color-line);
 }
 
 .day-picker-weekday {
@@ -872,12 +872,12 @@
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: var(--primary);
+  background: var(--color-accent);
   position: absolute;
   bottom: 4px;
 }
 .day-picker-item.active .day-picker-dot {
-  background: var(--primary-foreground);
+  background: var(--color-bg);
 }
 
 .day-picker-divider {

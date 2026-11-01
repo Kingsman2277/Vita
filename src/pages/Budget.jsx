@@ -1,8 +1,8 @@
 import { useState, useMemo, useEffect } from 'react'
 import toast from 'react-hot-toast'
-import Card from '../components/Card'
 import Modal from '../components/Modal'
 import SkeletonLoader from '../components/SkeletonLoader'
+import { AppHeader, Button, Card, ProgressBar, SectionHeader, TagPill } from '../components/ui'
 import { useBudget } from '../hooks/useBudget'
 import { useExpenses } from '../hooks/useExpenses'
 import { formatCurrency, formatDate, BUDGET_ALLOCATIONS, getCategoryEmoji } from '../lib/helpers'
@@ -101,14 +101,17 @@ export default function Budget() {
   }
 
   return (
-    <div className="page-container">
-      <div className="flex items-center justify-between">
-        <h1 className="page-title">Budget</h1>
-        <button onClick={openEditBudget} className="btn-secondary" style={{ padding: '8px 18px', minWidth: 'auto' }}>Edit</button>
-      </div>
+    <div
+      className="mx-auto w-full max-w-[640px] px-4 pb-6 flex flex-col gap-4"
+      style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}
+    >
+      <AppHeader
+        title="Budget"
+        right={<Button variant="secondary" size="md" onClick={openEditBudget}>Edit</Button>}
+      />
 
       {/* Cash Flow — compact with expandable detail */}
-      <div className="hero-card" style={{ padding: '20px 24px' }}>
+      <Card>
         <button
           type="button"
           onClick={() => setCashFlowOpen(o => !o)}
@@ -149,17 +152,17 @@ export default function Budget() {
             <FlowRow label="Spent So Far" value={`-${formatCurrency(spentSoFar)}`} colorVar="var(--warning)" />
           </div>
         )}
-      </div>
+      </Card>
 
       {/* Budget Allocation by Category */}
       <BudgetCategories discretionary={discretionary} expenses={expenses} />
 
       {/* Recurring */}
-      <div className="flex items-center justify-between">
-        <h2 className="section-title">Recurring Expenses</h2>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">{formatCurrency(totalRecurring)}/mo</span>
-          <button onClick={() => { setRecForm({ name: '', amount: '', day_of_month: '1', category: '' }); setAddRecModal(true) }} className="btn-secondary" style={{ padding: '8px 18px', minWidth: 'auto' }}>+ Add</button>
+      <div className="flex items-center justify-between gap-3">
+        <SectionHeader title="Recurring expenses" className="min-w-0 flex-1" />
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-[13px] text-muted whitespace-nowrap">{formatCurrency(totalRecurring)}/mo</span>
+          <Button variant="secondary" size="sm" onClick={() => { setRecForm({ name: '', amount: '', day_of_month: '1', category: '' }); setAddRecModal(true) }}>+ Add</Button>
         </div>
       </div>
 
@@ -382,9 +385,7 @@ function BudgetCategories({ discretionary, expenses }) {
           const allocated = discretionary * (percent / 100)
           const spent = spentByCategory[category] || 0
           const remaining = allocated - spent
-          const spentPct = allocated > 0 ? Math.min(100, (spent / allocated) * 100) : 0
           const isOver = remaining < 0
-          const fillColor = isOver ? 'var(--danger)' : spentPct > 80 ? 'var(--warning)' : 'var(--primary)'
 
           return (
             <button
@@ -392,31 +393,32 @@ function BudgetCategories({ discretionary, expenses }) {
               type="button"
               onClick={() => setDrillCategory({ category, label, emoji })}
               aria-label={`View ${label} expenses for this month`}
-              className="text-left w-full transition-all hover:border-primary/40"
-              style={{ padding: '18px 20px', borderRadius: 14, border: '1px solid var(--border)', background: 'var(--card)', cursor: 'pointer', fontFamily: 'inherit', color: 'inherit' }}
+              className="text-left w-full bg-card rounded-card p-4"
             >
-              {/* Header row */}
-              <div className="flex items-center justify-between" style={{ marginBottom: 14, gap: 12 }}>
-                <div className="flex items-center" style={{ gap: 12, minWidth: 0 }}>
-                  <span style={{ fontSize: 20, lineHeight: 1, flexShrink: 0 }} aria-hidden="true">{emoji}</span>
-                  <span className="text-foreground" style={{ fontSize: 14, fontWeight: 600 }}>{label}</span>
-                  <span className="text-muted-foreground" style={{ fontSize: 11, fontWeight: 500, padding: '2px 8px', borderRadius: 999, background: 'var(--muted)', flexShrink: 0 }}>{percent}%</span>
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-lg leading-none shrink-0" aria-hidden="true">{emoji}</span>
+                  <span className="text-[15px] font-semibold text-fg leading-tight">{label}</span>
+                  {isOver
+                    ? <TagPill>Over {formatCurrency(-remaining)}</TagPill>
+                    : <TagPill tone="neutral">{percent}%</TagPill>}
                 </div>
-                <span style={{ fontSize: 14, fontWeight: 700, color: isOver ? 'var(--danger)' : 'var(--foreground)', flexShrink: 0, whiteSpace: 'nowrap' }}>
-                  {formatCurrency(remaining)} left
+                <span className="text-[15px] shrink-0 tabular-nums whitespace-nowrap">
+                  <span className={`font-bold ${isOver ? 'text-danger' : 'text-fg'}`}>{formatCurrency(spent)}</span>
+                  <span className="text-muted"> / {formatCurrency(allocated)}</span>
                 </span>
               </div>
 
-              {/* Progress bar */}
-              <div className="progress-bar">
-                <div className="progress-bar-fill" style={{ width: `${spentPct}%`, background: fillColor }} />
-              </div>
+              <ProgressBar
+                value={spent}
+                max={allocated || 1}
+                tone={isOver ? 'danger' : 'accent'}
+                className="mt-2.5"
+              />
 
-              {/* Footer stats */}
-              <div className="flex justify-between" style={{ marginTop: 12 }}>
-                <span className="text-muted-foreground" style={{ fontSize: 12 }}>{formatCurrency(spent)} spent</span>
-                <span className="text-muted-foreground" style={{ fontSize: 12 }}>{formatCurrency(allocated)} budgeted</span>
-              </div>
+              <p className="text-xs text-muted mt-2">
+                {isOver ? 'over budget' : `${formatCurrency(remaining)} left`}
+              </p>
             </button>
           )
         })}
