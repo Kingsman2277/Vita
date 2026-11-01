@@ -107,8 +107,8 @@ export default function Finance() {
 
   return (
     <div className="page-container">
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex items-center justify-between" style={{ gap: 12 }}>
+        <div style={{ minWidth: 0 }}>
           <h1 className="page-title">Finance</h1>
           <p className="text-muted-foreground text-sm mt-1">
             {selectedDay !== null
@@ -117,7 +117,7 @@ export default function Finance() {
             }
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2" style={{ flexShrink: 0 }}>
           <button onClick={() => setSummaryOpen(true)} className="btn-secondary" style={{ padding: '10px 20px', borderRadius: 20, minWidth: 'auto' }}>📊 Summary</button>
           <button onClick={() => { setForm({ amount: '', category: 'groceries', note: '', date: getToday(), is_recurring: false }); setModalOpen(true) }} className="btn-primary" style={{ padding: '10px 20px', borderRadius: 20, minWidth: 'auto' }}>+ Expense</button>
         </div>
