@@ -22,13 +22,22 @@ const MUSCLE_COLOR = {
   arms:   '#F472B6',     // pink
 }
 
-const DOW_LABEL = { 1: 'Mon', 2: 'Tue', 3: 'Wed', 4: 'Thu', 5: 'Fri' }
-const DOW_LABEL_LONG = { 1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday', 5: 'Friday' }
+const DOW_LABEL = { 1: 'Mon', 2: 'Tue', 3: 'Wed', 4: 'Thu', 5: 'Fri', 6: 'Sat', 7: 'Sun' }
+const DOW_LABEL_LONG = {
+  1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday',
+  5: 'Friday', 6: 'Saturday', 7: 'Sunday',
+}
 
 function parseISODateLocal(s) {
   if (!s) return null
   const [y, m, d] = String(s).slice(0, 10).split('-').map(Number)
   return new Date(y, m - 1, d)
+}
+
+// Mon=1 .. Sun=7 — matches the schema and useWorkoutLogs.
+function isoDayOfWeek(date) {
+  const dow = date.getDay()
+  return dow === 0 ? 7 : dow
 }
 
 function formatLongDate(iso) {
@@ -63,7 +72,6 @@ export default function Workout() {
   const {
     dayTemplate,
     exercises,
-    isWeekend,
     allDone,
     completedCount,
     totalCount,
@@ -79,8 +87,8 @@ export default function Workout() {
     addProgramExercise,
     updateProgramExercise,
     deleteProgramExercise,
-    resetProgramToDefaults,
     clearProgram,
+    clearProgramForDay,
     resetDay,
   } = useWorkoutLogs(dateObj)
   const [programEditorOpen, setProgramEditorOpen] = useState(false)
@@ -159,15 +167,13 @@ export default function Workout() {
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted">
-              {isWeekend ? 'Rest day' : (dayTemplate?.day_label || 'Workout')}
+              {dayTemplate?.day_label || 'Workout'}
             </p>
-            {!isWeekend && (
-              <p className="text-[17px] font-semibold text-fg mt-1.5">
-                {DOW_LABEL_LONG[dayTemplate?.day_of_week] || ''}
-              </p>
-            )}
+            <p className="text-[17px] font-semibold text-fg mt-1.5">
+              {DOW_LABEL_LONG[dayTemplate?.day_of_week] || DOW_LABEL_LONG[isoDayOfWeek(dateObj)] || ''}
+            </p>
           </div>
-          {!isWeekend && totalCount > 0 && (
+          {totalCount > 0 && (
             <div className="text-right shrink-0">
               <p className="text-[26px] font-bold tracking-[-0.02em] text-fg tabular-nums leading-none">
                 {completedCount}<span className="text-muted text-base font-semibold">/{totalCount}</span>
@@ -177,7 +183,7 @@ export default function Workout() {
           )}
         </div>
 
-        {!isWeekend && totalCount > 0 && (
+        {totalCount > 0 && (
           <ProgressBar value={completedCount} max={totalCount} className="mt-3" />
         )}
 
@@ -203,7 +209,7 @@ export default function Workout() {
           variant="secondary"
           size="sm"
           onClick={handleResetDay}
-          disabled={resettingDay || isWeekend || exercises.length === 0}
+          disabled={resettingDay || exercises.length === 0}
           title="Reset today's checklist"
         >
           ↻ Reset day
@@ -219,30 +225,14 @@ export default function Workout() {
           <EmptyState
             icon="🏋️"
             title="Your program is empty"
-            desc="Add exercises for each weekday, or load the default 5-day full-body program to get started."
-            action={
-              <div className="flex gap-2 justify-center">
-                <Button size="md" onClick={() => setProgramEditorOpen(true)}>✎ Edit program</Button>
-                <Button
-                  variant="secondary"
-                  size="md"
-                  onClick={async () => {
-                    try { await resetProgramToDefaults(); toast.success('Default program loaded') }
-                    catch (err) { toast.error(err.message || 'Could not load defaults') }
-                  }}
-                >
-                  Load defaults
-                </Button>
-              </div>
-            }
+            desc="Build your routine from scratch — add exercises for each day you want to train, and leave the rest blank."
+            action={<Button size="md" onClick={() => setProgramEditorOpen(true)}>✎ Edit program</Button>}
           />
         </Card>
-      ) : isWeekend ? (
-        <RestDayCard date={selectedDate} />
       ) : exercises.length === 0 ? (
         <Card style={{ padding: 24, textAlign: 'center' }}>
           <p className="text-muted-foreground" style={{ fontSize: 13 }}>
-            No exercises scheduled for {DOW_LABEL_LONG[dayTemplate?.day_of_week] || 'this day'}. Tap <strong className="text-foreground">Edit Program</strong> to add some.
+            No exercises scheduled for {DOW_LABEL_LONG[isoDayOfWeek(dateObj)] || 'this day'}. Tap <strong className="text-foreground">Edit Program</strong> to add some, or leave it blank for a rest day.
           </p>
         </Card>
       ) : (
@@ -256,15 +246,15 @@ export default function Workout() {
                 onExpand={() => setExpandedOrder(expandedOrder === ex.exercise_order ? null : ex.exercise_order)}
                 onToggle={async () => {
                   try { await toggleComplete(ex.exercise_order) }
-                  catch { toast.error('Could not save — try again') }
+                  catch (err) { console.error('toggleComplete error:', err); toast.error(err?.message || 'Could not save — try again') }
                 }}
                 onWeightChange={async v => {
                   try { await updateWeight(ex.exercise_order, v) }
-                  catch { toast.error('Could not save weight') }
+                  catch (err) { console.error('updateWeight error:', err); toast.error(err?.message || 'Could not save weight') }
                 }}
                 onNoteChange={async v => {
                   try { await updateNote(ex.exercise_order, v) }
-                  catch { toast.error('Could not save note') }
+                  catch (err) { console.error('updateNote error:', err); toast.error(err?.message || 'Could not save note') }
                 }}
               />
             ))}
@@ -298,8 +288,8 @@ export default function Workout() {
           addProgramExercise,
           updateProgramExercise,
           deleteProgramExercise,
-          resetProgramToDefaults,
           clearProgram,
+          clearProgramForDay,
         }}
       />
     </div>
@@ -332,6 +322,9 @@ function WeekDots({ weekStats }) {
         } else if (d.status === 'missed') {
           style = { ...baseStyle, background: 'transparent', color: 'rgba(240,242,245,0.3)', border: '1px dashed rgba(255,255,255,0.06)' }
           label = 'missed'
+        } else if (d.status === 'rest') {
+          style = { ...baseStyle, background: 'transparent', color: 'rgba(240,242,245,0.25)', border: '1px solid rgba(255,255,255,0.04)' }
+          label = 'rest'
         } else {
           style = { ...baseStyle, background: 'transparent', color: 'var(--muted-foreground)', border: '1px solid var(--border)' }
           label = 'empty'
@@ -452,23 +445,6 @@ function ExerciseRow({ exercise, isExpanded, onExpand, onToggle, onWeightChange,
           </div>
         </div>
       )}
-    </Card>
-  )
-}
-
-function RestDayCard({ date }) {
-  return (
-    <Card style={{ padding: 28, textAlign: 'center' }}>
-      <p style={{ fontSize: 36, marginBottom: 12 }} aria-hidden="true">🛌</p>
-      <p className="text-foreground" style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>
-        Rest day
-      </p>
-      <p className="text-muted-foreground" style={{ fontSize: 13, lineHeight: 1.6, maxWidth: 280, margin: '0 auto' }}>
-        Recover and recharge. A light walk, stretching, or mobility work is fine — but keep weights off the menu.
-      </p>
-      <p className="text-muted-foreground" style={{ fontSize: 11, marginTop: 14, opacity: 0.7 }}>
-        {formatLongDate(date)}
-      </p>
     </Card>
   )
 }

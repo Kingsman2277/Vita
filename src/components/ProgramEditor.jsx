@@ -11,7 +11,8 @@ const MUSCLE_OPTIONS = [
   { key: 'arms',   label: 'Arms',    color: '#F472B6' },
 ]
 
-const DOW_LABELS = { 1: 'Mon', 2: 'Tue', 3: 'Wed', 4: 'Thu', 5: 'Fri' }
+const DOW_LABELS = { 1: 'Mon', 2: 'Tue', 3: 'Wed', 4: 'Thu', 5: 'Fri', 6: 'Sat', 7: 'Sun' }
+const ALL_DAYS = [1, 2, 3, 4, 5, 6, 7]
 
 /**
  * Modal for editing the user's per-day workout program. Day tabs
@@ -22,7 +23,7 @@ const DOW_LABELS = { 1: 'Mon', 2: 'Tue', 3: 'Wed', 4: 'Thu', 5: 'Fri' }
 export default function ProgramEditor({
   open, onClose,
   templates,
-  actions, // { addProgramExercise, updateProgramExercise, deleteProgramExercise, resetProgramToDefaults, clearProgram }
+  actions, // { addProgramExercise, updateProgramExercise, deleteProgramExercise, clearProgram, clearProgramForDay }
 }) {
   const [activeDay, setActiveDay] = useState(1)
   const [editingId, setEditingId] = useState(null) // template id being edited (or 'new')
@@ -47,15 +48,16 @@ export default function ProgramEditor({
     setBusy(false)
   }
 
-  const handleReset = async () => {
-    if (!confirm('Reset your program to the default 5-day full-body routine? Your current custom exercises will be replaced.')) return
+  const handleClearDay = async () => {
+    if (dayExercises.length === 0) return
+    if (!confirm(`Delete ALL ${dayExercises.length} exercises from ${DOW_LABELS[activeDay]}? You can add new ones after, or reset to defaults.`)) return
     setBusy(true)
     try {
-      await actions.resetProgramToDefaults()
-      toast.success('Program reset to defaults')
+      await actions.clearProgramForDay(activeDay)
+      toast.success(`${DOW_LABELS[activeDay]} cleared`)
       setEditingId(null)
     } catch (err) {
-      toast.error(err.message || 'Could not reset')
+      toast.error(err.message || 'Could not clear day')
     }
     setBusy(false)
   }
@@ -84,7 +86,7 @@ export default function ProgramEditor({
         }}
         role="tablist"
       >
-        {[1, 2, 3, 4, 5].map(d => {
+        {ALL_DAYS.map(d => {
           const isActive = activeDay === d
           return (
             <button
@@ -98,8 +100,8 @@ export default function ProgramEditor({
                 borderRadius: 8, border: 'none',
                 background: isActive ? 'var(--primary)' : 'transparent',
                 color: isActive ? 'var(--primary-foreground)' : 'var(--muted-foreground)',
-                fontFamily: 'inherit', fontSize: 12, fontWeight: 700,
-                cursor: 'pointer',
+                fontFamily: 'inherit', fontSize: 11, fontWeight: 700,
+                cursor: 'pointer', minWidth: 0,
               }}
             >
               {DOW_LABELS[d]}
@@ -220,46 +222,52 @@ export default function ProgramEditor({
       </div>
 
       {editingId !== 'new' && (
-        <button
-          type="button"
-          onClick={() => setEditingId('new')}
-          className="btn-secondary w-full"
-          style={{ padding: '10px 16px', marginBottom: 18 }}
-        >
-          + Add exercise to {DOW_LABELS[activeDay]}
-        </button>
+        <div className="flex flex-col" style={{ gap: 8, marginBottom: 18 }}>
+          <button
+            type="button"
+            onClick={() => setEditingId('new')}
+            className="btn-secondary w-full"
+            style={{ padding: '10px 16px' }}
+          >
+            + Add exercise to {DOW_LABELS[activeDay]}
+          </button>
+          {dayExercises.length > 0 && (
+            <button
+              type="button"
+              onClick={handleClearDay}
+              disabled={busy}
+              style={{
+                width: '100%', padding: '10px 16px', fontSize: 12, fontWeight: 600,
+                borderRadius: 8, border: '1px solid var(--danger)',
+                background: 'transparent', color: 'var(--danger)',
+                cursor: busy ? 'not-allowed' : 'pointer', fontFamily: 'inherit',
+                opacity: busy ? 0.5 : 1,
+              }}
+            >
+              Delete all from {DOW_LABELS[activeDay]}
+            </button>
+          )}
+        </div>
       )}
 
       {/* Footer actions */}
       <div style={{ marginTop: 8, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
-        <p className="stat-label" style={{ marginBottom: 10 }}>Reset</p>
-        <div className="flex" style={{ gap: 8 }}>
-          <button
-            type="button"
-            onClick={handleReset}
-            disabled={busy}
-            className="btn-secondary"
-            style={{ padding: '8px 14px', fontSize: 12, minWidth: 'auto', flex: 1, opacity: busy ? 0.5 : 1 }}
-          >
-            Reset to defaults
-          </button>
-          <button
-            type="button"
-            onClick={handleClear}
-            disabled={busy}
-            style={{
-              padding: '8px 14px', fontSize: 12,
-              borderRadius: 8, border: '1px solid var(--danger)',
-              background: 'transparent', color: 'var(--danger)', fontWeight: 600,
-              cursor: busy ? 'not-allowed' : 'pointer', fontFamily: 'inherit',
-              flex: 1, opacity: busy ? 0.5 : 1,
-            }}
-          >
-            Clear all
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={handleClear}
+          disabled={busy}
+          style={{
+            width: '100%', padding: '8px 14px', fontSize: 12,
+            borderRadius: 8, border: '1px solid var(--danger)',
+            background: 'transparent', color: 'var(--danger)', fontWeight: 600,
+            cursor: busy ? 'not-allowed' : 'pointer', fontFamily: 'inherit',
+            opacity: busy ? 0.5 : 1,
+          }}
+        >
+          Clear all days
+        </button>
         <p className="text-hint" style={{ marginTop: 8 }}>
-          Reset replaces your program with the standard 5-day routine. Clear wipes every day blank.
+          Wipes every day blank. Past workout history (completed exercises) stays put.
         </p>
       </div>
     </Modal>

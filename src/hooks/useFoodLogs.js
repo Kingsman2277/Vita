@@ -18,25 +18,13 @@ export function useFoodLogs() {
   useEffect(() => { fetchLogs() }, [fetchLogs])
 
   const addFoodLog = async (log) => {
-    let { error } = await supabase.from('food_logs').insert(log)
-    // If description column doesn't exist yet, retry without it
-    if (error && error.message?.toLowerCase().includes('description')) {
-      const { description, ...rest } = log
-      const retry = await supabase.from('food_logs').insert(rest)
-      error = retry.error
-    }
+    const { error } = await supabase.from('food_logs').insert(log)
     if (error) { console.error('addFoodLog error:', error); throw error }
     await fetchLogs()
   }
 
   const updateFoodLog = async (id, updates) => {
-    let { error } = await supabase.from('food_logs').update(updates).eq('id', id)
-    // If description column doesn't exist yet, retry without it
-    if (error && error.message?.toLowerCase().includes('description')) {
-      const { description, ...rest } = updates
-      const retry = await supabase.from('food_logs').update(rest).eq('id', id)
-      error = retry.error
-    }
+    const { error } = await supabase.from('food_logs').update(updates).eq('id', id)
     if (error) { console.error('updateFoodLog error:', error); throw error }
     await fetchLogs()
   }
