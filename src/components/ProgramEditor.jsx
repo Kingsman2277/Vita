@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import toast from 'react-hot-toast'
-import Modal from './Modal'
+import { BottomSheet as Modal, Button, Card } from './ui'
 
 // Mirrors the catalog used by the Workout page so the colors match.
 const MUSCLE_OPTIONS = [
@@ -78,14 +78,7 @@ export default function ProgramEditor({
   return (
     <Modal open={open} onClose={onClose} title="Edit Workout Program">
       {/* Day tabs */}
-      <div
-        className="flex"
-        style={{
-          gap: 6, padding: 4, borderRadius: 12,
-          background: 'var(--muted)', marginBottom: 16,
-        }}
-        role="tablist"
-      >
+      <div className="flex gap-1 p-1 rounded-[12px] bg-seg-track mb-4" role="tablist">
         {ALL_DAYS.map(d => {
           const isActive = activeDay === d
           return (
@@ -95,14 +88,9 @@ export default function ProgramEditor({
               role="tab"
               aria-selected={isActive}
               onClick={() => { setActiveDay(d); setEditingId(null) }}
-              style={{
-                flex: 1, padding: '8px 0',
-                borderRadius: 8, border: 'none',
-                background: isActive ? 'var(--primary)' : 'transparent',
-                color: isActive ? 'var(--primary-foreground)' : 'var(--muted-foreground)',
-                fontFamily: 'inherit', fontSize: 11, fontWeight: 700,
-                cursor: 'pointer', minWidth: 0,
-              }}
+              className={`flex-1 min-w-0 h-9 rounded-[9px] text-[11px] font-bold transition-colors ${
+                isActive ? 'bg-white-btn text-bg' : 'text-fg-2'
+              }`}
             >
               {DOW_LABELS[d]}
             </button>
@@ -113,13 +101,8 @@ export default function ProgramEditor({
       {/* Exercise list */}
       <div className="flex flex-col" style={{ gap: 8, marginBottom: 14 }}>
         {dayExercises.length === 0 && editingId !== 'new' && (
-          <div
-            style={{
-              padding: 18, borderRadius: 12, textAlign: 'center',
-              border: '1px dashed var(--border)', background: 'var(--card)',
-            }}
-          >
-            <p className="text-muted-foreground" style={{ fontSize: 13 }}>
+          <div className="py-5 px-4 rounded-[14px] text-center border border-dashed border-line bg-card">
+            <p className="text-[13px] text-muted">
               No exercises for {DOW_LABELS[activeDay]} yet. Add one below.
             </p>
           </div>
@@ -149,55 +132,37 @@ export default function ProgramEditor({
           }
           const color = MUSCLE_OPTIONS.find(m => m.key === t.muscle_group)?.color || 'var(--muted-foreground)'
           return (
-            <div
-              key={t.id}
-              style={{
-                padding: '12px 14px', borderRadius: 12,
-                border: '1px solid var(--border)', background: 'var(--card)',
-                display: 'flex', alignItems: 'center', gap: 10,
-              }}
-            >
+            <Card key={t.id} padding="sm" className="flex items-center gap-2.5">
               <span
                 aria-hidden="true"
                 style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }}
               />
-              <div style={{ minWidth: 0, flex: 1 }}>
-                <p className="text-foreground" style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.2 }}>
-                  {t.exercise_name}
-                </p>
-                <p className="text-muted-foreground" style={{ fontSize: 11, marginTop: 2 }}>
+              <div className="min-w-0 flex-1">
+                <p className="text-[14px] font-semibold text-fg leading-tight">{t.exercise_name}</p>
+                <p className="text-[11px] text-muted mt-0.5 truncate">
                   {t.sets_reps}{t.cue ? ` · ${t.cue}` : ''}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setEditingId(t.id)}
-                aria-label="Edit"
-                style={{
-                  padding: '6px 10px', fontSize: 11, fontWeight: 600,
-                  borderRadius: 8, border: '1px solid var(--border)',
-                  background: 'var(--card)', color: 'var(--foreground)',
-                  cursor: 'pointer', flexShrink: 0,
-                }}
+                aria-label={`Edit ${t.exercise_name}`}
+                className="relative shrink-0 h-8 px-2.5 rounded-[8px] bg-card-2 text-fg text-[11px] font-semibold"
               >
+                <span aria-hidden="true" className="absolute inset-x-0 -inset-y-2" />
                 Edit
               </button>
               <button
                 type="button"
                 onClick={() => handleDelete(t)}
-                aria-label="Delete"
+                aria-label={`Delete ${t.exercise_name}`}
                 disabled={busy}
-                style={{
-                  padding: '6px 10px', fontSize: 11, fontWeight: 600,
-                  borderRadius: 8, border: '1px solid var(--danger)',
-                  background: 'transparent', color: 'var(--danger)',
-                  cursor: busy ? 'not-allowed' : 'pointer', flexShrink: 0,
-                  opacity: busy ? 0.5 : 1,
-                }}
+                className="relative shrink-0 h-8 px-2.5 rounded-[8px] text-danger text-[11px] font-semibold disabled:opacity-50"
               >
+                <span aria-hidden="true" className="absolute inset-x-0 -inset-y-2" />
                 ✕
               </button>
-            </div>
+            </Card>
           )
         })}
 
@@ -223,26 +188,15 @@ export default function ProgramEditor({
 
       {editingId !== 'new' && (
         <div className="flex flex-col" style={{ gap: 8, marginBottom: 18 }}>
-          <button
-            type="button"
-            onClick={() => setEditingId('new')}
-            className="btn-secondary w-full"
-            style={{ padding: '10px 16px' }}
-          >
+          <Button variant="secondary" size="md" full onClick={() => setEditingId('new')}>
             + Add exercise to {DOW_LABELS[activeDay]}
-          </button>
+          </Button>
           {dayExercises.length > 0 && (
             <button
               type="button"
               onClick={handleClearDay}
               disabled={busy}
-              style={{
-                width: '100%', padding: '10px 16px', fontSize: 12, fontWeight: 600,
-                borderRadius: 8, border: '1px solid var(--danger)',
-                background: 'transparent', color: 'var(--danger)',
-                cursor: busy ? 'not-allowed' : 'pointer', fontFamily: 'inherit',
-                opacity: busy ? 0.5 : 1,
-              }}
+              className="w-full min-h-[44px] text-[13px] font-semibold text-danger disabled:opacity-50"
             >
               Delete all from {DOW_LABELS[activeDay]}
             </button>
@@ -251,18 +205,12 @@ export default function ProgramEditor({
       )}
 
       {/* Footer actions */}
-      <div style={{ marginTop: 8, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
+      <div className="mt-2 pt-3.5 border-t border-divider">
         <button
           type="button"
           onClick={handleClear}
           disabled={busy}
-          style={{
-            width: '100%', padding: '8px 14px', fontSize: 12,
-            borderRadius: 8, border: '1px solid var(--danger)',
-            background: 'transparent', color: 'var(--danger)', fontWeight: 600,
-            cursor: busy ? 'not-allowed' : 'pointer', fontFamily: 'inherit',
-            opacity: busy ? 0.5 : 1,
-          }}
+          className="w-full min-h-[44px] text-[13px] font-semibold text-danger disabled:opacity-50"
         >
           Clear all days
         </button>
@@ -294,7 +242,7 @@ function ExerciseForm({ initial, busy, onSave, onCancel }) {
       onSubmit={submit}
       style={{
         padding: 14, borderRadius: 12,
-        background: 'rgba(43, 181, 196, 0.06)', border: '1px solid var(--primary)',
+        background: 'rgb(255 90 31 / 0.06)', border: '1px solid var(--color-accent)',
         display: 'flex', flexDirection: 'column', gap: 10,
       }}
     >
@@ -341,22 +289,10 @@ function ExerciseForm({ initial, busy, onSave, onCancel }) {
         />
       </div>
       <div className="flex" style={{ gap: 8, marginTop: 4 }}>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="btn-secondary"
-          style={{ padding: '10px 16px', flex: 1, minWidth: 'auto' }}
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          disabled={busy}
-          className="btn-primary"
-          style={{ padding: '10px 16px', flex: 1, minWidth: 'auto', opacity: busy ? 0.5 : 1 }}
-        >
+        <Button variant="secondary" size="md" full onClick={onCancel}>Cancel</Button>
+        <Button type="submit" size="md" full disabled={busy}>
           {busy ? 'Saving…' : (initial ? 'Save changes' : 'Add exercise')}
-        </button>
+        </Button>
       </div>
     </form>
   )

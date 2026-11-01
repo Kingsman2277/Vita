@@ -617,12 +617,9 @@
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
   }
   input:focus, select:focus, textarea:focus {
-    border-color: var(--primary) !important;
-    box-shadow: 0 0 0 3px rgba(43, 181, 196, 0.18);
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px rgb(255 90 31 / 0.18);
   }
-}
-.dark input:focus, .dark select:focus, .dark textarea:focus {
-  box-shadow: 0 0 0 3px rgba(43, 181, 196, 0.18);
 }
 
 /* Visible keyboard focus for buttons & interactive elements */
@@ -631,7 +628,7 @@
   a:focus-visible,
   [role="button"]:focus-visible,
   [role="switch"]:focus-visible {
-    outline: 2px solid var(--primary);
+    outline: 2px solid var(--color-accent);
     outline-offset: 2px;
   }
   button:focus:not(:focus-visible) { outline: none; }
