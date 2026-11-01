@@ -378,6 +378,58 @@ export function useWorkoutLogs(selectedDate) {
     return { completedCount, days, weekStart: toLocalISODate(monday) }
   }, [allLogs])
 
+  /**
+   * Monday->Sunday of the current week, shaped for the Home week row.
+   *
+   * Separate from weekStats, which is Mon-Fri and feeds the Workout and
+   * Summary screens — the Home row shows the weekend too, as rest days.
+   * States: done | missed | rest | today | future.
+   */
+  const weekRow = useMemo(() => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const todayKey = toLocalISODate(today)
+    const monday = new Date(today)
+    monday.setDate(monday.getDate() - (isoDayOfWeek(today) - 1))
+
+    const byDate = new Map()
+    for (const l of allLogs) {
+      if (!byDate.has(l.date)) byDate.set(l.date, [])
+      byDate.get(l.date).push(l)
+    }
+    const scheduled = new Set(templates.map(t => t.day_of_week))
+
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(monday)
+      d.setDate(d.getDate() + i)
+      const date = toLocalISODate(d)
+      const dow = isoDayOfWeek(d)
+      const rows = byDate.get(date) || []
+      const label = ['M', 'T', 'W', 'T', 'F', 'S', 'S'][i]
+
+      // A weekday with no template rows is a rest day by definition —
+      // the program, not the calendar, decides which days those are.
+      const isToday = date === todayKey
+
+      if (!scheduled.has(dow)) return { date, label, isToday, state: 'rest' }
+
+      if (isToday) {
+        const doneToday = rows.filter(r => r.completed === true).length
+        return {
+          date,
+          label,
+          isToday,
+          state: 'today',
+          progress: rows.length > 0 ? doneToday / rows.length : 0,
+        }
+      }
+
+      const fullyDone = rows.length > 0 && rows.every(r => r.completed === true)
+      if (fullyDone) return { date, label, isToday, state: 'done' }
+      return { date, label, isToday, state: d < today ? 'missed' : 'future' }
+    })
+  }, [allLogs, templates])
+
   // Selected-date convenience flags
   const isWeekend = !isWeekday(dateObj)
   const allDoneForDate = exercises.length > 0 && exercises.every(e => e.completed === true)
@@ -474,6 +526,7 @@ export function useWorkoutLogs(selectedDate) {
     // Stats
     streak,
     weekStats,
+    weekRow,
     daysWithData,
     monthStats,
 
