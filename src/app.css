@@ -150,15 +150,17 @@
   * { margin: 0; padding: 0; box-sizing: border-box; }
 }
 
-body {
-  font-family: var(--font-sans);
-  font-size: 14px;
-  line-height: 1.6;
-  background-color: var(--background);
-  color: var(--foreground);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  overscroll-behavior: none;
+@layer base {
+  body {
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.6;
+    background-color: var(--background);
+    color: var(--foreground);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overscroll-behavior: none;
+  }
 }
 
 /* ─── TYPOGRAPHY ─── */
@@ -255,13 +257,10 @@ body {
   }
 }
 
-/* Reset native browser styles on semantic header element */
-header {
-  display: block;
-  margin: 0;
-  padding: 0;
-}
-section { display: block; }
+/* NOTE: `header { display: block }` and `section { display: block }` used to
+   live here, unlayered. Tailwind's preflight already normalises both inside
+   @layer base, and unlayered copies outranked every `.flex` / `.grid`
+   utility — see the RESET note above. Removed; do not reintroduce. */
 
 /* ─── SIDEBAR NAVIGATION (desktop) ─── */
 .nav-item {
@@ -610,35 +609,39 @@ section { display: block; }
 }
 
 /* ─── FORM INPUTS ─── */
-input, select, textarea {
-  outline: none;
-  color: var(--foreground);
-  font-family: inherit;
-  /* 16px minimum prevents iOS Safari from auto-zooming the page when
-     the input gains focus. Anything below 16px triggers the zoom. */
-  font-size: 16px;
-  padding: 10px 14px;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-input:focus, select:focus, textarea:focus {
-  border-color: var(--primary) !important;
-  box-shadow: 0 0 0 3px rgba(43, 181, 196, 0.18);
+@layer base {
+  input, select, textarea {
+    outline: none;
+    color: var(--foreground);
+    font-family: inherit;
+    /* 16px minimum prevents iOS Safari from auto-zooming the page when
+       the input gains focus. Anything below 16px triggers the zoom. */
+    font-size: 16px;
+    padding: 10px 14px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 3px rgba(43, 181, 196, 0.18);
+  }
 }
 .dark input:focus, .dark select:focus, .dark textarea:focus {
   box-shadow: 0 0 0 3px rgba(43, 181, 196, 0.18);
 }
 
 /* Visible keyboard focus for buttons & interactive elements */
-button:focus-visible,
-a:focus-visible,
-[role="button"]:focus-visible,
-[role="switch"]:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
-}
-button:focus:not(:focus-visible) { outline: none; }
-input::placeholder, textarea::placeholder {
-  color: var(--muted-foreground);
+@layer base {
+  button:focus-visible,
+  a:focus-visible,
+  [role="button"]:focus-visible,
+  [role="switch"]:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+  }
+  button:focus:not(:focus-visible) { outline: none; }
+  input::placeholder, textarea::placeholder {
+    color: var(--muted-foreground);
+  }
 }
 .form-label {
   display: block;
@@ -676,11 +679,13 @@ input::placeholder, textarea::placeholder {
 }
 
 /* ─── TAP RESPONSIVENESS ─── */
-button, a, [role="button"] {
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
+@layer base {
+  button, a, [role="button"] {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  html { -webkit-text-size-adjust: 100%; }
 }
-html { -webkit-text-size-adjust: 100%; }
 
 /* ─── SKELETON ─── */
 @keyframes shimmer {
