@@ -1,11 +1,13 @@
 import { useState, useMemo, useEffect } from 'react'
 import toast from 'react-hot-toast'
-import Card from '../components/Card'
 import SkeletonLoader from '../components/SkeletonLoader'
 import JumpToTodayButton from '../components/JumpToTodayButton'
-import MonthPicker from '../components/MonthPicker'
 import DayPicker from '../components/DayPicker'
 import ProgramEditor from '../components/ProgramEditor'
+import WorkoutComplete from '../components/WorkoutComplete'
+import {
+  AppHeader, Button, Card, EmptyState, MonthPill, ProgressBar, Skeleton,
+} from '../components/ui'
 import { useWorkoutLogs } from '../hooks/useWorkoutLogs'
 import { useMonthNavigation } from '../hooks/useMonthNavigation'
 import { getToday } from '../lib/helpers'
@@ -120,46 +122,22 @@ export default function Workout() {
   }
 
   return (
-    <div className="page-container">
-      {/* ─── Header ─── */}
-      <header className="flex items-start justify-between" style={{ gap: 12 }}>
-        <div style={{ minWidth: 0 }}>
-          <h1 className="page-title">Workout</h1>
-          <p className="text-muted-foreground" style={{ fontSize: 13, marginTop: 4 }}>
-            {isToday ? "Today's session" : formatLongDate(selectedDate)}
-          </p>
-        </div>
-        <div className="flex" style={{ gap: 6, flexShrink: 0 }}>
-          <button
-            type="button"
-            onClick={handleResetDay}
-            disabled={resettingDay || isWeekend || exercises.length === 0}
-            className="btn-secondary"
-            title="Reset today's checklist"
-            style={{
-              padding: '8px 12px', minWidth: 'auto', fontSize: 12,
-              opacity: (resettingDay || isWeekend || exercises.length === 0) ? 0.5 : 1,
-            }}
-          >
-            ↻
-          </button>
-          <button
-            type="button"
-            onClick={() => setProgramEditorOpen(true)}
-            className="btn-secondary"
-            style={{ padding: '8px 14px', minWidth: 'auto', fontSize: 12 }}
-          >
-            ✎ Edit Program
-          </button>
-        </div>
-      </header>
-
-      <MonthPicker
-        label={label}
-        onPrev={goToPrev}
-        onNext={goToNext}
-        onToday={() => { goToCurrentMonth(); setSelectedDay(today.getDate()) }}
-        isCurrentMonth={isCurrentMonth}
+    <div
+      className="mx-auto w-full max-w-[640px] px-4 pb-6 flex flex-col gap-4"
+      style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}
+    >
+      <AppHeader
+        title="Workout"
+        caption={isToday ? "Today's session" : formatLongDate(selectedDate)}
+        right={
+          <MonthPill
+            label={label}
+            isCurrentMonth={isCurrentMonth}
+            onPrev={goToPrev}
+            onNext={goToNext}
+            onToday={() => { goToCurrentMonth(); setSelectedDay(today.getDate()) }}
+          />
+        }
       />
 
       <DayPicker
@@ -177,79 +155,87 @@ export default function Workout() {
       />
 
       {/* ─── Hero stats card ─── */}
-      <div className="hero-card" style={{ padding: 24 }}>
-        <div className="flex items-start justify-between" style={{ gap: 12, marginBottom: 18 }}>
-          <div style={{ minWidth: 0 }}>
-            <p className="label stat-label">{isWeekend ? 'Rest Day' : (dayTemplate?.day_label || 'Workout')}</p>
+      <Card>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted">
+              {isWeekend ? 'Rest day' : (dayTemplate?.day_label || 'Workout')}
+            </p>
             {!isWeekend && (
-              <p className="text-foreground" style={{ fontSize: 16, fontWeight: 700, marginTop: 6 }}>
+              <p className="text-[17px] font-semibold text-fg mt-1.5">
                 {DOW_LABEL_LONG[dayTemplate?.day_of_week] || ''}
               </p>
             )}
           </div>
           {!isWeekend && totalCount > 0 && (
-            <div style={{ textAlign: 'right' }}>
-              <p
-                className="text-foreground"
-                style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1 }}
-              >
-                {completedCount}<span className="text-muted-foreground" style={{ fontSize: 16, fontWeight: 600 }}>/{totalCount}</span>
+            <div className="text-right shrink-0">
+              <p className="text-[26px] font-bold tracking-[-0.02em] text-fg tabular-nums leading-none">
+                {completedCount}<span className="text-muted text-base font-semibold">/{totalCount}</span>
               </p>
-              <p className="text-muted-foreground" style={{ fontSize: 11, marginTop: 4 }}>complete</p>
+              <p className="text-[11px] text-muted mt-1">complete</p>
             </div>
           )}
         </div>
 
+        {!isWeekend && totalCount > 0 && (
+          <ProgressBar value={completedCount} max={totalCount} className="mt-3" />
+        )}
+
         {/* Streak + week dots */}
-        <div className="flex items-center justify-between" style={{ gap: 16, flexWrap: 'wrap' }}>
-          <div className="flex items-center" style={{ gap: 10 }}>
-            <span style={{ fontSize: 22 }} aria-hidden="true">🔥</span>
+        <div className="flex items-center justify-between gap-4 flex-wrap mt-4">
+          <div className="flex items-center gap-2.5">
+            <span className="text-[22px]" aria-hidden="true">🔥</span>
             <div>
-              <p
-                className="text-foreground"
-                style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1 }}
-              >
-                {streak} <span className="text-muted-foreground" style={{ fontSize: 12, fontWeight: 600 }}>day{streak === 1 ? '' : 's'}</span>
+              <p className="text-[22px] font-bold tracking-[-0.02em] text-fg tabular-nums leading-none">
+                {streak} <span className="text-muted text-xs font-semibold">day{streak === 1 ? '' : 's'}</span>
               </p>
-              <p className="text-muted-foreground" style={{ fontSize: 10, marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700 }}>streak</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-muted mt-1">streak</p>
             </div>
           </div>
 
           <WeekDots weekStats={weekStats} />
         </div>
+      </Card>
+
+      {/* Program controls sit below the hero so the header stays clean. */}
+      <div className="flex justify-end gap-2">
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={handleResetDay}
+          disabled={resettingDay || isWeekend || exercises.length === 0}
+          title="Reset today's checklist"
+        >
+          ↻ Reset day
+        </Button>
+        <Button variant="secondary" size="sm" onClick={() => setProgramEditorOpen(true)}>
+          ✎ Edit program
+        </Button>
       </div>
 
       {/* ─── Body ─── */}
       {!hasTemplates ? (
-        <Card style={{ padding: 28, textAlign: 'center' }}>
-          <p style={{ fontSize: 32, marginBottom: 12 }} aria-hidden="true">🏋️</p>
-          <p className="text-foreground" style={{ fontSize: 15, fontWeight: 600, marginBottom: 6 }}>
-            Your program is empty
-          </p>
-          <p className="text-muted-foreground" style={{ fontSize: 13, lineHeight: 1.5, maxWidth: 320, margin: '0 auto 18px' }}>
-            Build your own routine by adding exercises for each weekday, or load the default 5-day full-body program to get started.
-          </p>
-          <div className="flex" style={{ gap: 8, justifyContent: 'center' }}>
-            <button
-              type="button"
-              onClick={() => setProgramEditorOpen(true)}
-              className="btn-primary"
-              style={{ padding: '10px 18px', minWidth: 'auto', fontSize: 13 }}
-            >
-              ✎ Edit Program
-            </button>
-            <button
-              type="button"
-              onClick={async () => {
-                try { await resetProgramToDefaults(); toast.success('Default program loaded') }
-                catch (err) { toast.error(err.message || 'Could not load defaults') }
-              }}
-              className="btn-secondary"
-              style={{ padding: '10px 18px', minWidth: 'auto', fontSize: 13 }}
-            >
-              Load defaults
-            </button>
-          </div>
+        <Card>
+          <EmptyState
+            icon="🏋️"
+            title="Your program is empty"
+            desc="Add exercises for each weekday, or load the default 5-day full-body program to get started."
+            action={
+              <div className="flex gap-2 justify-center">
+                <Button size="md" onClick={() => setProgramEditorOpen(true)}>✎ Edit program</Button>
+                <Button
+                  variant="secondary"
+                  size="md"
+                  onClick={async () => {
+                    try { await resetProgramToDefaults(); toast.success('Default program loaded') }
+                    catch (err) { toast.error(err.message || 'Could not load defaults') }
+                  }}
+                >
+                  Load defaults
+                </Button>
+              </div>
+            }
+          />
         </Card>
       ) : isWeekend ? (
         <RestDayCard date={selectedDate} />
@@ -294,9 +280,15 @@ export default function Workout() {
         </>
       )}
 
-      {showCelebration && (
-        <CelebrationToast onClose={() => setShowCelebration(false)} count={totalCount} />
-      )}
+      <WorkoutComplete
+        open={showCelebration}
+        onClose={() => setShowCelebration(false)}
+        exercises={exercises}
+        dayLabel={dayTemplate?.day_label}
+        dateLabel={isToday ? "Today's" : `${DOW_LABEL_LONG[dayTemplate?.day_of_week] || 'That day'}'s`}
+        streak={streak}
+        weekStats={weekStats}
+      />
 
       <ProgramEditor
         open={programEditorOpen}
@@ -367,14 +359,7 @@ function ExerciseRow({ exercise, isExpanded, onExpand, onToggle, onWeightChange,
   }, [exercise.id, exercise.weight_used, exercise.note])
 
   return (
-    <Card
-      style={{
-        padding: '14px 16px',
-        background: exercise.completed ? 'rgba(52, 211, 153, 0.06)' : 'var(--card)',
-        borderColor: exercise.completed ? 'rgba(52, 211, 153, 0.25)' : 'var(--border)',
-        transition: 'background 0.2s ease, border-color 0.2s ease',
-      }}
-    >
+    <Card padding="sm" className="transition-colors duration-200">
       <div className="flex items-center" style={{ gap: 12 }}>
         {/* Muscle group dot */}
         <span
@@ -397,19 +382,12 @@ function ExerciseRow({ exercise, isExpanded, onExpand, onToggle, onWeightChange,
             color: 'inherit', fontFamily: 'inherit', cursor: 'pointer',
           }}
         >
-          <p
-            className="text-foreground"
-            style={{
-              fontSize: 14, fontWeight: 500, lineHeight: 1.25,
-              textDecoration: exercise.completed ? 'line-through' : 'none',
-              opacity: exercise.completed ? 0.7 : 1,
-            }}
-          >
+          <p className={`text-[15px] font-semibold leading-tight ${exercise.completed ? 'text-muted line-through' : 'text-fg'}`}>
             {exercise.exercise_name}
           </p>
-          <p className="text-muted-foreground" style={{ fontSize: 12, marginTop: 2 }}>
+          <p className="text-xs text-muted mt-0.5">
             {exercise.sets_reps}
-            {exercise.weight_used && <span style={{ marginLeft: 8, color: 'var(--primary)' }}>· {exercise.weight_used}</span>}
+            {exercise.weight_used && <span className="text-accent ml-2">· {exercise.weight_used}</span>}
           </p>
         </button>
 
@@ -421,8 +399,8 @@ function ExerciseRow({ exercise, isExpanded, onExpand, onToggle, onWeightChange,
           aria-label={exercise.completed ? 'Mark as not done' : 'Mark as done'}
           style={{
             width: 32, height: 32, borderRadius: '50%',
-            border: exercise.completed ? '2px solid var(--success)' : '2px solid var(--border)',
-            background: exercise.completed ? 'var(--success)' : 'transparent',
+            border: exercise.completed ? '2px solid var(--color-accent)' : '2px solid var(--color-line)',
+            background: exercise.completed ? 'var(--color-accent)' : 'transparent',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             cursor: 'pointer', flexShrink: 0,
             transition: 'all 0.15s ease',
@@ -521,12 +499,4 @@ function DoneCard({ count, note, onNoteChange }) {
       />
     </Card>
   )
-}
-
-function CelebrationToast({ onClose, count }) {
-  useEffect(() => {
-    toast.success(`Workout complete — ${count}/${count}! 🎉`, { duration: 3500 })
-    onClose()
-  }, [count, onClose])
-  return null
 }

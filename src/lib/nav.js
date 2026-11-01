@@ -44,5 +44,6 @@ export const LEGACY_REDIRECTS = {
   '/workout': '/body/training',
   '/food': '/body/food',
   '/goals': '/body/progress',
+  '/body-goals': '/body/progress',
   '/settings': '/me',
 }

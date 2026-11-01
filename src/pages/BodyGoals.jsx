@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import Card from '../components/Card'
-import Modal from '../components/Modal'
+import { AppHeader, BottomSheet as Modal, Button } from '../components/ui'
 import SkeletonLoader from '../components/SkeletonLoader'
 import WeightChart from '../components/WeightChart'
 import { useGoals } from '../hooks/useGoals'
@@ -42,7 +42,7 @@ export default function BodyGoals() {
   const [editingMetric, setEditingMetric] = useState(null)
   const [metricForm, setMetricForm] = useState({ date: getToday(), waist: '', chest: '', hips: '', body_fat: '', note: '' })
   const [goalModalOpen, setGoalModalOpen] = useState(false)
-  const [goalForm, setGoalForm] = useState({ target_weight: '', target_date: '' })
+  const [goalForm, setGoalForm] = useState({ target_weight: '', target_date: '', height_ft: '', height_in: '' })
 
   // Prefill goal form when opening
   useEffect(() => {
@@ -50,6 +50,8 @@ export default function BodyGoals() {
       setGoalForm({
         target_weight: bodyGoal?.data?.target_weight ? String(bodyGoal.data.target_weight) : '',
         target_date: bodyGoal?.target_date || '',
+        height_ft: bodyGoal?.data?.height_ft ? String(bodyGoal.data.height_ft) : '',
+        height_in: bodyGoal?.data?.height_in ? String(bodyGoal.data.height_in) : '',
       })
     }
   }, [goalModalOpen, bodyGoal])
@@ -142,6 +144,10 @@ export default function BodyGoals() {
         data: {
           ...(bodyGoal?.data || {}),
           target_weight: Number(goalForm.target_weight),
+          // Height moved here when the Goals page was merged in; blank
+          // leaves whatever was already stored.
+          ...(goalForm.height_ft !== '' ? { height_ft: Number(goalForm.height_ft) || 0 } : {}),
+          ...(goalForm.height_in !== '' ? { height_in: Number(goalForm.height_in) || 0 } : {}),
         },
         target_date: goalForm.target_date || null,
       })
@@ -159,19 +165,19 @@ export default function BodyGoals() {
   const hasMood = logs.some(l => l.mood != null)
 
   return (
-    <div className="page-container">
-      <header className="flex items-center justify-between">
-        <div>
-          <h1 className="page-title">Body Goals</h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            {currentWeight != null ? `${currentWeight.toFixed(1)} lbs current` : 'No entries yet'}
-            {targetWeight && currentWeight != null && ` · ${(currentWeight - targetWeight).toFixed(1)} lbs to go`}
-          </p>
-        </div>
-        <button onClick={openNewLog} className="btn-primary" style={{ padding: '10px 20px', borderRadius: 20, minWidth: 'auto' }}>
-          + Weight
-        </button>
-      </header>
+    <div
+      className="mx-auto w-full max-w-[640px] px-4 pb-6 flex flex-col gap-4"
+      style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}
+    >
+      <AppHeader
+        title="Progress"
+        caption={
+          currentWeight != null
+            ? `${currentWeight.toFixed(1)} LB CURRENT${targetWeight ? ` · ${(currentWeight - targetWeight).toFixed(1)} TO GO` : ''}`
+            : 'NO ENTRIES YET'
+        }
+        right={<Button size="md" onClick={openNewLog}>+ Weight</Button>}
+      />
 
       {/* Hero: Pace + Streak */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -189,9 +195,9 @@ export default function BodyGoals() {
               {targetWeight != null && target.target_date && <> · goal {new Date(target.target_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</>}
             </p>
           )}
-          <button onClick={() => setGoalModalOpen(true)} className="btn-secondary" style={{ marginTop: 16, padding: '8px 16px', minWidth: 'auto', fontSize: 12 }}>
+          <Button variant="secondary" size="sm" className="mt-4" onClick={() => setGoalModalOpen(true)}>
             {targetWeight ? 'Edit goal' : 'Set a goal'}
-          </button>
+          </Button>
         </div>
 
         <div className="hero-card" style={{ padding: 24 }}>
@@ -444,6 +450,16 @@ export default function BodyGoals() {
           <div className="form-group">
             <label className="form-label">Target Date</label>
             <input type="date" value={goalForm.target_date} onChange={e => setGoalForm(f => ({ ...f, target_date: e.target.value }))} className="form-input" />
+          </div>
+          <div className="form-row grid-cols-2">
+            <div className="form-group">
+              <label className="form-label">Height (ft)</label>
+              <input type="number" inputMode="numeric" value={goalForm.height_ft} onChange={e => setGoalForm(f => ({ ...f, height_ft: e.target.value }))} className="form-input" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Height (in)</label>
+              <input type="number" inputMode="numeric" value={goalForm.height_in} onChange={e => setGoalForm(f => ({ ...f, height_in: e.target.value }))} className="form-input" />
+            </div>
           </div>
           <button type="submit" className="btn-primary w-full" style={{ padding: '12px 24px' }}>Save Goal</button>
         </form>

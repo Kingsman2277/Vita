@@ -4,6 +4,7 @@ import {
   IconButton, ListRow, ProgressBar, ProgressRing, SectionHeader,
   SegmentedControl, Skeleton, StatTile, TagPill, WeekRow,
 } from '../components/ui'
+import WorkoutComplete from '../components/WorkoutComplete'
 import { formatCurrency, formatDate } from '../lib/helpers'
 
 // Dev-only gallery for the design "D" component set (docs/redesign §4.4).
@@ -38,6 +39,7 @@ export default function DevUI() {
   const [segment, setSegment] = useState('today')
   const [sheetOpen, setSheetOpen] = useState(false)
   const [amount, setAmount] = useState('24.50')
+  const [completeOpen, setCompleteOpen] = useState(false)
 
   return (
     <div className="bg-bg min-h-dvh">
@@ -149,6 +151,25 @@ export default function DevUI() {
               <Skeleton width="40%" height={14} />
             </div>
           </Card>
+        </Section>
+
+        <Section title="Workout completion">
+          <Button variant="secondary" full onClick={() => setCompleteOpen(true)}>Open completion screen</Button>
+          <WorkoutComplete
+            open={completeOpen}
+            onClose={() => setCompleteOpen(false)}
+            dayLabel="Upper"
+            dateLabel="Friday's"
+            streak={7}
+            weekStats={{ completedCount: 5, days: [1, 2, 3, 4, 5] }}
+            exercises={[
+              { id: 1, exercise_name: 'Chest press', sets_reps: '3 x 10', weight_used: 60 },
+              { id: 2, exercise_name: 'Cable fly', sets_reps: '3 x 10', weight_used: 80 },
+              { id: 3, exercise_name: 'Lat pull-down', sets_reps: '3 x 10', weight_used: 70 },
+              { id: 4, exercise_name: 'Shoulder press', sets_reps: '3 x 10', weight_used: 40 },
+              { id: 5, exercise_name: 'Face pull', sets_reps: '3 x 10', weight_used: 30 },
+            ]}
+          />
         </Section>
 
         <Section title="Bottom sheet + keypad">

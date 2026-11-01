@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import Modal from '../components/Modal'
 import SkeletonLoader from '../components/SkeletonLoader'
+import SavingsGoalCard from '../components/SavingsGoalCard'
 import { AppHeader, Button, Card, ProgressBar, SectionHeader, TagPill } from '../components/ui'
 import { useBudget } from '../hooks/useBudget'
 import { useExpenses } from '../hooks/useExpenses'
@@ -153,6 +154,9 @@ export default function Budget() {
           </div>
         )}
       </Card>
+
+      {/* Savings goal — moved here from the old Goals page (§5). */}
+      <SavingsGoalCard />
 
       {/* Budget Allocation by Category */}
       <BudgetCategories discretionary={discretionary} expenses={expenses} />

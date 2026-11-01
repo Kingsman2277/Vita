@@ -8,11 +8,9 @@ import Dashboard from './pages/Dashboard'
 import Money from './pages/Money'
 import Body from './pages/Body'
 import Me from './pages/Me'
-import BodyGoals from './pages/BodyGoals'
 import Admin from './pages/Admin'
 import Login from './pages/Login'
 import DevUI from './pages/DevUI'
-import RequireFeature from './components/RequireFeature'
 import { LEGACY_REDIRECTS } from './lib/nav'
 import { useAuth } from './hooks/useAuth'
 
@@ -49,12 +47,6 @@ export default function App() {
           <Route path="/money/:segment" element={<Money />} />
           <Route path="/body" element={<Body />} />
           <Route path="/body/:segment" element={<Body />} />
-
-          {/* Detail screen reached from Body > Progress, not from the nav */}
-          <Route
-            path="/body-goals"
-            element={<RequireFeature feature="goals"><BodyGoals /></RequireFeature>}
-          />
 
           {/* The app is an installed PWA, so old bookmarks and the
               home-screen shortcut can still point at any previous path. */}

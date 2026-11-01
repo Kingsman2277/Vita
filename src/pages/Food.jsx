@@ -1,8 +1,7 @@
 import { useState, useRef, useMemo } from 'react'
 import toast from 'react-hot-toast'
 import Card from '../components/Card'
-import Modal from '../components/Modal'
-import MonthPicker from '../components/MonthPicker'
+import { AppHeader, BottomSheet as Modal, Button, MonthPill } from '../components/ui'
 import CameraModal from '../components/CameraModal'
 import MacroRing from '../components/MacroRing'
 import SkeletonLoader from '../components/SkeletonLoader'
@@ -284,19 +283,32 @@ export default function Food() {
   )
 
   return (
-    <div className="page-container">
-      <header>
-        <h1 className="page-title">Food Log</h1>
-        <div className="flex" style={{ gap: 10, marginTop: 16 }}>
+    <div
+      className="mx-auto w-full max-w-[640px] px-4 pb-6 flex flex-col gap-4"
+      style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}
+    >
+      <header className="flex flex-col gap-3">
+        <AppHeader
+          title="Food"
+          right={
+            <MonthPill
+              label={label}
+              isCurrentMonth={isCurrentMonth}
+              onPrev={() => { goToPrev(); setSelectedDay(null) }}
+              onNext={() => { goToNext(); setSelectedDay(null) }}
+              onToday={() => { goToCurrentMonth(); setSelectedDay(new Date().getDate()) }}
+            />
+          }
+        />
+        <div className="flex" style={{ gap: 10 }}>
           {aiEnabled && (
             <div className="relative">
               <button
                 type="button"
                 onClick={() => setPhotoMenuOpen(p => !p)}
-                className="btn-secondary"
+                className="btn-secondary h-11 px-4 rounded-[14px] bg-card text-fg text-sm font-semibold"
                 aria-haspopup="menu"
                 aria-expanded={photoMenuOpen}
-                style={{ padding: '11px 20px', borderRadius: 24, minWidth: 'auto', fontSize: 13 }}
               >
                 📷 Photo
               </button>
@@ -316,14 +328,10 @@ export default function Food() {
               )}
             </div>
           )}
-          <button onClick={openAddModal} className="btn-primary" style={{ padding: '11px 20px', borderRadius: 24, minWidth: 'auto', fontSize: 13 }}>
-            + Log Food
-          </button>
+          <Button size="md" onClick={openAddModal}>+ Log food</Button>
         </div>
         <input ref={galleryRef} type="file" accept="image/*" className="hidden" onChange={handleGalleryUpload} />
       </header>
-
-      <MonthPicker label={label} onPrev={() => { goToPrev(); setSelectedDay(null) }} onNext={() => { goToNext(); setSelectedDay(null) }} onToday={() => { goToCurrentMonth(); setSelectedDay(new Date().getDate()) }} isCurrentMonth={isCurrentMonth} />
 
       <DayPicker year={selectedMonth.year} month={selectedMonth.month} selectedDay={selectedDay} onSelectDay={setSelectedDay} daysWithData={foodDaysWithData} />
 

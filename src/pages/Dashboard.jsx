@@ -264,7 +264,7 @@ export default function Dashboard() {
             )}
           </div>
 
-          {showWeight && <WeightCard onViewAll={() => navigate('/body-goals')} />}
+          {showWeight && <WeightCard onViewAll={() => navigate('/body/progress')} />}
         </>
       )}
     </div>

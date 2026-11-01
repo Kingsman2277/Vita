@@ -2,18 +2,18 @@ import SegmentShell from '../components/SegmentShell'
 import { BODY_SEGMENTS } from '../lib/nav'
 import Workout from './Workout'
 import Food from './Food'
-import Goals from './Goals'
+import BodyGoals from './BodyGoals'
 
-// Progress maps to the existing Goals page for now: it carries both the
-// body-goal card (which links on to /body-goals) and the financial goal
-// card. Phase 5 splits those — financial moves to Money, the rest merges
-// with BodyGoals — but routing it here keeps everything reachable today.
+// Progress is the merged body view (docs/redesign §5): pace, weight
+// trend, logging streak, body metrics and the body-goal editor. The old
+// Goals page is gone — its savings card moved to Budget, and its height
+// fields moved into the body-goal sheet here.
 export default function Body() {
   return (
     <SegmentShell
       base="/body"
       segments={BODY_SEGMENTS}
-      views={{ training: Workout, food: Food, progress: Goals }}
+      views={{ training: Workout, food: Food, progress: BodyGoals }}
     />
   )
 }
