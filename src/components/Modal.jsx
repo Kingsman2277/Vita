@@ -94,7 +94,7 @@ export default function Modal({ open, onClose, title, children }) {
           <button
             onClick={onClose}
             aria-label="Close"
-            className="text-muted-foreground hover:text-foreground transition-colors p-1.5 rounded-lg hover:bg-muted"
+            className="text-muted-foreground hover:text-foreground transition-colors p-1.5 rounded-lg hover:bg-card-2"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />

@@ -160,7 +160,7 @@ export default function Finance() {
           {filtered.map(exp => (
             <Card key={exp.id} onClick={() => openEditExpense(exp)} className="flex items-center justify-between cursor-pointer" style={{ padding: '14px 16px' }}>
               <div className="flex items-center gap-3 min-w-0 flex-1">
-                <span className="text-xl flex items-center justify-center rounded-lg bg-muted flex-shrink-0" style={{ width: 36, height: 36 }}>{getCategoryEmoji(exp.category)}</span>
+                <span className="text-xl flex items-center justify-center rounded-lg bg-card-2 flex-shrink-0" style={{ width: 36, height: 36 }}>{getCategoryEmoji(exp.category)}</span>
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
                     <p className="font-medium text-sm truncate text-foreground">{exp.note || exp.category}</p>
@@ -191,7 +191,7 @@ export default function Finance() {
             <div className="grid grid-cols-3 gap-2 mt-1">
               {EXPENSE_CATEGORIES.map(c => (
                 <button key={c.value} type="button" onClick={() => setForm(f => ({ ...f, category: c.value }))}
-                  className={`p-3 rounded-lg border text-center transition-all duration-200 ${form.category === c.value ? 'border-primary bg-secondary text-secondary-foreground' : 'border-border bg-muted text-muted-foreground hover:text-foreground hover:border-primary/30'}`}>
+                  className={`p-3 rounded-lg border text-center transition-all duration-200 ${form.category === c.value ? 'border-primary bg-secondary text-secondary-foreground' : 'border-border bg-card-2 text-muted-foreground hover:text-foreground hover:border-primary/30'}`}>
                   <span className="text-lg">{c.emoji}</span>
                   <p className="text-xs mt-1 font-medium">{c.label}</p>
                 </button>
@@ -275,7 +275,7 @@ export default function Finance() {
             <div className="grid grid-cols-3 gap-2 mt-1">
               {EXPENSE_CATEGORIES.map(c => (
                 <button key={c.value} type="button" onClick={() => setEditForm(f => ({ ...f, category: c.value }))}
-                  className={`p-3 rounded-lg border text-center transition-all duration-200 ${editForm.category === c.value ? 'border-primary bg-secondary text-secondary-foreground' : 'border-border bg-muted text-muted-foreground hover:text-foreground hover:border-primary/30'}`}>
+                  className={`p-3 rounded-lg border text-center transition-all duration-200 ${editForm.category === c.value ? 'border-primary bg-secondary text-secondary-foreground' : 'border-border bg-card-2 text-muted-foreground hover:text-foreground hover:border-primary/30'}`}>
                   <span className="text-lg">{c.emoji}</span>
                   <p className="text-xs mt-1 font-medium">{c.label}</p>
                 </button>
@@ -400,7 +400,7 @@ function SummaryView({ monthExpenses, monthTotal, onCategoryClick }) {
                 </div>
               </div>
               {/* Progress bar */}
-              <div className="bg-muted rounded-full overflow-hidden" style={{ height: 8, borderRadius: 4, marginBottom: data.recurring > 0 ? 10 : 0 }}>
+              <div className="bg-card-2 rounded-full overflow-hidden" style={{ height: 8, borderRadius: 4, marginBottom: data.recurring > 0 ? 10 : 0 }}>
                 <div
                   className="h-full rounded-full transition-all duration-500"
                   style={{ width: `${pct}%`, background: 'var(--primary)', borderRadius: 4 }}
@@ -461,7 +461,7 @@ function CategoryDrillDown({ expenses, onBack }) {
               </div>
               <div className="flex flex-col gap-1.5">
                 {items.map(e => (
-                  <div key={e.id} className="flex justify-between items-center py-2 px-3 rounded-lg bg-muted">
+                  <div key={e.id} className="flex justify-between items-center py-2 px-3 rounded-lg bg-card-2">
                     <div>
                       <p className="text-sm text-foreground">{e.note || e.category}</p>
                       {e.is_recurring && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-secondary text-secondary-foreground font-semibold uppercase tracking-wider">Reimbursable</span>}

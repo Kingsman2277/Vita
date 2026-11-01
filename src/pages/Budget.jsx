@@ -445,7 +445,7 @@ function BudgetCategories({ discretionary, expenses }) {
             {drillItems.map(e => (
               <div
                 key={e.id}
-                className="flex items-center justify-between rounded-lg bg-muted"
+                className="flex items-center justify-between rounded-lg bg-card-2"
                 style={{ padding: '12px 14px' }}
               >
                 <div className="min-w-0 flex-1">

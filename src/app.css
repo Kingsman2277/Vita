@@ -1,42 +1,9 @@
 @import "tailwindcss";
 
-:root {
-  --card: #fcfcfc;
-  --ring: #644a40;
-  --input: #d8d8d8;
-  --muted: #efefef;
-  --accent: #e8e8e8;
-  --border: #d8d8d8;
-  --radius: 14px;
-  --radius-sm: 10px;
-  --radius-pill: 20px;
-  --chart-1: #644a40;
-  --chart-2: #ffdfb5;
-  --chart-3: #e8e8e8;
-  --chart-4: #ffe6c4;
-  --chart-5: #66493e;
-  --popover: #fcfcfc;
-  --primary: #644a40;
-  --sidebar: #fbfbfb;
-  --secondary: #ffdfb5;
-  --background: #f9f9f9;
-  --foreground: #202020;
-  --destructive: #e54d2e;
-  --sidebar-ring: #b5b5b5;
-  --sidebar-accent: #f7f7f7;
-  --sidebar-border: #ebebeb;
-  --card-foreground: #202020;
-  --sidebar-primary: #343434;
-  --muted-foreground: #646464;
-  --accent-foreground: #202020;
-  --popover-foreground: #202020;
-  --primary-foreground: #ffffff;
-  --sidebar-foreground: #252525;
-  --secondary-foreground: #582d1d;
-  --destructive-foreground: #ffffff;
-  --sidebar-accent-foreground: #343434;
-  --sidebar-primary-foreground: #fbfbfb;
-}
+/* The app is dark-only: <html class="dark"> is hard-coded in index.html and
+   never toggled. The old :root light palette was dead weight and has been
+   removed — every token below lives on .dark. */
+
 
 .dark {
   /* ─── Vita Design V1: Cool teal palette ─── */
@@ -135,7 +102,37 @@
   --color-destructive-foreground: var(--destructive-foreground);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --font-sans: "Manrope", sans-serif;
+  --font-sans: "Work Sans", ui-sans-serif, system-ui, sans-serif;
+}
+
+/* ─── DESIGN "D" TOKENS (docs/redesign §4.1, §4.3) ─── */
+/* Declared after `@theme inline` so the three overlapping names — card,
+   accent and muted — resolve to the new system rather than the old teal
+   palette. `muted` flips meaning here: it was a dark *surface*, it is now
+   the muted *text* grey. Surfaces use card / card-2. */
+@theme {
+  --color-bg: #0B0B0C;
+  --color-card: #18181A;
+  --color-card-2: #212124;
+  --color-sheet: #141416;
+  --color-keypad: #1C1C1F;
+  --color-seg-track: #161618;
+  --color-line: #2A2A2E;
+  --color-divider: #232326;
+  --color-fg: #F5F5F7;
+  --color-fg-2: #C9C9CE;
+  --color-muted: #8E8E93;
+  --color-muted-2: #5E5E63;
+  --color-accent: #FF5A1F;
+  --color-accent-soft: rgb(255 90 31 / 0.16);
+  --color-danger: #FF3B30;
+  --color-white-btn: #FFFFFF;
+
+  --font-sans: "Work Sans", ui-sans-serif, system-ui, sans-serif;
+
+  --radius-card: 18px;
+  --radius-sheet: 26px;
+  --radius-tile: 14px;
 }
 
 /* ─── RESET ─── */
@@ -685,6 +682,16 @@
     touch-action: manipulation;
   }
   html { -webkit-text-size-adjust: 100%; }
+}
+
+/* ─── DESIGN "D" COMPONENT KEYFRAMES (src/components/ui/*) ─── */
+@keyframes ui-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+@keyframes ui-sheet-up {
+  from { transform: translateY(16px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
 /* ─── SKELETON ─── */

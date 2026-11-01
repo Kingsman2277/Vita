@@ -304,11 +304,11 @@ export default function Food() {
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setPhotoMenuOpen(false)} aria-hidden="true" />
                   <div role="menu" className="absolute left-0 top-full mt-2 z-50 bg-card border border-border rounded-lg shadow-lg overflow-hidden min-w-[200px]" style={{ padding: '4px 0' }}>
-                    <button type="button" role="menuitem" onClick={() => { setPhotoMenuOpen(false); setCameraOpen(true) }} className="w-full text-left text-sm text-foreground hover:bg-muted transition-colors flex items-center gap-3" style={{ padding: '12px 16px' }}>
+                    <button type="button" role="menuitem" onClick={() => { setPhotoMenuOpen(false); setCameraOpen(true) }} className="w-full text-left text-sm text-foreground hover:bg-card-2 transition-colors flex items-center gap-3" style={{ padding: '12px 16px' }}>
                       <span aria-hidden="true">📸</span> Take Photo
                     </button>
                     <div className="border-t border-border" aria-hidden="true" />
-                    <button type="button" role="menuitem" onClick={() => { setPhotoMenuOpen(false); galleryRef.current.value = ''; galleryRef.current?.click() }} className="w-full text-left text-sm text-foreground hover:bg-muted transition-colors flex items-center gap-3" style={{ padding: '12px 16px' }}>
+                    <button type="button" role="menuitem" onClick={() => { setPhotoMenuOpen(false); galleryRef.current.value = ''; galleryRef.current?.click() }} className="w-full text-left text-sm text-foreground hover:bg-card-2 transition-colors flex items-center gap-3" style={{ padding: '12px 16px' }}>
                       <span aria-hidden="true">🖼️</span> Upload from Gallery
                     </button>
                   </div>
@@ -389,7 +389,7 @@ export default function Food() {
               <Card key={item.id} onClick={() => openEditEntry(item)} className="flex items-center justify-between cursor-pointer" style={{ padding: '14px 16px' }}>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-semibold uppercase tracking-wider">{item.meal_type}</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-card-2 text-muted-foreground font-semibold uppercase tracking-wider">{item.meal_type}</span>
                     <p className="font-medium text-sm truncate text-foreground">{item.food_name}</p>
                   </div>
                   {item.description && (
