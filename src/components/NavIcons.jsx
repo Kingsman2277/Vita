@@ -54,12 +54,18 @@ export function AdminIcon({ className }) {
 }
 
 // `feature` is the gate; null means always-on.
-export const NAV_ITEMS = [
-  { to: '/dashboard', label: 'Home',    icon: HomeIcon,    feature: null },
-  { to: '/food',      label: 'Food',    icon: FoodIcon,    feature: 'food' },
-  { to: '/workout',   label: 'Workout', icon: WorkoutIcon, feature: 'workout' },
-  { to: '/finance',   label: 'Finance', icon: FinanceIcon, feature: 'finance' },
-  { to: '/budget',    label: 'Budget',  icon: BudgetIcon,  feature: 'budget' },
-  { to: '/goals',     label: 'Goals',   icon: GoalsIcon,   feature: 'goals' },
-  { to: '/summary',   label: 'Summary', icon: SummaryIcon, feature: 'summary' },
-]
+export function BodyIcon({ className }) {
+  // Torso + arms — reads as "body" at 26px where a dumbbell reads as a line.
+  return (<svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden="true"><circle cx="12" cy="4.5" r="2.25" /><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v6m0-6c-1.6 0-3 .6-3.9 1.6L5.25 13.5M12 9c1.6 0 3 .6 3.9 1.6l2.85 2.9M9.75 15l-1.5 5.25M14.25 15l1.5 5.25" /></svg>)
+}
+
+export function MeIcon({ className }) {
+  return (<svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.5 20.25a7.5 7.5 0 0115 0" /></svg>)
+}
+
+export function PlusIcon({ className }) {
+  return (<svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14M5 12h14" /></svg>)
+}
+
+// The nav item list now lives in src/lib/nav.js — it describes tabs and
+// segments, not one flat row of pages.

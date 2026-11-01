@@ -1,24 +1,24 @@
+import { useState } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
-import BottomNav from './components/BottomNav'
+import BottomNav from './components/ui/BottomNav'
+import QuickAddSheet from './components/QuickAddSheet'
 import Sidebar from './components/Sidebar'
 import SkeletonLoader from './components/SkeletonLoader'
 import Dashboard from './pages/Dashboard'
-import Food from './pages/Food'
-import Finance from './pages/Finance'
-import Budget from './pages/Budget'
-import Goals from './pages/Goals'
+import Money from './pages/Money'
+import Body from './pages/Body'
+import Me from './pages/Me'
 import BodyGoals from './pages/BodyGoals'
-import Workout from './pages/Workout'
-import Summary from './pages/Summary'
-import Settings from './pages/Settings'
 import Admin from './pages/Admin'
 import Login from './pages/Login'
 import DevUI from './pages/DevUI'
 import RequireFeature from './components/RequireFeature'
+import { LEGACY_REDIRECTS } from './lib/nav'
 import { useAuth } from './hooks/useAuth'
 
 export default function App() {
   const { isAuthenticated, loading } = useAuth()
+  const [quickAddOpen, setQuickAddOpen] = useState(false)
 
   // While we resolve the persisted session, show a neutral shell instead
   // of flashing the login screen to already-signed-in users.
@@ -34,27 +34,42 @@ export default function App() {
 
   return (
     <div className="min-h-dvh bg-background text-foreground">
-      <Sidebar />
+      <Sidebar onQuickAdd={() => setQuickAddOpen(true)} />
       <div className="safe-bottom">
         <Routes>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/" element={<Navigate to="/home" replace />} />
+
           {/* Always available */}
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/settings" element={<Settings />} />
+          <Route path="/home" element={<Dashboard />} />
+          <Route path="/me" element={<Me />} />
           <Route path="/admin" element={<Admin />} />
-          {/* Feature-gated */}
-          <Route path="/food"       element={<RequireFeature feature="food"><Food /></RequireFeature>} />
-          <Route path="/finance"    element={<RequireFeature feature="finance"><Finance /></RequireFeature>} />
-          <Route path="/budget"     element={<RequireFeature feature="budget"><Budget /></RequireFeature>} />
-          <Route path="/goals"      element={<RequireFeature feature="goals"><Goals /></RequireFeature>} />
-          <Route path="/body-goals" element={<RequireFeature feature="goals"><BodyGoals /></RequireFeature>} />
-          <Route path="/workout"    element={<RequireFeature feature="workout"><Workout /></RequireFeature>} />
-          <Route path="/summary"    element={<RequireFeature feature="summary"><Summary /></RequireFeature>} />
+
+          {/* Tab containers — each filters its own segments by feature */}
+          <Route path="/money" element={<Money />} />
+          <Route path="/money/:segment" element={<Money />} />
+          <Route path="/body" element={<Body />} />
+          <Route path="/body/:segment" element={<Body />} />
+
+          {/* Detail screen reached from Body > Progress, not from the nav */}
+          <Route
+            path="/body-goals"
+            element={<RequireFeature feature="goals"><BodyGoals /></RequireFeature>}
+          />
+
+          {/* The app is an installed PWA, so old bookmarks and the
+              home-screen shortcut can still point at any previous path. */}
+          {Object.entries(LEGACY_REDIRECTS).map(([from, to]) => (
+            <Route key={from} path={from} element={<Navigate to={to} replace />} />
+          ))}
+
           {/* Component gallery for the redesign — dev builds only, never shipped. */}
           {import.meta.env.DEV && <Route path="/dev/ui" element={<DevUI />} />}
+
+          <Route path="*" element={<Navigate to="/home" replace />} />
         </Routes>
       </div>
-      <BottomNav />
+      <BottomNav onQuickAdd={() => setQuickAddOpen(true)} />
+      <QuickAddSheet open={quickAddOpen} onClose={() => setQuickAddOpen(false)} />
     </div>
   )
 }

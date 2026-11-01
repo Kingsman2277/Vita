@@ -31,7 +31,7 @@ export default function Admin() {
           <p className="text-muted-foreground" style={{ fontSize: 13, marginBottom: 16 }}>
             This page is reserved for the project owner.
           </p>
-          <button onClick={() => navigate('/dashboard')} className="btn-secondary" style={{ padding: '10px 20px', minWidth: 'auto' }}>
+          <button onClick={() => navigate('/home')} className="btn-secondary" style={{ padding: '10px 20px', minWidth: 'auto' }}>
             Back to Dashboard
           </button>
         </Card>

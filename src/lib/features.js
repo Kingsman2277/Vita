@@ -18,15 +18,3 @@ export const FEATURE_CATALOG = [
 
 export const DEFAULT_FEATURES = ['food', 'finance', 'budget', 'goals', 'summary']
 export const ALL_FEATURES = FEATURE_CATALOG.map(f => f.key)
-
-// Map route path → feature key it requires. Routes not in this map
-// (Dashboard, Settings, Admin, Login) bypass feature gating.
-export const ROUTE_TO_FEATURE = {
-  '/food': 'food',
-  '/workout': 'workout',
-  '/finance': 'finance',
-  '/budget': 'budget',
-  '/goals': 'goals',
-  '/body-goals': 'goals',
-  '/summary': 'summary',
-}

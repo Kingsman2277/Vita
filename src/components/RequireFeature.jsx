@@ -48,7 +48,7 @@ function LockedCard({ feature }) {
         </p>
         <button
           type="button"
-          onClick={() => navigate('/dashboard')}
+          onClick={() => navigate('/home')}
           className="btn-secondary"
           style={{ padding: '10px 22px', minWidth: 'auto' }}
         >

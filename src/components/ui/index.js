@@ -1,6 +1,7 @@
 export { default as AmountKeypad } from './AmountKeypad'
 export { default as AppHeader } from './AppHeader'
 export { default as AreaChart } from './AreaChart'
+export { default as BottomNav } from './BottomNav'
 export { default as BottomSheet } from './BottomSheet'
 export { default as Button } from './Button'
 export { default as Card } from './Card'
