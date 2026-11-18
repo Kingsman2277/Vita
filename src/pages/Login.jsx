@@ -29,7 +29,8 @@ export default function Login() {
 
   return (
     <div className="min-h-dvh grid place-items-center bg-bg px-6 py-10">
-      <form onSubmit={handleSubmit} className="w-full max-w-[380px] bg-card rounded-card p-8">
+      <div className="w-full max-w-[380px]">
+        <form onSubmit={handleSubmit} className="w-full bg-card rounded-card p-8">
         <div className="text-center mb-7">
           {/* The app mark, not a padlock: this is a personal tracker, not
               a security product. Phase 7 ships the same V as the PWA icon. */}
@@ -77,7 +78,13 @@ export default function Login() {
         <p className="text-center text-[11px] text-muted mt-5">
           Private tracker · accounts by invitation only
         </p>
-      </form>
+        </form>
+        <p className="text-center text-[11px] text-muted mt-5">
+          <a href="https://shippedforyou.com" rel="noopener noreferrer" className="hover:text-fg">
+            Built by Shipped For You
+          </a>
+        </p>
+      </div>
     </div>
   )
 }
