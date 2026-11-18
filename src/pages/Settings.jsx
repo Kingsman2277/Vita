@@ -120,6 +120,11 @@ export default function Settings() {
       <p className="text-center text-[11px] text-muted">
         {username ? `${username} · ` : ''}Vita v1.0
       </p>
+      <p className="text-center text-[11px] text-muted">
+        <a href="https://shippedforyou.com" rel="noopener noreferrer" className="hover:text-fg">
+          Built by Shipped For You
+        </a>
+      </p>
 
       {/* ─── Sheets ─── */}
       <BottomSheet open={usernameSheet} onClose={() => setUsernameSheet(false)} title="Change username">
